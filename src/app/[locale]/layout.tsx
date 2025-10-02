@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       images: ["https://foody-user.vercel.app/images/logo.png"],
     },
     verification: {
-      "google": "vYA8i7hLQd5Ovyo-6HxZMEMUkxD5S22Psf_9e79p_wk",
+      "google": "2VuD2LK75PU77--qBlHFjDSXtqPR_RNCn9fttlTE6ks",
     },
   };
 }
