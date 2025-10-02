@@ -5,7 +5,7 @@ import SectionSubscribe2 from "@/components/SectionSubscribe2";
 
 export default function HotDealsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
 
   const categories = [
     { id: 'all', name: 'Tất cả', icon: '🍽️' },
@@ -112,7 +112,7 @@ export default function HotDealsPage() {
     ? deals 
     : deals.filter(deal => deal.category === selectedCategory);
 
-  const toggleFavorite = (id) => {
+  const toggleFavorite = (id: number) => {
     setFavorites(prev => 
       prev.includes(id) 
         ? prev.filter(fav => fav !== id)

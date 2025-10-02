@@ -2,8 +2,16 @@
 import React, { useState } from "react";
 import { CheckCircle2, Gift, Crown, Calendar, Clock, MapPin, Package, Truck } from "lucide-react";
 
+type ColorClass = {
+  border: string;
+  bg: string;
+  text: string;
+  button: string;
+};
+
 const MembershipPage = () => {
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState<number | string | null>(null);
+
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -81,14 +89,14 @@ const MembershipPage = () => {
     }
   ];
 
-  const districts = [
+  const districts: string[] = [
     "Quận 1", "Quận 2", "Quận 3", "Quận 4", "Quận 5",
     "Quận 6", "Quận 7", "Quận 8", "Quận 9", "Quận 10",
     "Quận 11", "Quận 12", "Quận Bình Thạnh", "Quận Tân Bình",
     "Quận Phú Nhuận", "Quận Gò Vấp", "Quận Thủ Đức"
   ];
 
-  const wards = {
+  const wards: Record<string, string[]> = {
     "Quận 1": ["Phường Bến Nghé", "Phường Bến Thành", "Phường Cầu Kho", "Phường Cầu Ông Lãnh"],
     "Quận 2": ["Phường An Phú", "Phường An Khánh", "Phường Bình An", "Phường Bình Trưng Đông"],
     "Quận 3": ["Phường 1", "Phường 2", "Phường 3", "Phường 4"],
@@ -101,7 +109,7 @@ const MembershipPage = () => {
     { value: "evening", label: "Tối (15h - 20h)" }
   ];
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: any) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -110,7 +118,7 @@ const MembershipPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     if (!selectedPlan) {
       alert("Vui lòng chọn gói thành viên");
@@ -120,7 +128,7 @@ const MembershipPage = () => {
     alert("Đăng ký thành công! Chúng tôi sẽ liên hệ với bạn sớm.");
   };
 
-  const colorClasses = {
+  const colorClasses: Record<string, ColorClass> = {
     blue: {
       border: "border-blue-500",
       bg: "bg-blue-50",
@@ -466,7 +474,7 @@ const MembershipPage = () => {
                   value={formData.address}
                   onChange={handleInputChange}
                   required
-                  rows="3"
+                  rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition resize-none"
                   placeholder="Số nhà, tên đường..."
                 />

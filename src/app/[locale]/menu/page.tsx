@@ -6,9 +6,9 @@ import { Search, ShoppingCart, Star, Clock, MapPin, Heart, Filter, X, Plus, Minu
 export default function FoodyMenu() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartItems, setCartItems] = useState([]);
-  const [showCart, setShowCart] = useState(false);
-  const [favorites, setFavorites] = useState([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [showCart, setShowCart] = useState<any>(false);
+  const [favorites, setFavorites] = useState<any[]>([]);
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [sortBy, setSortBy] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
@@ -214,7 +214,7 @@ export default function FoodyMenu() {
     return items;
   }, [selectedCategory, searchQuery, priceRange, sortBy]);
 
-  const addToCart = (item) => {
+  const addToCart = (item: any) => {
     const existingItem = cartItems.find(i => i.id === item.id);
     if (existingItem) {
       setCartItems(cartItems.map(i => 
@@ -225,7 +225,7 @@ export default function FoodyMenu() {
     }
   };
 
-  const removeFromCart = (itemId) => {
+  const removeFromCart = (itemId: any) => {
     const existingItem = cartItems.find(i => i.id === itemId);
     if (existingItem.quantity === 1) {
       setCartItems(cartItems.filter(i => i.id !== itemId));
@@ -236,7 +236,7 @@ export default function FoodyMenu() {
     }
   };
 
-  const toggleFavorite = (itemId) => {
+  const toggleFavorite = (itemId: any) => {
     if (favorites.includes(itemId)) {
       setFavorites(favorites.filter(id => id !== itemId));
     } else {
