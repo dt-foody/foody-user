@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Pizza",
+    "href": "/food-category/pizza",
+    "count": 42,
+    "thumbnail": "/images/foodCategories/pizza.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Burgers",
+    "href": "/food-category/burgers",
+    "count": 37,
+    "thumbnail": "/images/foodCategories/burgers.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Sushi",
+    "href": "/food-category/sushi",
+    "count": 28,
+    "thumbnail": "/images/foodCategories/sushi.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Desserts",
+    "href": "/food-category/desserts",
+    "count": 15,
+    "thumbnail": "/images/foodCategories/desserts.jpg"
+  }
+]

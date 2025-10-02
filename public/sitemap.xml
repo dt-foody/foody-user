@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+    xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+    xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Home page -->
+  <url>
+    <loc>https://user-booking.vercel.app/en/</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/" />
+  </url>
+
+  <!-- Listing stay page -->
+  <url>
+    <loc>https://user-booking.vercel.app/en/listing-stay</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/listing-stay" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/listing-stay" />
+  </url>
+
+  <!-- Listing stay detail page -->
+  <url>
+    <loc>https://user-booking.vercel.app/en/listing-stay-detail</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/listing-stay-detail" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/listing-stay-detail" />
+  </url>
+
+  <!-- Checkout page -->
+  <url>
+    <loc>https://user-booking.vercel.app/en/checkout</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/checkout" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/checkout" />
+  </url>
+
+</urlset>

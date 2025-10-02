@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "siteTitle": "Hotel Booking - Find the Best Hotel Deals",
+    "siteDescription": "Book hotels online quickly, easily, and securely. Find hotels in any city with great deals and offers.",
+    "keywords": "hotel booking, hotels, book hotel, travel, accommodation, vacation",
+    "ogTitle": "Hotel Booking - Find the Best Hotel Deals",
+    "ogDescription": "Book hotels online quickly, easily, and securely.",
+    "twitterTitle": "Hotel Booking - Find the Best Hotel Deals",
+    "twitterDescription": "Book hotels online quickly, easily, and securely."
+  },
+  "section-hero": {
+    "title": "Hotel Booking",
+    "sub-title": "Discover and reserve hotels and resort villas with ease and confidence.",
+    "start-your-search": "Start your search"
+  },
+  "location": {
+    "title": "Location",
+    "sub-title": "Where are you going?"
+  }
+}

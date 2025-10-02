@@ -1,0 +1,52 @@
+[
+  {
+    "id": "food_1",
+    "authorId": 101,
+    "date": "Jan 10, 2023",
+    "href": "/food-detail",
+    "foodCategoryId": 1,
+    "title": "Cheese Burger",
+    "featuredImage": "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "galleryImgs": [
+      "https://images.pexels.com/photos/1639563/pexels-photo-1639563.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+      "https://images.pexels.com/photos/1639564/pexels-photo-1639564.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+      "https://images.pexels.com/photos/1639565/pexels-photo-1639565.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+    ],
+    "commentCount": 120,
+    "viewCount": 1520,
+    "like": true,
+    "address": "Kitchen Street 21",
+    "reviewStart": 4.7,
+    "reviewCount": 430,
+    "price": "$12.55",
+    "ingredients": ["Beef patty", "Cheese", "Lettuce", "Tomato", "Bun"],
+    "calories": 750,
+    "saleOff": "-15% today",
+    "isAds": null
+  },
+  {
+    "id": "food_2",
+    "authorId": 102,
+    "date": "Feb 5, 2023",
+    "href": "/food-detail",
+    "foodCategoryId": 2,
+    "title": "Classic Waffles",
+    "featuredImage": "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "galleryImgs": [
+      "https://images.pexels.com/photos/376465/pexels-photo-376465.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+      "https://images.pexels.com/photos/376466/pexels-photo-376466.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+      "https://images.pexels.com/photos/376467/pexels-photo-376467.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+    ],
+    "commentCount": 85,
+    "viewCount": 920,
+    "like": false,
+    "address": "Bakery House 14",
+    "reviewStart": 4.5,
+    "reviewCount": 260,
+    "price": "$8.99",
+    "ingredients": ["Flour", "Eggs", "Milk", "Butter", "Maple Syrup"],
+    "calories": 400,
+    "saleOff": "-10% this week",
+    "isAds": null
+  }
+]
