@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://user-booking.vercel.app/sitemap.xml
+Sitemap: https://foody-user.vercel.app/sitemap.xml
