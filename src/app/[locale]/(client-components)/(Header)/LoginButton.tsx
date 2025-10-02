@@ -14,7 +14,7 @@ const LoginButton = () => {
   return (
     <div className="self-center">
       <ButtonPrimary onClick={handleLogin}>
-        Login
+        Đăng nhập
       </ButtonPrimary>
     </div>
   );

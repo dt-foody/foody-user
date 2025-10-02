@@ -14,11 +14,11 @@ export interface MainNav2Props {
 }
 
 const NAV_ITEMS = [
-  { href: "/menu", label: "Menu" },
-  { href: "/hot-deal", label: "Hot Deal" },
-  { href: "/about", label: "About" },
-  { href: "/blog", label: "Blog" },
+  { href: "/menu", label: "Thực đơn" },
+  { href: "/hot-deal", label: "Khuyến mãi" },
+  { href: "/blog", label: "Blog & Mẹo ẩm thực" },
   { href: "/membership", label: "Thành viên" },
+  { href: "/about", label: "Giới thiệu" },
 ];
 
 const MainNav2: FC<MainNav2Props> = ({ className = "", isLoggedIn = false }) => {
@@ -45,9 +45,9 @@ const MainNav2: FC<MainNav2Props> = ({ className = "", isLoggedIn = false }) => 
         </div>
 
         {/* Search mobile */}
-        <div className="lg:hidden flex-1 px-3">
+        {/* <div className="lg:hidden flex-1 px-3">
           <HeroSearchForm2MobileFactory />
-        </div>
+        </div> */}
 
         {/* Right actions */}
         <div className="flex items-center space-x-4 text-neutral-700 dark:text-neutral-100">
@@ -65,9 +65,9 @@ const MainNav2: FC<MainNav2Props> = ({ className = "", isLoggedIn = false }) => 
           {!isLoggedIn ? <LoginButton /> : <AvatarDropdown />}
 
           {/* Hamburger menu cho mobile */}
-          <div className="lg:hidden">
+          {/* <div className="lg:hidden">
             <MenuBar />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

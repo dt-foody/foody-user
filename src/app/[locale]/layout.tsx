@@ -26,10 +26,10 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
       locale: params.locale === "ar" ? "ar_AR" : "en_US",
-      url: `https://user-booking.vercel.app//${params.locale}`,
+      url: `https://foody-user.vercel.app//${params.locale}`,
       images: [
         {
-          url: "https://user-booking.vercel.app/images/logo.png",
+          url: "https://foody-user.vercel.app/images/logo.png",
           width: 1200,
           height: 630,
           alt: messages.metadata.siteTitle,
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       card: "summary_large_image",
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
-      images: ["https://user-booking.vercel.app/images/logo.png"],
+      images: ["https://foody-user.vercel.app/images/logo.png"],
     },
     verification: {
       "google": "vYA8i7hLQd5Ovyo-6HxZMEMUkxD5S22Psf_9e79p_wk",
