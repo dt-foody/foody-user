@@ -44,11 +44,10 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       images: ["https://foody-user.vercel.app/images/logo.png"],
     },
     verification: {
-      "google": "2VuD2LK75PU77--qBlHFjDSXtqPR_RNCn9fttlTE6ks",
+      "google": "tNXgCsyw3HWELlE_scnMxLvRfx1WQ8dIkjJU4gDrjGE",
     },
   };
 }
-
 
 export default async function RootLayout({
   children,

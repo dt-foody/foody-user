@@ -1,42 +1,51 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <urlset
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- Home page -->
   <url>
-    <loc>https://user-booking.vercel.app/en/</loc>
+    <loc>https://foody-user.vercel.app/en/</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/" />
   </url>
 
-  <!-- Listing stay page -->
+  <!-- Blog page -->
   <url>
-    <loc>https://user-booking.vercel.app/en/listing-stay</loc>
+    <loc>https://foody-user.vercel.app/en/blog</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/listing-stay" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/listing-stay" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/blog" />
   </url>
 
-  <!-- Listing stay detail page -->
+  <!-- Membership page -->
   <url>
-    <loc>https://user-booking.vercel.app/en/listing-stay-detail</loc>
+    <loc>https://foody-user.vercel.app/en/listing-stay-detail</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/listing-stay-detail" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/listing-stay-detail" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/membership" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/membership" />
   </url>
 
-  <!-- Checkout page -->
+  <!-- Hot deal page -->
   <url>
-    <loc>https://user-booking.vercel.app/en/checkout</loc>
+    <loc>https://foody-user.vercel.app/en/hot-deal</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://user-booking.vercel.app/en/checkout" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://user-booking.vercel.app/ar/checkout" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/hot-deal" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/hot-deal" />
+  </url>
+
+  <!-- About page -->
+  <url>
+    <loc>https://foody-user.vercel.app/en/about</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/about" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/about" />
   </url>
 
 </urlset>
