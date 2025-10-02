@@ -466,7 +466,7 @@ export default function PageAbout() {
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2">Tin nhắn</label>
                     <textarea 
-                      rows="4" 
+                      rows={4}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="Nội dung tin nhắn..."
                     ></textarea>
