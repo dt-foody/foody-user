@@ -1,12 +1,11 @@
 import React, { FC } from "react";
 import Logo from "@/shared/Logo";
-import MenuBar from "@/shared/MenuBar";
 import NotifyDropdown from "./NotifyDropdown";
 import AvatarDropdown from "./AvatarDropdown";
 import LoginButton from "./LoginButton";
-import HeroSearchForm2MobileFactory from "../(HeroSearchForm2Mobile)/HeroSearchForm2MobileFactory";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 
 export interface MainNav2Props {
   className?: string;
@@ -21,7 +20,12 @@ const NAV_ITEMS = [
   { href: "/about", label: "Giới thiệu" },
 ];
 
-const MainNav2: FC<MainNav2Props> = ({ className = "", isLoggedIn = false }) => {
+const MainNav2: FC<MainNav2Props> = ({
+  className = "",
+  isLoggedIn = false,
+}) => {
+  const { cartCount, isCartAnimating, setShowCart, addToCart } = useCart();
+
   return (
     <div className={`MainNav2 relative z-10 ${className}`}>
       <div className="px-4 h-20 lg:container flex justify-between items-center">
@@ -44,30 +48,33 @@ const MainNav2: FC<MainNav2Props> = ({ className = "", isLoggedIn = false }) => 
           </nav>
         </div>
 
-        {/* Search mobile */}
-        {/* <div className="lg:hidden flex-1 px-3">
-          <HeroSearchForm2MobileFactory />
-        </div> */}
-
         {/* Right actions */}
         <div className="flex items-center space-x-4 text-neutral-700 dark:text-neutral-100">
           <button
-            className="w-10 h-10 flex items-center justify-center rounded-full 
-                       bg-primary-100 text-primary-600 hover:bg-primary-600 
-                       hover:text-white transition"
-            aria-label="Giỏ hàng"
+            onClick={() => setShowCart(true)}
+            // Thêm padding, bo tròn và hiệu ứng focus/hover
+            className={`relative p-3 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+              isCartAnimating ? "animate-bounce" : ""
+            }`}
           >
-            <ShoppingCart className="w-5 h-5" />
+            {/* Icon không thay đổi */}
+            <ShoppingCart className="w-6 h-6" />
+
+            {/* Badge số lượng */}
+            {cartCount > 0 && (
+              <span
+                // Định vị badge ở góc trên bên phải của button
+                className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 
+                 bg-red-500 text-white text-xs font-bold rounded-full"
+              >
+                {cartCount}
+              </span>
+            )}
           </button>
 
           <NotifyDropdown />
 
           {!isLoggedIn ? <LoginButton /> : <AvatarDropdown />}
-
-          {/* Hamburger menu cho mobile */}
-          {/* <div className="lg:hidden">
-            <MenuBar />
-          </div> */}
         </div>
       </div>
     </div>

@@ -6,8 +6,11 @@ import "./globals.css";
 import "@/fonts/line-awesome-1.3.0/css/line-awesome.css";
 import "@/styles/index.scss";
 import "rc-slider/assets/index.css";
+import { CartProvider } from '@/contexts/CartContext';
 import Footer from "@/components/Footer";
 import FooterNav from "@/components/FooterNav";
+import CartSidebar from '@/components/CartSidebar';
+import ProductOptionsModal from "@/components/ProductOptionsModal";
 
 const poppins = Inter({
   subsets: ["latin"],
@@ -26,7 +29,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
       locale: params.locale === "ar" ? "ar_AR" : "en_US",
-      url: `https://foody-user.vercel.app//${params.locale}`,
+      url: `https://foody-user.vercel.app/${params.locale}`,
       images: [
         {
           url: "https://foody-user.vercel.app/images/logo.png",
@@ -65,11 +68,17 @@ export default async function RootLayout({
     <html lang={params.locale} className={poppins.className} dir={dir}>
       <body className="bg-white text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
         <NextIntlClientProvider locale={params.locale} messages={messages}>
-          <ClientCommons />
-          <SiteHeader />
-          {children}
-          <FooterNav />
-          <Footer />
+          <CartProvider>
+            <ClientCommons />
+            <SiteHeader />
+            {children}
+            <FooterNav />
+            <Footer />
+
+            {/* Global Cart Components */}
+            <CartSidebar />
+            <ProductOptionsModal />
+          </CartProvider>
         </NextIntlClientProvider>
       </body>
     </html>

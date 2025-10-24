@@ -6,10 +6,10 @@ const withNextIntl = createNextIntlPlugin();
 
 const nextConfig = {
   reactStrictMode: false,
-  experimental: {
-    appDir: true,
-    typedRoutes: false,
-  },
+  // experimental: {
+  //   appDir: true,
+  //   typedRoutes: false,
+  // },
   images: {
     remotePatterns: [
       {
@@ -35,6 +35,12 @@ const nextConfig = {
         hostname: "www.gstatic.com",
         port: "",
         pathname: "/**",
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/public/**',
       },
     ],
   },

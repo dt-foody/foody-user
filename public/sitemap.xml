@@ -23,7 +23,7 @@
 
   <!-- Membership page -->
   <url>
-    <loc>https://foody-user.vercel.app/en/listing-stay-detail</loc>
+    <loc>https://foody-user.vercel.app/en/membership</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/membership" />

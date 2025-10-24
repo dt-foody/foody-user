@@ -1,282 +1,435 @@
-'use client';
-import { useState } from 'react';
-import { Clock, MapPin, Star, Flame, Tag, Heart } from 'lucide-react';
-import SectionSubscribe2 from "@/components/SectionSubscribe2";
+"use client";
 
+import { useState, useEffect, useMemo } from "react";
+import {
+  Flame,
+  Loader,
+  Plus,
+  TrendingDown,
+  Tag,
+  ChevronDown,
+} from "lucide-react";
+
+import ProductCard from "@/components/ProductCard";
+import ProductNotFound from "@/components/ProductNotFound";
+import MenuCategory from "@/components/MenuCategory";
+import ErrorDisplay from "@/components/ErrorDisplay";
+import SkeletonCard from "@/components/SkeletonCard";
+
+import {
+  MenuItem,
+  Category,
+  Product,
+  Combo,
+  PricePromotion,
+} from "@/types/product";
+
+// --- CONSTANTS ---
+const API_BASE = "http://localhost:3000/v1/public";
+const IMAGE_BASE = "http://localhost:3000";
+const ITEMS_PER_PAGE = 12;
+
+// --- MAIN COMPONENT ---
 export default function HotDealsPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [combos, setCombos] = useState<Combo[]>([]);
+  const [promotions, setPromotions] = useState<PricePromotion[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<"discount" | "price:asc" | "price:desc">(
+    "discount"
+  );
+  const [showSortMenu, setShowSortMenu] = useState<boolean>(false);
 
-  const categories = [
-    { id: 'all', name: 'Tất cả', icon: '🍽️' },
-    { id: 'food', name: 'Đồ ăn', icon: '🍜' },
-    { id: 'drink', name: 'Đồ uống', icon: '🥤' },
-    { id: 'buffet', name: 'Buffet', icon: '🍱' },
-    { id: 'fastfood', name: 'Fast Food', icon: '🍔' },
-  ];
+  const [activeTab, setActiveTab] = useState<{
+    type: "category" | "combo";
+    id: string;
+  }>({ type: "category", id: "all" });
 
-  const deals = [
-    {
-      id: 1,
-      category: 'food',
-      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80',
-      restaurant: 'Bún Bò Huế Mẹ Tôi',
-      title: 'Giảm 50% Bún Bò Huế đặc biệt',
-      originalPrice: 80000,
-      discountPrice: 40000,
-      discount: 50,
-      rating: 4.8,
-      sold: 342,
-      timeLeft: '2 giờ',
-      location: 'Quận 1, TP.HCM',
-      tag: 'Hot',
-    },
-    {
-      id: 2,
-      category: 'drink',
-      image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80',
-      restaurant: 'The Coffee House',
-      title: 'Mua 1 tặng 1 - Trà sữa size L',
-      originalPrice: 49000,
-      discountPrice: 49000,
-      discount: 50,
-      rating: 4.6,
-      sold: 523,
-      timeLeft: '5 giờ',
-      location: 'Quận 3, TP.HCM',
-      tag: 'Best Seller',
-    },
-    {
-      id: 3,
-      category: 'buffet',
-      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80',
-      restaurant: 'Buffet BBQ Garden',
-      title: 'Buffet nướng & lẩu - Giảm 40%',
-      originalPrice: 299000,
-      discountPrice: 179000,
-      discount: 40,
-      rating: 4.9,
-      sold: 156,
-      timeLeft: '1 ngày',
-      location: 'Quận 7, TP.HCM',
-      tag: 'New',
-    },
-    {
-      id: 4,
-      category: 'fastfood',
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
-      restaurant: 'Burger King',
-      title: 'Combo Burger + Khoai tây + Nước',
-      originalPrice: 99000,
-      discountPrice: 69000,
-      discount: 30,
-      rating: 4.5,
-      sold: 678,
-      timeLeft: '3 giờ',
-      location: 'Quận 2, TP.HCM',
-      tag: 'Hot',
-    },
-    {
-      id: 5,
-      category: 'food',
-      image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80',
-      restaurant: 'Sushi World',
-      title: 'Set Sushi 20 miếng - Giảm 35%',
-      originalPrice: 350000,
-      discountPrice: 227500,
-      discount: 35,
-      rating: 4.7,
-      sold: 234,
-      timeLeft: '6 giờ',
-      location: 'Quận 1, TP.HCM',
-      tag: 'Premium',
-    },
-    {
-      id: 6,
-      category: 'drink',
-      image: 'https://images.unsplash.com/photo-1514066558159-fc8c737ef259?w=800&q=80',
-      restaurant: 'Juice & Smoothie',
-      title: 'Combo 3 ly sinh tố trái cây',
-      originalPrice: 120000,
-      discountPrice: 84000,
-      discount: 30,
-      rating: 4.4,
-      sold: 445,
-      timeLeft: '4 giờ',
-      location: 'Quận 5, TP.HCM',
-      tag: 'Hot',
-    },
-  ];
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
-  const filteredDeals = selectedCategory === 'all' 
-    ? deals 
-    : deals.filter(deal => deal.category === selectedCategory);
+  useEffect(() => {
+    if (!loading) {
+      loadDeals();
+    }
+  }, [activeTab, currentPage, sortBy]);
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => 
-      prev.includes(id) 
-        ? prev.filter(fav => fav !== id)
-        : [...prev, id]
-    );
+  const loadInitialData = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const catPromise = fetch(`${API_BASE}/categories`);
+      const promoPromise = fetch(
+        `${API_BASE}/price-promotions?populate=product;combo&isActive=true&page=1&limit=${ITEMS_PER_PAGE}`
+      );
+
+      const [catRes, promoRes] = await Promise.all([catPromise, promoPromise]);
+
+      if (!catRes.ok || !promoRes.ok) {
+        throw new Error("Không thể tải dữ liệu từ máy chủ");
+      }
+
+      const catData = await catRes.json();
+      const promoData = await promoRes.json();
+
+      setCategories(buildCategoryTree(catData.results || []));
+
+      const validPromotions = (promoData.results || []).filter(
+        (p: PricePromotion) =>
+          (p.product && typeof p.product === "object") ||
+          (p.combo && typeof p.combo === "object")
+      );
+
+      setPromotions(validPromotions);
+      processPromotions(validPromotions);
+      setTotalPages(promoData.totalPages || 1);
+    } catch (err: any) {
+      setError(err.message || "Một lỗi không xác định đã xảy ra.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const loadDeals = async (): Promise<void> => {
+    if (currentPage === 1) setLoading(true);
+    else setLoadingMore(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams({
+        populate: "product;combo",
+        isActive: "true",
+        page: currentPage.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+      });
+
+      const response = await fetch(`${API_BASE}/price-promotions?${params}`);
+      if (!response.ok) throw new Error("Không thể tải danh sách khuyến mãi");
+
+      const data = await response.json();
+      const validPromotions = (data.results || []).filter(
+        (p: PricePromotion) =>
+          (p.product && typeof p.product === "object") ||
+          (p.combo && typeof p.combo === "object")
+      );
+
+      setPromotions(
+        currentPage === 1
+          ? validPromotions
+          : (prev) => [...prev, ...validPromotions]
+      );
+
+      processPromotions(validPromotions, currentPage > 1);
+      setTotalPages(data.totalPages || 1);
+    } catch (err: any) {
+      setError(err.message || "Một lỗi không xác định đã xảy ra.");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const processPromotions = (
+    promos: PricePromotion[],
+    append = false
+  ): void => {
+    const productsList: Product[] = [];
+    const combosList: Combo[] = [];
+
+    promos.forEach((promo) => {
+      if (promo.product && typeof promo.product === "object") {
+        const product = promo.product as Product;
+        productsList.push({
+          ...product,
+          thumbnailUrl: `${IMAGE_BASE}${product.thumbnailUrl}`,
+        });
+      }
+      if (promo.combo && typeof promo.combo === "object") {
+        const combo = promo.combo as Combo;
+        combosList.push({
+          ...combo,
+          thumbnailUrl: `${IMAGE_BASE}${combo.thumbnailUrl}`,
+        });
+      }
+    });
+
+    if (append) {
+      setProducts((prev) => [...prev, ...productsList]);
+      setCombos((prev) => [...prev, ...combosList]);
+    } else {
+      setProducts(productsList);
+      setCombos(combosList);
+    }
+  };
+
+  const buildCategoryTree = (cats: Category[]): Category[] => {
+    return cats
+      .filter((c: Category) => !c.parent)
+      .map((parent: Category) => ({
+        ...parent,
+        image: parent.image ? `${IMAGE_BASE}${parent.image}` : "",
+      }));
+  };
+
+  const calculateTimeLeft = (endDate?: string): string => {
+    if (!endDate) return "";
+
+    const now = new Date();
+    const end = new Date(endDate);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return "Đã hết hạn";
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `Còn ${days} ngày`;
+    if (hours > 0) return `Còn ${hours} giờ`;
+    return "Sắp hết";
+  };
+
+  const dealItems = useMemo((): MenuItem[] => {
+    const getPromotion = (id: string) =>
+      promotions.find(
+        (p) =>
+          (p.product as Product)?.id === id || (p.combo as Combo)?.id === id
+      );
+
+    const allItems = [...products, ...combos];
+
+    const filteredItems =
+      selectedCategory === "all"
+        ? allItems
+        : allItems.filter((item) => {
+            if ("comboPrice" in item) return false;
+            return (item as Product).category === selectedCategory;
+          });
+
+    let items = filteredItems.map((item): MenuItem => {
+      const isCombo = "comboPrice" in item;
+      const promotion = getPromotion(item.id);
+
+      let finalPrice = isCombo
+        ? (item as Combo).comboPrice
+        : (item as Product).basePrice;
+      let originalPrice = undefined;
+
+      if (promotion) {
+        originalPrice = finalPrice;
+        finalPrice =
+          promotion.discountType === "percentage"
+            ? finalPrice * (1 - promotion.discountValue / 100)
+            : finalPrice - promotion.discountValue;
+      }
+
+      const productItem = item as Product;
+      const timeLeft = promotion?.endDate
+        ? calculateTimeLeft(promotion.endDate)
+        : "";
+
+      return {
+        ...productItem,
+        type: (isCombo ? "combo" : "product") as "combo" | "product",
+        price: finalPrice,
+        originalPrice,
+        discount: promotion || null,
+        image: item.thumbnailUrl,
+        reviews: Math.floor(Math.random() * 500) + 100,
+        rating: (4.0 + Math.random() * 0.9).toFixed(1),
+        sold: Math.floor(Math.random() * 1000) + 50,
+        timeLeft,
+        optionGroups: productItem.optionGroups,
+      };
+    });
+
+    switch (sortBy) {
+      case "discount":
+        items.sort((a, b) => {
+          const discountA = a.discount
+            ? a.discount.discountType === "percentage"
+              ? a.discount.discountValue
+              : (a.discount.discountValue / (a.originalPrice || a.price)) * 100
+            : 0;
+          const discountB = b.discount
+            ? b.discount.discountType === "percentage"
+              ? b.discount.discountValue
+              : (b.discount.discountValue / (b.originalPrice || b.price)) * 100
+            : 0;
+          return discountB - discountA;
+        });
+        break;
+      case "price:asc":
+        items.sort((a, b) => a.price - b.price);
+        break;
+      case "price:desc":
+        items.sort((a, b) => b.price - a.price);
+        break;
+    }
+
+    return items;
+  }, [products, combos, promotions, selectedCategory, sortBy]);
+
+  const handleTabClick = (type: "category" | "combo", id: string) => {
+    if (activeTab.type === type && activeTab.id === id) return;
+    setCurrentPage(1);
+    setProducts([]);
+    setCombos([]);
+    setActiveTab({ type, id });
+  };
+
+
+  const activeDealCount = dealItems.length;
+
+  const sortOptions = [
+    { value: "discount", label: "Giảm giá nhiều nhất" },
+    { value: "price:asc", label: "Giá thấp - cao" },
+    { value: "price:desc", label: "Giá cao - thấp" },
+  ];
+
+  const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || "Sắp xếp";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <Flame className="w-10 h-10 animate-pulse" />
-            <h1 className="text-4xl md:text-5xl font-bold">Hot Deals Hôm Nay</h1>
-          </div>
-          <p className="text-lg md:text-xl opacity-90">
-            Săn ngay các ưu đãi hấp dẫn - Tiết kiệm đến 50%!
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3 items-center">
-            <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-              <span className="font-semibold">{filteredDeals.length} deal đang diễn ra</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Clean Hero Section */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <Flame className="w-7 h-7 text-orange-500" />
             </div>
-            <div className="bg-yellow-400 text-orange-900 px-4 py-2 rounded-full font-semibold animate-bounce">
-              🔥 Ưu đãi kết thúc sớm!
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Ưu Đãi Hôm Nay
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {activeDealCount} sản phẩm đang giảm giá
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Categories Filter */}
-      <div className="sticky top-0 z-40 bg-white shadow-md">
+      {/* Simplified Filter Bar */}
+      <div className="z-40 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map(cat => (
+          <div className="flex items-center justify-between gap-3">
+            {/* Categories */}
+            <MenuCategory
+              categories={categories}
+              activeTab={ activeTab }
+              onTabClick={ handleTabClick }
+            />
+
+            {/* Sort Dropdown */}
+            <div className="relative">
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all transform hover:scale-105 ${
-                  selectedCategory === cat.id
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:border-orange-500 transition-colors whitespace-nowrap"
               >
-                <span className="text-xl">{cat.icon}</span>
-                <span>{cat.name}</span>
+                <TrendingDown className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  {currentSortLabel}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
               </button>
-            ))}
+
+              {showSortMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value as any);
+                        setShowSortMenu(false);
+                        setCurrentPage(1);
+                      }}
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                        sortBy === option.value
+                          ? "bg-orange-50 text-orange-600 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <span className="text-sm">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-start gap-3">
+          <Tag className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold text-orange-700">Mẹo:</span> Các ưu đãi có thể kết thúc bất cứ lúc nào. 
+              Đặt hàng ngay để không bỏ lỡ!
+            </p>
           </div>
         </div>
       </div>
 
       {/* Deals Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDeals.map(deal => (
-            <div
-              key={deal.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group"
-            >
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={deal.image}
-                  alt={deal.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${
-                    deal.tag === 'Hot' ? 'bg-red-500' :
-                    deal.tag === 'New' ? 'bg-green-500' :
-                    deal.tag === 'Premium' ? 'bg-purple-500' :
-                    'bg-blue-500'
-                  }`}>
-                    {deal.tag}
-                  </span>
-                </div>
-                <div className="absolute top-3 right-3">
-                  <button
-                    onClick={() => toggleFavorite(deal.id)}
-                    className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        favorites.includes(deal.id)
-                          ? 'fill-red-500 text-red-500'
-                          : 'text-gray-400'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <div className="absolute bottom-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full font-bold shadow-lg">
-                  -{deal.discount}%
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5">
-                <h3 className="font-bold text-gray-800 mb-1 truncate">
-                  {deal.restaurant}
-                </h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  {deal.title}
-                </p>
-
-                {/* Rating & Sold */}
-                <div className="flex items-center gap-4 mb-3 text-sm">
-                  <div className="flex items-center gap-1 text-yellow-500">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-semibold text-gray-700">{deal.rating}</span>
-                  </div>
-                  <div className="text-gray-500">
-                    Đã bán {deal.sold}
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-2xl font-bold text-orange-500">
-                    {deal.discountPrice.toLocaleString('vi-VN')}đ
-                  </span>
-                  <span className="text-gray-400 line-through">
-                    {deal.originalPrice.toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-
-                {/* Location & Time */}
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span className="truncate">{deal.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-red-500 font-medium">
-                    <Clock className="w-4 h-4" />
-                    <span>Còn {deal.timeLeft}</span>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-105 active:scale-95 shadow-md">
-                  Đặt ngay
-                </button>
-              </div>
-            </div>
-          ))}
+      <div className="max-w-7xl mx-auto px-4 pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {error ? (
+            <ErrorDisplay message={error} onRetry={loadInitialData} />
+          ) : loading && currentPage === 1 ? (
+            Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : dealItems.length === 0 ? (
+            <ProductNotFound />
+          ) : (
+            dealItems.map((item) => (
+              <ProductCard key={item.id} product={item} showHotDealBadge />
+            ))
+          )}
         </div>
 
-        {/* Empty State */}
-        {filteredDeals.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🍽️</div>
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">
-              Không có deal nào
-            </h3>
-            <p className="text-gray-500">
-              Hãy thử chọn danh mục khác nhé!
-            </p>
-          </div>
-        )}
+        {/* Load More Button */}
+        {!loading &&
+          !error &&
+          dealItems.length > 0 &&
+          currentPage < totalPages && (
+            <div className="mt-10 text-center">
+              <button
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={loadingMore}
+                className="px-8 py-3.5 bg-white border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-500 hover:text-white transition-all disabled:opacity-50 inline-flex items-center gap-2 shadow-sm"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    <span>Đang tải...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    <span>Xem thêm ưu đãi</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <SectionSubscribe2 />
-      </div>
+      {/* Click outside to close dropdown */}
+      {showSortMenu && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => setShowSortMenu(false)}
+        />
+      )}
     </div>
   );
 }

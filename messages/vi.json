@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "siteTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
+    "siteDescription": "Tìm kiếm và đặt món ăn ngon, khám phá nhà hàng hấp dẫn. Chia sẻ trải nghiệm ẩm thực của bạn cùng cộng đồng.",
+    "keywords": "foody, ẩm thực, nhà hàng, món ngon, đặt món, review nhà hàng, food delivery",
+    "ogTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
+    "ogDescription": "Tìm kiếm món ăn ngon, đặt món dễ dàng và chia sẻ trải nghiệm ẩm thực với cộng đồng.",
+    "twitterTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
+    "twitterDescription": "Tìm kiếm món ăn ngon, đặt món dễ dàng và chia sẻ trải nghiệm ẩm thực với cộng đồng."
+  },
+  "section-hero": {
+    "bg_alt": "Món ăn ngon",
+    "headline": "Thưởng thức <highlight>ẩm thực tuyệt vời</highlight> <br></br>cho khẩu vị của bạn",
+    "subhead": "Khám phá hương vị tinh tế và khoảnh khắc khó quên tại thiên đường ẩm thực thân thiện của chúng tôi.",
+    "cta_primary": "Đăng ký thành viên ngay",
+    "cta_secondary": "Xem thực đơn"
+  }
+}

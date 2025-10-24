@@ -9,12 +9,10 @@
     "twitterDescription": "احجز الفنادق عبر الإنترنت بسرعة وسهولة وأمان."
   },
   "section-hero": {
-    "title": "حجز الفنادق",
-    "sub-title": "اكتشف واحجز الفنادق والفلل السياحية بسهولة وثقة.",
-    "start-your-search": "ابدأ بحثك"
-  },
-  "location": {
-    "title": "موقع",
-    "sub-title": "إلى أين أنت ذاهب؟"
+    "bg_alt": "Delicious dish",
+    "headline": "Enjoy <highlight>wonderful cuisine</highlight><br/>for your taste",
+    "subhead": "Discover refined flavors and unforgettable moments at our friendly food haven.",
+    "cta_primary": "Join now",
+    "cta_secondary": "See menu"
   }
 }

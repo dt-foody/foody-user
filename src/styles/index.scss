@@ -3,3 +3,9 @@
 @import "./_dates_picker";
 //
 @import "./header";
+@import "slick-carousel/slick/slick.css";
+@import "slick-carousel/slick/slick-theme.css";
+
+.slick-dots {
+  bottom: -40px !important;
+}

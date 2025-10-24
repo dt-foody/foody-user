@@ -1,20 +1,18 @@
 {
   "metadata": {
-    "siteTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
-    "siteDescription": "Tìm kiếm và đặt món ăn ngon, khám phá nhà hàng hấp dẫn. Chia sẻ trải nghiệm ẩm thực của bạn cùng cộng đồng.",
-    "keywords": "foody, ẩm thực, nhà hàng, món ngon, đặt món, review nhà hàng, food delivery",
-    "ogTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
-    "ogDescription": "Tìm kiếm món ăn ngon, đặt món dễ dàng và chia sẻ trải nghiệm ẩm thực với cộng đồng.",
-    "twitterTitle": "Foody - Khám Phá Ẩm Thực Tuyệt Vời",
-    "twitterDescription": "Tìm kiếm món ăn ngon, đặt món dễ dàng và chia sẻ trải nghiệm ẩm thực với cộng đồng."
+    "siteTitle": "Foody - Discover Great Cuisine",
+    "siteDescription": "Search and order delicious food, discover attractive restaurants. Share your culinary experience with the community.",
+    "keywords": "foody, cuisine, restaurant, delicious food, order food, restaurant review, food delivery",
+    "ogTitle": "Foody - Discover Great Cuisine",
+    "ogDescription": "Search for delicious food, order food easily and share culinary experience with the community.",
+    "twitterTitle": "Foody - Discover Great Cuisine",
+    "twitterDescription": "Search for delicious food, order food easily and share culinary experience with the community."
   },
   "section-hero": {
-    "title": "Hotel Booking",
-    "sub-title": "Discover and reserve hotels and resort villas with ease and confidence.",
-    "start-your-search": "Start your search"
-  },
-  "location": {
-    "title": "Location",
-    "sub-title": "Where are you going?"
+    "bg_alt": "Delicious dish",
+    "headline": "Enjoy <highlight>wonderful cuisine</highlight><br></br>for your taste",
+    "subhead": "Discover refined flavors and unforgettable moments at our friendly food haven.",
+    "cta_primary": "Join now",
+    "cta_secondary": "See menu"
   }
 }

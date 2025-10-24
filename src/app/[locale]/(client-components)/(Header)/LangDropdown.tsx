@@ -6,6 +6,7 @@ import { FC, Fragment, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 export const headerLanguage = [
+  { id: "vi", name: "Việt Nam", description: "Vietnamese" },
   { id: "en", name: "English", description: "United States" },
   { id: "ar", name: "Arabic", description: "Arabic" },
 ];
@@ -27,7 +28,7 @@ const LangDropdown: FC<LangDropdownProps> = ({
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [selectedLang, setSelectedLang] = useState("en");
+  const [selectedLang, setSelectedLang] = useState("vi");
 
   // Lấy locale từ cookie khi load page
   useEffect(() => {

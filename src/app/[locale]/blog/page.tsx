@@ -1,19 +1,22 @@
 import React from "react";
-import { DEMO_POSTS } from "@/data/posts";
 import SectionAds from "./SectionAds";
-import SectionMagazine5 from "./SectionMagazine5";
 import SectionLatestPosts from "./SectionLatestPosts";
 import BgGlassmorphism from "@/components/BgGlassmorphism";
 import SectionSubscribe2 from "@/components/SectionSubscribe2";
-
-// DEMO DATA
-const POSTS = DEMO_POSTS;
-
-// DEMO POST FOR MAGAZINE SECTION
-const MAGAZINE1_POSTS = POSTS.filter((_, i) => i >= 0 && i < 8);
-//
+import WidgetTags from "@/app/[locale]/blog/WidgetTags";
+import WidgetCategories from "@/app/[locale]/blog/WidgetCategories";
+import WidgetPosts from "@/app/[locale]/blog/WidgetPosts";
 
 const BlogPage: React.FC = () => {
+  // ✅ Tạo sidebar ở phía server
+  const sidebarContent = (
+    <>
+      <WidgetTags />
+      <WidgetCategories />
+      <WidgetPosts />
+    </>
+  );
+
   return (
     <div className="nc-BlogPage overflow-hidden relative">
       {/* ======== BG GLASS ======== */}
@@ -22,15 +25,10 @@ const BlogPage: React.FC = () => {
       {/* ======= START CONTAINER ============= */}
       <div className="container relative">
         {/* === SECTION 1 === */}
-        <div className="pt-12 pb-16 lg:pb-28">
-          <SectionMagazine5 posts={MAGAZINE1_POSTS} />
-        </div>
-
-        {/* === SECTION 1 === */}
         <SectionAds />
 
         {/* === SECTION 8 === */}
-        <SectionLatestPosts className="py-16 lg:py-28" />
+        <SectionLatestPosts sidebar={sidebarContent} />
 
         {/* === SECTION 1 === */}
         <SectionSubscribe2 className="pb-16 lg:pb-28" />

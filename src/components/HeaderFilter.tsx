@@ -4,22 +4,20 @@ import React, { FC, useEffect, useState, ReactNode } from "react";
 import Heading from "@/shared/Heading";
 import Nav from "@/shared/Nav";
 import NavItem from "@/shared/NavItem";
-import ButtonSecondary from "@/shared/ButtonSecondary";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
 
 export interface HeaderFilterProps {
   tabActive: string;
-  tabs: string[];
+  tabs: { label: string; value: string }[]; // ✅ đổi sang label/value
   heading: ReactNode;
   subHeading?: ReactNode;
-  onClickTab?: (item: string) => void;
+  onClickTab?: (value: string) => void; // ✅ đổi sang truyền value
 }
 
 const HeaderFilter: FC<HeaderFilterProps> = ({
   tabActive,
   tabs,
   subHeading = "",
-  heading = "Latest Articles 🎈",
+  heading = "Bài Viết Mới Nhất 🎈",
   onClickTab = () => {},
 }) => {
   const [tabActiveState, setTabActiveState] = useState(tabActive);
@@ -28,9 +26,9 @@ const HeaderFilter: FC<HeaderFilterProps> = ({
     setTabActiveState(tabActive);
   }, [tabActive]);
 
-  const handleClickTab = (item: string) => {
-    onClickTab(item);
-    setTabActiveState(item);
+  const handleClickTab = (value: string) => {
+    onClickTab(value);
+    setTabActiveState(value);
   };
 
   return (
@@ -41,24 +39,16 @@ const HeaderFilter: FC<HeaderFilterProps> = ({
           className="sm:space-x-2"
           containerClassName="relative flex w-full overflow-x-auto text-sm md:text-base hiddenScrollbar"
         >
-          {tabs.map((item, index) => (
+          {tabs.map((tab, index) => (
             <NavItem
               key={index}
-              isActive={tabActiveState === item}
-              onClick={() => handleClickTab(item)}
+              isActive={tabActiveState === tab.value}
+              onClick={() => handleClickTab(tab.value)}
             >
-              {item}
+              {tab.label}
             </NavItem>
           ))}
         </Nav>
-        <span className="hidden sm:block flex-shrink-0">
-          <ButtonSecondary href="/listing-stay" className="!leading-none">
-            <div className="flex items-center justify-center">
-              <span>Tất cả</span>
-              <ArrowRightIcon className="w-5 h-5 ml-3" />
-            </div>
-          </ButtonSecondary>
-        </span>
       </div>
     </div>
   );
