@@ -1,8 +1,7 @@
-import api from "@/utils/api";
+import { apiFetch } from "@/utils/api";
 
 export const authService = {
   auth: async (): Promise<any> => {
-    const response = await api.get("/auth/login");
-    return response.data;
+    return await apiFetch("/auth/login");
   },
 };

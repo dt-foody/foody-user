@@ -1,44 +1,20 @@
 // app/[locale]/(server-components)/SectionGridFeaturePlaces.tsx
 import ClientGridFeaturePlaces from "@/components/ClientGridFeaturePlaces";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000";
+import { categoryService } from "@/services/category.service";
+import { productService } from "@/services/product.service";
+import { Category } from "@/types/category";
+import { Product } from "@/types/product";
 
 export const revalidate = 300; // ISR 5 phút
-
-type Category = { 
-  id: string; 
-  name: string; 
-  parent: string | null;
-  image?: string;
-};
-
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  thumbnailUrl: string;
-  category: string;
-  isActive: boolean;
-  priority: number;
-};
 
 export default async function SectionGridFeaturePlaces() {
   try {
     // 1) Lấy categories level 1 (parent categories)
-    const catRes = await fetch(`${API_BASE}/v1/public/categories?level=1`, {
-      next: { revalidate: 300, tags: ["categories"] },
-    });
-
-    if (!catRes.ok) {
-      throw new Error("Không thể tải danh mục");
-    }
-
-    const catData = await catRes.json();
-    const categories: Category[] = catData?.results ?? [];
+    const catRes = await categoryService.getCategories({ level: 1 });
+    const categories: Category[] = catRes?.results ?? [];
 
     // Lọc chỉ lấy parent categories (không có parent)
-    const parentCategories = categories.filter(c => !c.parent);
+    const parentCategories = categories.filter((c) => !c.parent);
 
     if (parentCategories.length === 0) {
       return (
@@ -57,26 +33,19 @@ export default async function SectionGridFeaturePlaces() {
     let initialProducts: Product[] = [];
     let initialHasMore = false;
 
-    const proRes = await fetch(
-      `${API_BASE}/v1/public/products?category=${encodeURIComponent(firstCategoryId)}&page=1&limit=8&isActive=true`,
-      { 
-        next: { 
-          revalidate: 300, 
-          tags: ["products", `category:${firstCategoryId}`] 
-        } 
-      }
-    );
+    const proRes = await productService.getProducts({
+      page: 1,
+      limit: 8,
+      category: firstCategoryId,
+      isActive: true,
+    });
 
-    if (proRes.ok) {
-      const proData = await proRes.json();
-      initialProducts = proData?.results ?? [];
-      const totalPages = proData?.totalPages ?? 0;
-      initialHasMore = 1 < totalPages;
-    }
+    initialProducts = proRes?.results ?? [];
+    const totalPages = proRes?.totalPages ?? 0;
+    initialHasMore = 1 < totalPages;
 
     return (
       <ClientGridFeaturePlaces
-        apiBase={API_BASE}
         initialCategories={parentCategories}
         initialActiveTab={firstCategoryId}
         initialProducts={initialProducts}
@@ -85,7 +54,6 @@ export default async function SectionGridFeaturePlaces() {
         subHeading="Những món ăn được yêu thích nhất mà chúng tôi gợi ý cho bạn"
       />
     );
-
   } catch (error) {
     // Fallback UI khi có lỗi
     console.error("Error loading featured places:", error);

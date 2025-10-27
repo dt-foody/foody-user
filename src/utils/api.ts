@@ -1,33 +1,48 @@
-import axios from 'axios';
+// services/apiService.js
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/v1',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+/**
+ * A generic fetch function to call the backend API.
+ * @param {string} endpoint - The endpoint to call.
+ * @param {RequestInit} options - Optional fetch options.
+ * @returns {Promise} - A promise with the parsed response data.
+ */
+export const apiFetch = async <T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const url = `${API_URL}${endpoint}`;
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // Thêm token nếu cần
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  const defaultHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  const config: RequestInit = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+  };
+
+  try {
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
+      throw {
+        message: errorData.message || "An unknown API error occurred",
+        statusCode: response.status,
+      };
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
-// Response interceptor
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle errors
-    return Promise.reject(error);
+    return (await response.json()) as T;
+  } catch (error) {
+    throw {
+      message: "A network error occurred. Please check your connection.",
+    };
   }
-);
-
-export default api;
+};

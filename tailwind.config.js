@@ -32,6 +32,9 @@ module.exports = {
     // },
 
     extend: {
+      fontSize: {
+        base: ['14px'],
+      },
       colors: {
         primary: {
           50: customColors("--c-primary-50"),

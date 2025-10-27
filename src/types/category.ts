@@ -67,8 +67,8 @@ export interface MenuItem extends Product {
   timeLeft?: string;
 }
 
-export interface ProductResponse {
-  results: Product[];  // Mảng sản phẩm
+export interface CategoryResponse {
+  results: Category[];  // Mảng sản phẩm
   page: number;        // Trang hiện tại
   limit: number;       // Số sản phẩm mỗi trang
   totalPages: number;  // Tổng số trang

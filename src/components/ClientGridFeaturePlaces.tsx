@@ -1,42 +1,27 @@
 // components/ClientGridFeaturePlaces.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react"; // CHANGED: Added useCallback, useEffect
 import { ShoppingCart, Star, Loader } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import HeaderFilter from "./HeaderFilter";
 import { useCart } from "@/contexts/CartContext";
-
-type Category = { 
-  id: string; 
-  name: string;
-  parent?: string | null;
-  image?: string;
-};
-
-type Product = {
-  id: string;
-  name: string;
-  basePrice: number;
-  thumbnailUrl: string;
-  description: string;
-  category: string;
-  isActive: boolean;
-  priority: number;
-};
+import { productService } from "@/services/product.service";
+import { Product } from "@/types/product";
+import { Category } from "@/types/category";
 
 type MenuItem = Product & {
   price: number;
   image: string;
-  type: 'product';
+  type: "product";
   reviews: number;
   rating: string;
 };
 
-const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
 
 export default function ClientGridFeaturePlaces({
-  apiBase,
   initialCategories,
   initialActiveTab,
   initialProducts,
@@ -45,7 +30,6 @@ export default function ClientGridFeaturePlaces({
   subHeading = "Những món ăn được yêu thích nhất mà chúng tôi gợi ý cho bạn",
   gridClass = "",
 }: {
-  apiBase: string;
   initialCategories: Category[];
   initialActiveTab: string;
   initialProducts: Product[];
@@ -55,7 +39,47 @@ export default function ClientGridFeaturePlaces({
   gridClass?: string;
 }) {
   const [categories] = useState<Category[]>(initialCategories);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+
+  // CHANGED: getImageUrl is now wrapped in useCallback
+  const getImageUrl = (url: string): string => {
+    if (!url) return PLACEHOLDER_IMAGE;
+    if (url.startsWith("http")) return url;
+    return `${process.env.NEXT_PUBLIC_API_IMAGE}${
+      url.startsWith("/") ? "" : "/"
+    }${url}`;
+  };
+
+  // CHANGED: convertToMenuItem is now wrapped in useCallback
+  // This is where the random data is generated ONCE per product
+  const convertToMenuItem = useCallback(
+    (product: Product): MenuItem => ({
+      ...product,
+      price: product.basePrice,
+      image: getImageUrl(product.thumbnailUrl),
+      type: "product",
+      reviews: Math.floor(Math.random() * 400) + 100, // Generated once
+      rating: (3.8 + Math.random() * 1.2).toFixed(1), // Generated once
+    }),
+    [getImageUrl]
+  );
+
+  // CHANGED: Helper for SSR to avoid hydration mismatch.
+  // It provides stable, non-random values.
+  const convertToMenuItem_SSR = (product: Product): MenuItem => ({
+    ...product,
+    price: product.basePrice,
+    image: getImageUrl(product.thumbnailUrl),
+    type: "product",
+    reviews: 0,
+    rating: "...",
+  });
+
+  // CHANGED: State is now MenuItem[].
+  // We initialize it with the STABLE SSR version first.
+  const [products, setProducts] = useState<MenuItem[]>(() =>
+    initialProducts.map(convertToMenuItem_SSR)
+  );
+
   const [activeTab, setActiveTab] = useState<string>(initialActiveTab);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
@@ -64,47 +88,45 @@ export default function ClientGridFeaturePlaces({
 
   const { addToCart } = useCart();
 
-  const getImageUrl = (url: string): string => {
-    if (!url) return PLACEHOLDER_IMAGE;
-    if (url.startsWith("http")) return url;
-    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  // CHANGED: This useEffect runs ONCE on the client after mount.
+  // It "hydrates" the product state with the random (but now stable) data.
+  useEffect(() => {
+    setProducts(initialProducts.map((p) => convertToMenuItem(p)));
+    // We only want this to run once on mount, so we disable the linter warning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
     e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
-  // Convert Product to MenuItem format
-  const convertToMenuItem = (product: Product): MenuItem => ({
-    ...product,
-    price: product.basePrice,
-    image: getImageUrl(product.thumbnailUrl),
-    type: 'product',
-    reviews: Math.floor(Math.random() * 400) + 100,
-    rating: (3.8 + Math.random() * 1.2).toFixed(1),
-  });
-
-  async function fetchProducts(categoryId: string, pageNum: number, append = false) {
+  async function fetchProducts(
+    categoryId: string,
+    pageNum: number,
+    append = false
+  ) {
     if (!append) setLoading(true);
-    
+
     try {
-      const res = await fetch(
-        `${apiBase}/v1/public/products?category=${encodeURIComponent(
-          categoryId
-        )}&page=${pageNum}&limit=8&isActive=true`,
-        { cache: "no-store" }
-      );
+      const data = await productService.getProducts({
+        page: pageNum,
+        limit: 8,
+        category: categoryId,
+        isActive: true,
+      });
+      const list: Product[] = data.results ?? [];
+      const totalPages = data.totalPages ?? 0;
 
-      if (!res.ok) {
-        throw new Error("Không thể tải sản phẩm");
-      }
-
-      const data = await res.json();
-      const list: Product[] = data?.results ?? [];
-      const totalPages = data?.totalPages ?? 0;
+      // CHANGED: Convert new products to MenuItems
+      const newMenuItems = list.map((p) => convertToMenuItem(p));
 
       setHasMore(pageNum < totalPages);
-      setProducts((prev) => (append ? [...prev, ...list] : list));
+      // CHANGED: Set state with MenuItem[]
+      setProducts((prev) =>
+        append ? [...prev, ...newMenuItems] : newMenuItems
+      );
     } catch (error) {
       console.error("Error fetching products:", error);
       if (!append) {
@@ -132,9 +154,9 @@ export default function ClientGridFeaturePlaces({
     setLoadingMore(false);
   }
 
-  const handleAddToCart = (product: Product) => {
-    const menuItem = convertToMenuItem(product);
-    addToCart(menuItem);
+  // CHANGED: Parameter is now the full MenuItem
+  const handleAddToCart = (product: MenuItem) => {
+    addToCart(product);
   };
 
   return (
@@ -160,60 +182,65 @@ export default function ClientGridFeaturePlaces({
             className={`grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gridClass}`}
           >
             {products.length > 0 ? (
-              products.map((food) => (
-                <div
-                  key={food.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group flex flex-col"
-                >
-                  <div className="relative">
-                    <img
-                      src={getImageUrl(food.thumbnailUrl)}
-                      alt={food.name}
-                      onError={handleImageError}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="font-bold text-gray-900 text-lg line-clamp-1 mb-1">
-                      {food.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1 mb-4 line-clamp-2 flex-grow min-h-[40px]">
-                      {food.description}
-                    </p>
-
-                    {/* Rating */}
-                    <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
-                        <span className="font-medium text-gray-800">
-                          {(3.8 + Math.random() * 1.2).toFixed(1)}
-                        </span>
-                        <span className="ml-1">
-                          ({Math.floor(Math.random() * 400) + 100})
-                        </span>
-                      </div>
+              products.map(
+                (
+                  food // food is now a MenuItem
+                ) => (
+                  <div
+                    key={food.id}
+                    className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group flex flex-col"
+                  >
+                    <div className="relative">
+                      <img
+                        src={food.image} // CHANGED: Use the pre-built image URL
+                        alt={food.name}
+                        onError={handleImageError}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
                     </div>
 
-                    {/* Price & Add to cart */}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-                      <div>
-                        <span className="text-xl font-bold text-orange-600">
-                          {Math.round(food.basePrice).toLocaleString("vi-VN")}₫
-                        </span>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1 mb-1">
+                        {food.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1 mb-4 line-clamp-2 flex-grow min-h-[40px]">
+                        {food.description}
+                      </p>
+
+                      {/* Rating */}
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
+                          <span className="font-medium text-gray-800">
+                            {food.rating} {/* CHANGED: Read from state */}
+                          </span>
+                          <span className="ml-1">
+                            ({food.reviews}) {/* CHANGED: Read from state */}
+                          </span>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleAddToCart(food)}
-                        aria-label={`Thêm ${food.name} vào giỏ`}
-                        className="bg-orange-100 text-orange-600 w-10 h-10 rounded-full hover:bg-orange-500 hover:text-white transition-all duration-300 flex items-center justify-center transform group-hover:scale-110 shadow-sm"
-                      >
-                        <ShoppingCart className="w-5 h-5" />
-                      </button>
+
+                      {/* Price & Add to cart */}
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                        <div>
+                          <span className="text-xl font-bold text-orange-600">
+                            {Math.round(food.basePrice).toLocaleString("vi-VN")}
+                            ₫
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleAddToCart(food)} // CHANGED: Pass the MenuItem
+                          aria-label={`Thêm ${food.name} vào giỏ`}
+                          className="bg-orange-100 text-orange-600 w-10 h-10 rounded-full hover:bg-orange-500 hover:text-white transition-all duration-300 flex items-center justify-center transform group-hover:scale-110 shadow-sm"
+                        >
+                          <ShoppingCart className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              )
             ) : (
               <div className="col-span-full text-center py-20">
                 <div className="text-6xl mb-4">🍽️</div>
