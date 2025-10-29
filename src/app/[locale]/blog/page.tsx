@@ -5,7 +5,6 @@ import BgGlassmorphism from "@/components/BgGlassmorphism";
 import SectionSubscribe2 from "@/components/SectionSubscribe2";
 import WidgetTags from "@/app/[locale]/blog/WidgetTags";
 import WidgetCategories from "@/app/[locale]/blog/WidgetCategories";
-import WidgetPosts from "@/app/[locale]/blog/WidgetPosts";
 
 const BlogPage: React.FC = () => {
   // ✅ Tạo sidebar ở phía server
@@ -13,7 +12,6 @@ const BlogPage: React.FC = () => {
     <>
       <WidgetTags />
       <WidgetCategories />
-      <WidgetPosts />
     </>
   );
 

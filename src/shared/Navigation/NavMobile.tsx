@@ -64,7 +64,7 @@ const NavMobile: React.FC<NavMobileProps> = ({
     );
   };
 
-  const _renderItem = (item: NavItemType, index: number) => {
+  const _renderItem = (item: NavItemType) => {
     return (
       <Disclosure
         key={item.id}

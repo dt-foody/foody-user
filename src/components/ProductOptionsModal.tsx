@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { useCart, CartItem } from '../contexts/CartContext';
+import { useCart } from '../contexts/CartContext';
 
 interface OptionItem {
   name: string;
@@ -20,14 +20,6 @@ interface OptionGroup {
   options: OptionItem[];
 }
 
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  optionGroups?: OptionGroup[];
-}
-
 export default function ProductOptionsModal() {
   const { productForOptions, setProductForOptions, addToCartWithOptions } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, OptionItem[]>>({});
@@ -37,7 +29,7 @@ export default function ProductOptionsModal() {
     if (!productForOptions) return;
     
     const initialOptions: Record<string, OptionItem[]> = {};
-    productForOptions.optionGroups?.forEach(group => {
+    productForOptions.optionGroups?.forEach((group: any) => {
       if (group.maxOptions === 1 && group.options.length > 0) {
         initialOptions[group.name] = [group.options[0]];
       } else {
@@ -84,7 +76,7 @@ export default function ProductOptionsModal() {
       price += option.priceModifier;
     });
     
-    productForOptions.optionGroups?.forEach(group => {
+    productForOptions.optionGroups?.forEach((group: any) => {
       const selectionCount = selectedOptions[group.name]?.length || 0;
       if (selectionCount < group.minOptions) {
         errors[group.name] = `Bạn cần chọn ít nhất ${group.minOptions} mục.`;
@@ -139,7 +131,7 @@ export default function ProductOptionsModal() {
           )}
           
           {/* Option Groups */}
-          {productForOptions.optionGroups?.sort((a, b) => a.priority - b.priority).map((group) => {
+          {productForOptions.optionGroups?.sort((a: any, b: any) => a.priority - b.priority).map((group: any) => {
             const currentSelectionCount = selectedOptions[group.name]?.length || 0;
             const error = validationErrors[group.name];
             const groupClass = error ? 'border-red-300 bg-red-50' : 'border-gray-200';
@@ -163,7 +155,7 @@ export default function ProductOptionsModal() {
                 
                 {/* Options */}
                 <div className="mt-3 space-y-3">
-                  {group.options.sort((a, b) => a.priority - b.priority).map(option => {
+                  {group.options.sort((a: any, b: any) => a.priority - b.priority).map((option: any) => {
                     const isChecked = !!selectedOptions[group.name]?.some(o => o.name === option.name);
                     const inputType = group.maxOptions === 1 ? 'radio' : 'checkbox';
                     

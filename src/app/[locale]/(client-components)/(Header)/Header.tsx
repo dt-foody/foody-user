@@ -2,16 +2,13 @@
 
 import React, { FC, useEffect, useState } from "react";
 import axios from "axios";
-import MainNav1 from "./MainNav1";
 import MainNav2 from "./MainNav2";
-import { API_URL } from "@/configurations/constant";
 
 export interface HeaderProps {
-  navType?: "MainNav1" | "MainNav2";
   className?: string;
 }
 
-const Header: FC<HeaderProps> = ({ navType = "MainNav1", className = "" }) => {
+const Header: FC<HeaderProps> = ({ className = "" }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -22,14 +19,7 @@ const Header: FC<HeaderProps> = ({ navType = "MainNav1", className = "" }) => {
   }, []);
 
   const renderNav = () => {
-    switch (navType) {
-      case "MainNav1":
-        return <MainNav1 />;
-      case "MainNav2":
-        return <MainNav2 isLoggedIn={isLoggedIn} />;
-      default:
-        return <MainNav1/>;
-    }
+    return <MainNav2 isLoggedIn={isLoggedIn} />;
   };
 
   return (

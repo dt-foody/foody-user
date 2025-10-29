@@ -3,9 +3,6 @@ import React, { useEffect, useState } from "react";
 import Heading from "@/shared/Heading";
 import Pagination from "@/shared/Pagination";
 import ButtonPrimary from "@/shared/ButtonPrimary";
-import WidgetTags from "./WidgetTags";
-import WidgetCategories from "./WidgetCategories";
-import WidgetPosts from "./WidgetPosts";
 import SkeletonCard from "@/components/SkeletonCard";
 import Link from "next/link"; // Sử dụng Link của Next.js để tối ưu điều hướng
 

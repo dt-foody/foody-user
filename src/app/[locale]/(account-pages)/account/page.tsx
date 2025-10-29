@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React from "react";
 import Label from "@/components/Label";
 import Avatar from "@/shared/Avatar";
 import ButtonPrimary from "@/shared/ButtonPrimary";

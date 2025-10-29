@@ -171,7 +171,7 @@ const SectionClientSay: FC<SectionClientSayProps> = ({
               </AnimatePresence>
 
               <div className="mt-10 flex items-center justify-center space-x-2">
-                {data.map((item, i) => (
+                {data.map((_, i) => (
                   <button
                     className={`w-2 h-2 rounded-full ${
                       i === index ? "bg-black/70" : "bg-black/10 "
