@@ -19,12 +19,9 @@ export default async function WidgetCategories() {
       `${API_BASE}/v1/public/blog-categories?limit=10&sortBy=postCount:desc`,
       { next: { revalidate: 60 } }
     );
-    console.log("res", res);
     if (res.ok) {
       const data = await res.json();
       categories = data.results || [];
-
-      console.log("categories", categories);
     }
   } catch (err) {
     console.log("ERROR categories", err);
