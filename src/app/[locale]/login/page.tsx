@@ -1,5 +1,6 @@
 "use client";
 import React, { FC, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import facebookSvg from "@/images/Facebook.svg";
 import twitterSvg from "@/images/Twitter.svg";
 import googleSvg from "@/images/Google.svg";
@@ -28,16 +29,19 @@ interface FormErrors {
   password?: string;
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 const PageLogin: FC<PageLoginProps> = ({}) => {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string>("");
+
+  // MỚI: Khởi tạo các hook
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,11 +101,13 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
       };
 
       // Call login API
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const response = await fetch(`http://localhost:3000/v1/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        // MỚI: Bắt buộc phải có nếu bạn dùng HttpOnly cookie
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -111,13 +117,28 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
         throw new Error(data.message || "Đăng nhập thất bại");
       }
 
-      ///// Handle successful login (e.g., redirect, store token, etc.)
+      // ----- MỚI: Xử lý điều hướng sau khi đăng nhập thành công -----
 
-      
+      // (Tùy chọn: Lưu data.user, data.permissions vào global state/context)
+
+      // 1. Lấy redirect_uri từ URL, ví dụ: /login?redirect_uri=/dashboard
+      const redirectUri = searchParams.get("redirect_uri");
+
+      // 2. Mặc định điều hướng về trang chủ
+      let destination = "/";
+
+      // 3. Kiểm tra bảo mật: chỉ điều hướng nếu redirectUri là
+      //    đường dẫn tương đối (bắt đầu bằng "/") để chống tấn công Open Redirect
+      if (redirectUri && redirectUri.startsWith("/")) {
+        destination = redirectUri;
+      }
+
+      // 4. Thực hiện điều hướng
+      router.push(destination);
+
+      // ----- KẾT THÚC PHẦN MỚI -----
     } catch (error) {
-      setApiError(
-        error instanceof Error ? error.message : "Đã có lỗi xảy ra"
-      );
+      setApiError(error instanceof Error ? error.message : "Đã có lỗi xảy ra");
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +151,6 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
           Login
         </h2>
         <div className="max-w-md mx-auto space-y-6">
-
           {apiError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
               {apiError}
@@ -161,7 +181,10 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
             <label className="block">
               <span className="flex justify-between items-center text-neutral-800 dark:text-neutral-200">
                 Password
-                <Link href="/forgot-password" className="text-sm underline font-medium">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm underline font-medium"
+                >
                   Forgot password?
                 </Link>
               </span>
@@ -183,34 +206,6 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
               {isLoading ? "Đang xử lý..." : "Continue"}
             </ButtonPrimary>
           </form>
-
-          {/* OR */}
-          <div className="relative text-center">
-            <span className="relative z-10 inline-block px-4 font-medium text-sm bg-white dark:text-neutral-400 dark:bg-neutral-900">
-              OR
-            </span>
-            <div className="absolute left-0 w-full top-1/2 transform -translate-y-1/2 border border-neutral-100 dark:border-neutral-800"></div>
-          </div>
-
-          {/* SOCIAL */}
-          <div className="grid grid-cols-2 gap-3">
-            {loginSocials.map((item, index) => (
-              <a
-                key={index}
-                href={item.href}
-                className="flex w-full rounded-lg bg-primary-50 dark:bg-neutral-800 px-4 py-3 transform transition-transform sm:px-6 hover:translate-y-[-2px]"
-              >
-                <Image
-                  className="flex-shrink-0"
-                  src={item.icon}
-                  alt={item.name}
-                />
-                <h3 className="flex-grow text-center text-sm font-medium text-neutral-700 dark:text-neutral-300 sm:text-sm">
-                  {item.name}
-                </h3>
-              </a>
-            ))}
-          </div>
 
           {/* ==== */}
           <span className="block text-center text-neutral-700 dark:text-neutral-300">

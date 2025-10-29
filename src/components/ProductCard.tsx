@@ -77,7 +77,7 @@ const ProductCard = ({ product, showHotDealBadge = false }: ProductCardProps) =>
         <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
           {product.name}
         </h3>
-        <p className="text-sm text-gray-600 mt-1 mb-3 line-clamp-1 flex-grow min-h-[1.25rem]">
+        <p className="text-sm text-gray-600 mt-1 mb-3 line-clamp-2">
           {product.description}
         </p>
 

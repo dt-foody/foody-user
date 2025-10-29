@@ -16,7 +16,7 @@ const Header: FC<HeaderProps> = ({ navType = "MainNav1", className = "" }) => {
 
   useEffect(() => {
     axios
-      .get(`${API_URL}/auth/me`, { withCredentials: true })
+      .get(`http://localhost:3000/v1/auth/me`, { withCredentials: true })
       .then(() => setIsLoggedIn(true))
       .catch(() => setIsLoggedIn(false));
   }, []);

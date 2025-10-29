@@ -24,7 +24,7 @@ const MainNav2: FC<MainNav2Props> = ({
   className = "",
   isLoggedIn = false,
 }) => {
-  const { cartCount, isCartAnimating, setShowCart, addToCart } = useCart();
+  const { cartCount, setShowCart } = useCart();
 
   return (
     <div className={`MainNav2 relative z-10 ${className}`}>
@@ -53,9 +53,7 @@ const MainNav2: FC<MainNav2Props> = ({
           <button
             onClick={() => setShowCart(true)}
             // Thêm padding, bo tròn và hiệu ứng focus/hover
-            className={`relative p-3 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${
-              isCartAnimating ? "animate-bounce" : ""
-            }`}
+            className={`relative p-3 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
           >
             {/* Icon không thay đổi */}
             <ShoppingCart className="w-6 h-6" />
