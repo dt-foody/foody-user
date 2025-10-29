@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useCart, SHIPPING_FEE } from "@/contexts/CartContext"; // Đảm bảo đường dẫn này đúng
 import { useRouter } from "next/navigation";
 import { User, Phone, MapPin, Banknote, Landmark, Loader } from "lucide-react";
+import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
 
 export default function CheckoutPage() {
   const {

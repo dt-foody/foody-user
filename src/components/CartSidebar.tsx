@@ -14,7 +14,7 @@ import {
   XCircle,
   Check,
 } from "lucide-react";
-import { useCart, SHIPPING_FEE } from "../contexts/CartContext";
+import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import type { Coupon, EligibilityStatus } from "../contexts/CartContext";
 

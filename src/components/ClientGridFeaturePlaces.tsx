@@ -5,10 +5,10 @@ import React, { useState, useCallback, useEffect } from "react"; // CHANGED: Add
 import { ShoppingCart, Star, Loader } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import HeaderFilter from "./HeaderFilter";
-import { useCart } from "@/contexts/CartContext";
 import { productService } from "@/services/product.service";
 import { Product } from "@/types/product";
 import { Category } from "@/types/category";
+import { useCart } from "@/stores/useCartStore";
 
 type MenuItem = Product & {
   price: number;

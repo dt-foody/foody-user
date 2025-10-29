@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '@/stores/useCartStore';
+// import { useCart } from '../contexts/CartContext';
 
 interface OptionItem {
   name: string;

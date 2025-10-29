@@ -1,7 +1,7 @@
 import { Heart, ShoppingCart, Star, Clock, Flame } from "lucide-react";
 import { MenuItem } from "@/types/product";
-import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
+import { useCart } from "@/stores/useCartStore";
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
 

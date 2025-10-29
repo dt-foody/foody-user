@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import FooterNav from "@/components/FooterNav";
 import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
+import { CartStoreInitializer } from "@/stores/useCartStore";
 
 const poppins = Inter({
   subsets: ["latin"],
@@ -68,7 +69,8 @@ export default async function RootLayout({
     <html lang={params.locale} className={poppins.className} dir={dir}>
       <body className="bg-white text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
         <NextIntlClientProvider locale={params.locale} messages={messages}>
-          <CartProvider>
+          <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}
+          {/* <CartProvider> */}
             <ClientCommons />
             <SiteHeader />
             {children}
@@ -78,7 +80,7 @@ export default async function RootLayout({
             {/* Global Cart Components */}
             <CartSidebar />
             <ProductOptionsModal />
-          </CartProvider>
+          {/* </CartProvider> */}
         </NextIntlClientProvider>
       </body>
     </html>

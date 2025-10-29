@@ -5,7 +5,8 @@ import AvatarDropdown from "./AvatarDropdown";
 import LoginButton from "./LoginButton";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/stores/useCartStore";
+// import { useCart } from "@/contexts/CartContext";
 
 export interface MainNav2Props {
   className?: string;
