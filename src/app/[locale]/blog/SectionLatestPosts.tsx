@@ -67,7 +67,7 @@ const SectionLatestPosts = ({ sidebar }: { sidebar: React.ReactNode }) => {
       setError(null);
 
       const response = await fetch(
-        `${API_BASE}/v1/public/blog-posts?limit=5&page=${pageNum}&sortBy=publishedAt:desc&status=published&populate=categories;tags`
+        `${API_BASE}/v1/blog-posts?limit=5&page=${pageNum}&sortBy=publishedAt:desc&status=published&populate=categories;tags`
       );
 
       if (!response.ok) {

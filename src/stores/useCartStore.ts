@@ -346,7 +346,7 @@ export const useCartStore = create<CartState & CartActions>()(
       fetchPublicCoupons: async () => {
         try {
           set({ isLoadingPublicCoupons: true });
-          const response = await fetch(`${API_URL}/public/coupons/available`);
+          const response = await fetch(`${API_URL}/coupons/available`);
           const data = await response.json();
           set({ publicCoupons: data.coupons || data || [], isLoadingPublicCoupons: false });
         } catch (e) {

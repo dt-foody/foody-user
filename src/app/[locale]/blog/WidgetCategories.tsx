@@ -16,7 +16,7 @@ export default async function WidgetCategories() {
 
   try {
     const res = await fetch(
-      `${API_BASE}/v1/public/blog-categories?limit=10&sortBy=postCount:desc`,
+      `${API_BASE}/v1/blog-categories?limit=10&sortBy=postCount:desc`,
       { next: { revalidate: 60 } }
     );
     if (res.ok) {

@@ -17,6 +17,7 @@ import {
 import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import type { Coupon, EligibilityStatus } from "../contexts/CartContext";
+import { useAuthStore } from "@/stores/useAuthStore"; // 🟢 thêm dòng này
 
 export default function CartSidebar() {
   const {
@@ -43,6 +44,7 @@ export default function CartSidebar() {
   const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
   const [manualCouponCode, setManualCouponCode] = useState("");
   const router = useRouter();
+  const { user } = useAuthStore(); // 🟢 lấy user từ Zustand
 
   const handleApplyPrivateCoupon = async () => {
     if (manualCouponCode) {
@@ -61,6 +63,13 @@ export default function CartSidebar() {
 
   const handlePlaceOrder = () => {
     setShowCart(false);
+
+    if (!user) {
+      // Chưa login → chuyển sang login
+      router.push("/login?redirect_uri=/checkout");
+      return;
+    }
+    
     router.push("/checkout");
   };
 
@@ -204,7 +213,9 @@ export default function CartSidebar() {
               >
                 <div className="flex items-center gap-2">
                   <Tag className="w-5 h-5 text-orange-500" />
-                  <span className="font-semibold text-sm">Chọn khuyến mãi có sẵn</span>
+                  <span className="font-semibold text-sm">
+                    Chọn khuyến mãi có sẵn
+                  </span>
                 </div>
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -259,9 +270,13 @@ export default function CartSidebar() {
           </div>
           <button
             onClick={handlePlaceOrder}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold text-lg"
+            className={`w-full py-3 rounded-xl font-semibold text-lg transition-all ${
+              user
+                ? "bg-orange-500 text-white hover:bg-orange-600"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
           >
-            Đặt hàng
+            {user ? "Đặt hàng" : "Vui lòng đăng nhập"}
           </button>
         </div>
       )}

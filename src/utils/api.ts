@@ -23,6 +23,7 @@ export const apiFetch = async <T>(
     headers: {
       ...defaultHeaders,
       ...options.headers,
+      credentials: "include", 
     },
   };
 

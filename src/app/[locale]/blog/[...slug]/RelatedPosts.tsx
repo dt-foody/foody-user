@@ -43,7 +43,7 @@ const RelatedPosts = ({ authorId, currentPostId }: RelatedPostsProps) => {
 
     const fetchRelated = async () => {
       const res = await fetch(
-        `${API_BASE}/v1/public/blog-posts?createdBy=${authorId}&limit=5&sortBy=publishedAt:desc&populate=createdBy;categories`
+        `${API_BASE}/v1/blog-posts?createdBy=${authorId}&limit=5&sortBy=publishedAt:desc&populate=createdBy;categories`
       );
       if (res.ok) {
         const data = await res.json();

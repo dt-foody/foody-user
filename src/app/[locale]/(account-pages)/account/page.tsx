@@ -10,7 +10,7 @@ export interface AccountPageProps {}
 
 const AccountPage = () => {
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6">
       {/* HEADING */}
       <h2 className="text-3xl font-semibold">Account infomation</h2>
       <div className="w-14 border-b border-neutral-200 dark:border-neutral-700"></div>
@@ -43,7 +43,7 @@ const AccountPage = () => {
             />
           </div>
         </div>
-        <div className="flex-grow mt-10 md:mt-0 md:pl-16 max-w-3xl space-y-6">
+        <div className="flex-grow mt-10 md:mt-0 md:pl-16 max-w-3xl space-y-4">
           <div>
             <Label>Name</Label>
             <Input className="mt-1.5" defaultValue="Eden Tuan" />

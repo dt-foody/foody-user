@@ -6,11 +6,10 @@ import LoginButton from "./LoginButton";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/stores/useCartStore";
-// import { useCart } from "@/contexts/CartContext";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export interface MainNav2Props {
   className?: string;
-  isLoggedIn?: boolean;
 }
 
 const NAV_ITEMS = [
@@ -23,9 +22,11 @@ const NAV_ITEMS = [
 
 const MainNav2: FC<MainNav2Props> = ({
   className = "",
-  isLoggedIn = false,
 }) => {
   const { cartCount, setShowCart } = useCart();
+  const { user } = useAuthStore();
+
+  console.log("user", user);
 
   return (
     <div className={`MainNav2 relative z-10 ${className}`}>
@@ -73,7 +74,7 @@ const MainNav2: FC<MainNav2Props> = ({
 
           <NotifyDropdown />
 
-          {!isLoggedIn ? <LoginButton /> : <AvatarDropdown />}
+          {user ? <AvatarDropdown /> : <LoginButton />}
         </div>
       </div>
     </div>

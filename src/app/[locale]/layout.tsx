@@ -6,12 +6,12 @@ import "./globals.css";
 import "@/fonts/line-awesome-1.3.0/css/line-awesome.css";
 import "@/styles/index.scss";
 import "rc-slider/assets/index.css";
-import { CartProvider } from '@/contexts/CartContext';
 import Footer from "@/components/Footer";
 import FooterNav from "@/components/FooterNav";
 import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
+import { getUserFromCookie } from "@/lib/getUserFromCookie";
 
 const poppins = Inter({
   subsets: ["latin"],
@@ -65,6 +65,8 @@ export default async function RootLayout({
   const dir = params.locale === "ar" ? "rtl" : "ltr";
   // const dir = "ltr";
 
+  const user = await getUserFromCookie(); // 🧠 Lấy user từ cookie SSR
+
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
       <body className="bg-white text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
@@ -72,7 +74,7 @@ export default async function RootLayout({
           <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}
           {/* <CartProvider> */}
             <ClientCommons />
-            <SiteHeader />
+            <SiteHeader ssrUser={user} />
             {children}
             <FooterNav />
             <Footer />

@@ -1,35 +1,17 @@
 "use client";
 import React, { FC, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import facebookSvg from "@/images/Facebook.svg";
-import twitterSvg from "@/images/Twitter.svg";
-import googleSvg from "@/images/Google.svg";
 import Input from "@/shared/Input";
 import ButtonPrimary from "@/shared/ButtonPrimary";
-import Image from "next/image";
 import Link from "next/link";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export interface PageLoginProps {}
-
-const loginSocials = [
-  {
-    name: "Facebook",
-    href: "#",
-    icon: facebookSvg,
-  },
-  {
-    name: "Google",
-    href: "#",
-    icon: googleSvg,
-  },
-];
 
 interface FormErrors {
   email?: string;
   password?: string;
 }
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 const PageLogin: FC<PageLoginProps> = ({}) => {
   const emailRef = useRef<HTMLInputElement>(null);
@@ -120,6 +102,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
       // ----- MỚI: Xử lý điều hướng sau khi đăng nhập thành công -----
 
       // (Tùy chọn: Lưu data.user, data.permissions vào global state/context)
+      useAuthStore.getState().setUser(data.user);
 
       // 1. Lấy redirect_uri từ URL, ví dụ: /login?redirect_uri=/dashboard
       const redirectUri = searchParams.get("redirect_uri");

@@ -27,7 +27,7 @@ import MenuCategory from "@/components/MenuCategory";
 import ErrorDisplay from "@/components/ErrorDisplay";
 
 // --- CONSTANTS ---
-const API_BASE = "http://localhost:3000/v1/public";
+const API_BASE = "http://localhost:3000/v1";
 const IMAGE_BASE = "http://localhost:3000";
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";

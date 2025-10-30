@@ -53,7 +53,7 @@ const calculateReadTime = (content: string) => {
 
 const Page = async ({ params }: PageProps) => {
   const res = await fetch(
-    `${API_BASE}/v1/public/blog-posts/${params.slug}?populate=createdBy;categories;tags`
+    `${API_BASE}/v1/blog-posts/${params.slug}?populate=createdBy;categories;tags`
     // { next: { revalidate: 60 } } // ISR 60s
   );
   if (!res.ok) {

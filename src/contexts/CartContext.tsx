@@ -225,7 +225,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const fetchPublicCoupons = async () => {
       try {
         setIsLoadingPublicCoupons(true);
-        const response = await fetch(`${API_URL}/public/coupons/available`);
+        const response = await fetch(`${API_URL}/coupons/available`);
         const data = await response.json();
         setPublicCoupons(data.coupons || data || []);
       } catch (e) {

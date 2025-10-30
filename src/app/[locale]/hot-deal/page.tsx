@@ -25,7 +25,7 @@ import {
 } from "@/types/product";
 
 // --- CONSTANTS ---
-const API_BASE = "http://localhost:3000/v1/public";
+const API_BASE = "http://localhost:3000/v1";
 const IMAGE_BASE = "http://localhost:3000";
 const ITEMS_PER_PAGE = 12;
 

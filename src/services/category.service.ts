@@ -3,11 +3,6 @@
 import { Category, CategoryResponse } from "@/types/category";
 import { apiFetch } from "@/utils/api"; // Giả sử apiFetch là một hàm gọi API chuẩn.
 
-interface ApiError {
-  message: string;
-  statusCode: number;
-}
-
 export const categoryService = {
   /**
    * Fetch danh sách sản phẩm từ backend.

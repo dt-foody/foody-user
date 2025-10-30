@@ -1,25 +1,15 @@
 "use client";
 
-import React, { FC, useEffect, useState } from "react";
-import axios from "axios";
+import React, { FC } from "react";
 import MainNav2 from "./MainNav2";
 
 export interface HeaderProps {
   className?: string;
 }
 
-const Header: FC<HeaderProps> = ({ className = "" }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    axios
-      .get(`http://localhost:3000/v1/auth/me`, { withCredentials: true })
-      .then(() => setIsLoggedIn(true))
-      .catch(() => setIsLoggedIn(false));
-  }, []);
-
+const Header: FC<HeaderProps> = ({className = "" }) => {
   const renderNav = () => {
-    return <MainNav2 isLoggedIn={isLoggedIn} />;
+    return <MainNav2 />;
   };
 
   return (

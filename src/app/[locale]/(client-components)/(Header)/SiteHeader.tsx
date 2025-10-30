@@ -1,27 +1,21 @@
+// Trong file: src/app/[locale]/(client-components)/(Header)/SiteHeader.tsx
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect } from "react";
 import Header from "./Header";
-import { useThemeMode } from "@/utils/useThemeMode";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-export type SiteHeaders = "Header 1" | "Header 2" | "Header 3";
+export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
+  const { user, setUser, fetchUser } = useAuthStore();
 
-const SiteHeader = () => {
-  const anchorRef = useRef<HTMLDivElement>(null);
-
-  useThemeMode();
-
+  useEffect(() => {
+    if (ssrUser) setUser(ssrUser);
+    else fetchUser(); // fallback nếu chưa có user
+  }, [ssrUser]);
+  
   const renderHeader = () => {
-    let headerClassName = "shadow-sm dark:border-b dark:border-neutral-700";
-    return <Header className={headerClassName} />;
+    return <Header/>;
   };
 
-  return (
-    <>
-      {renderHeader()}
-      <div ref={anchorRef} className="h-1 absolute invisible"></div>
-    </>
-  );
-};
-
-export default SiteHeader;
+  return <>{renderHeader()}</>;
+}

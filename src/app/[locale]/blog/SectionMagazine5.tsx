@@ -24,7 +24,7 @@ export interface SectionMagazine5Props {
 async function getBlogPosts(): Promise<BlogPost[]> {
   try {
     const response = await fetch(
-      `${API_BASE}/v1/public/blog-posts?isPinned=true&limit=5&sortBy=publishedAt:desc`,
+      `${API_BASE}/v1/blog-posts?isPinned=true&limit=5&sortBy=publishedAt:desc`,
       {
         next: { revalidate: 3600 }, // Revalidate mỗi 1 giờ
       }

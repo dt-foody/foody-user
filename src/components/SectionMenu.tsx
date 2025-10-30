@@ -9,7 +9,7 @@ export const revalidate = 300; // 5 phút (tùy chỉnh)
 export default async function SectionMenu() {
   // Public data → cache ISR + tag để revalidate theo sự kiện
   const res = await fetch(
-    `${API_BASE}/v1/public/categories?level=1`,
+    `${API_BASE}/v1/categories?level=1`,
     { next: { revalidate: 300, tags: ["categories"] } }
   );
 

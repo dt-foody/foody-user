@@ -29,7 +29,7 @@ const WidgetTags = async ({ className = 'bg-neutral-100 dark:bg-neutral-800' }: 
 
   // 3. Fetch dữ liệu bên trong Server Component
   try {
-    const res = await fetch(`${API_BASE}/v1/public/blog-tags?limit=20&sortBy=postCount:desc`, {
+    const res = await fetch(`${API_BASE}/v1/blog-tags?limit=20&sortBy=postCount:desc`, {
       next: { revalidate: 60 }, // Cache lại kết quả trong 60 giây (ISR)
     });
 
