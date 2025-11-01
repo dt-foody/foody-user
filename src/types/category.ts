@@ -1,76 +1,26 @@
-// --- TYPE DEFINITIONS ---
-export interface OptionItem {
-  name: string;
-  priceModifier: number;
-  type: "fixed_amount" | "percentage";
-  isActive: boolean;
-  priority: number;
-}
+// src/types/category.ts
+import type { Paginated } from "@/lib";
 
-export interface OptionGroup {
-  name: string;
-  minOptions: number;
-  maxOptions: number;
-  priority: number;
-  options: OptionItem[];
-}
-
+/** Chỉ đọc: luôn chuẩn hoá về id & parentId (không giữ object populate) */
 export interface Category {
   id: string;
   name: string;
-  parent: string | null;
-  image: string;
-}
+  description?: string;
+  image?: string;
 
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  thumbnailUrl: string;
-  category: string;
   isActive: boolean;
   priority: number;
-  optionGroups?: OptionGroup[];
+
+  /** id của parent hoặc null */
+  parent: string | Category | null;
+
+  /** danh sách ancestor dưới dạng id */
+  ancestors: string[];
+
+  // optional: giữ cho mục đích hiển thị/log
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Combo {
-  id: string;
-  name: string;
-  description: string;
-  thumbnailUrl: string;
-  comboPrice: number;
-  items: any[];
-}
-
-export interface PricePromotion {
-  id: string;
-  name: string;
-  product?: Product | string;
-  combo?: Combo | string;
-  discountType: "percentage" | "fixed_amount";
-  discountValue: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-}
-
-export interface MenuItem extends Product {
-  price: number;
-  originalPrice?: number;
-  image: string;
-  type: "product" | "combo";
-  discount?: PricePromotion | null;
-  reviews: number;
-  rating: string;
-  sold?: number;
-  timeLeft?: string;
-}
-
-export interface CategoryResponse {
-  results: Category[];  // Mảng sản phẩm
-  page: number;        // Trang hiện tại
-  limit: number;       // Số sản phẩm mỗi trang
-  totalPages: number;  // Tổng số trang
-  totalResults: number; // Tổng số sản phẩm
-}
+/** Response phân trang giữ nguyên shape bạn đang dùng */
+export type CategoryPaginate = Paginated<Category>;

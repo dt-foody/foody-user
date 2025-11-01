@@ -2,38 +2,17 @@ import { FC } from "react";
 import Image from "next/image";
 import ButtonSecondary from "@/shared/ButtonSecondary";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-interface BlogPost {
-  _id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  coverImage: string;
-  coverImageAlt: string;
-  publishedAt: string;
-  isPinned: boolean;
-  isFeatured: boolean;
-  categories: string[];
-  tags: string[];
-}
+import { blogPostService } from "@/services";
+import { BlogPost } from "@/types";
 
 // Server-side data fetching
 async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const response = await fetch(
-      `${API_BASE}/v1/blog-posts?isPinned=true&limit=5&sortBy=publishedAt:desc`,
-      {
-        next: { revalidate: 3600 }, // Revalidate mỗi 1 giờ
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch blog posts");
-    }
-
-    const data = await response.json();
+    const data = await blogPostService.getAll({
+      isPinned: true,
+      limit: 5,
+      sortBy: "publishedAt:desc",
+    });
 
     return data.results || [];
   } catch (error) {
@@ -42,7 +21,10 @@ async function getBlogPosts(): Promise<BlogPost[]> {
   }
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) {
+    return "";
+  }
   const date = new Date(dateString);
   return date.toLocaleDateString("vi-VN", {
     day: "2-digit",
@@ -84,7 +66,7 @@ const SectionBlog: FC = async () => {
             <a href={`/blog/${featuredPost.slug}`}>
               <div className="relative w-full h-80">
                 <Image
-                  src={featuredPost.coverImage}
+                  src={featuredPost.coverImage || ""}
                   alt={featuredPost.coverImageAlt || featuredPost.title}
                   fill
                   className="object-cover"
@@ -121,13 +103,13 @@ const SectionBlog: FC = async () => {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
             {otherPosts.map((post) => (
               <a
-                key={post._id}
+                key={post.id}
                 href={`/blog/${post.slug}`}
                 className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition"
               >
                 <div className="relative w-full h-40">
                   <Image
-                    src={post.coverImage}
+                    src={post.coverImage || ""}
                     alt={post.coverImageAlt || post.title}
                     fill
                     className="object-cover"

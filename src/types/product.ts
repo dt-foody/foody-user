@@ -1,8 +1,15 @@
-// --- TYPE DEFINITIONS ---
+// src/types/product.ts
+import type { Paginated } from "@/lib";
+import { Category } from "./category";
+import { PricePromotion } from "./pricePromotion";
+
+// ===== Option Types =====
+export type OptionPriceType = "fixed_amount" | "percentage";
+
 export interface OptionItem {
   name: string;
-  priceModifier: number;
-  type: "fixed_amount" | "percentage";
+  priceModifier: number; // (đồng) hoặc (%)
+  type: OptionPriceType; // fixed_amount | percentage
   isActive: boolean;
   priority: number;
 }
@@ -15,63 +22,46 @@ export interface OptionGroup {
   options: OptionItem[];
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  parent: string | null;
-  image: string;
-}
-
+// ===== Product from API (BE) =====
 export interface Product {
   id: string;
   name: string;
   description: string;
   basePrice: number;
   thumbnailUrl: string;
-  category: string;
+  category: string | Category | null;
   isActive: boolean;
   priority: number;
   optionGroups?: OptionGroup[];
+
+  // Optional từ BE (timestamps + audit)
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
-export interface Combo {
-  id: string;
-  name: string;
-  description: string;
-  thumbnailUrl: string;
-  comboPrice: number;
-  items: any[];
-}
-
-export interface PricePromotion {
-  id: string;
-  name: string;
-  product?: Product | string;
-  combo?: Combo | string;
-  discountType: "percentage" | "fixed_amount";
-  discountValue: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-}
+// ===== UI Projection (MenuItem) =====
+export type MenuItemType = "product" | "combo";
 
 export interface MenuItem extends Product {
-  price: number;
-  originalPrice?: number;
-  image: string;
-  type: "product" | "combo";
+  // UI-specific (được map từ Product + promotion)
+  price: number; // giá hiện tại để hiển thị (basePrice hoặc đã apply khuyến mãi)
+  originalPrice?: number; // giá gốc (để gạch ngang)
+  image?: string; // alias của thumbnailUrl cho UI
+  type: MenuItemType;
   discount?: PricePromotion | null;
+
+  // Optional analytics/UI
   reviews: number;
-  rating: string;
+  rating: number | string;
   sold?: number;
   timeLeft?: string;
+
+  // Dùng cho coupon filter (nếu cần nhiều category, FE có thể enrich)
   categoryIds?: string[];
 }
 
-export interface ProductResponse {
-  results: Product[];  // Mảng sản phẩm
-  page: number;        // Trang hiện tại
-  limit: number;       // Số sản phẩm mỗi trang
-  totalPages: number;  // Tổng số trang
-  totalResults: number; // Tổng số sản phẩm
-}
+export type ProductPaginate = Paginated<Product>;

@@ -1,30 +1,19 @@
 import React from "react";
 import Link from "next/link";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-interface BlogCategory {
-  id: string;
-  name: string;
-  slug: string;
-  coverImage: string;
-  postCount: number;
-}
+import { blogCategoryService } from "@/services";
+import { BlogCategory } from "@/types";
 
 export default async function WidgetCategories() {
   let categories: BlogCategory[] = [];
 
   try {
-    const res = await fetch(
-      `${API_BASE}/v1/blog-categories?limit=10&sortBy=postCount:desc`,
-      { next: { revalidate: 60 } }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      categories = data.results || [];
-    }
+    const res = await blogCategoryService.getAll({
+      limit: 10,
+      sortBy: "postCount:desc",
+    });
+    categories = res.results || [];
   } catch (err) {
-    console.log("ERROR categories", err);
+    console.log("ERROR blog categories", err);
   }
 
   // không hiện nếu rỗng

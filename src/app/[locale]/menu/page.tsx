@@ -12,23 +12,18 @@ import {
   DollarSign,
 } from "lucide-react";
 
-import {
-  Category,
-  Product,
-  Combo,
-  PricePromotion,
-  MenuItem,
-} from "@/types/product";
+import { Category, Product, Combo, PricePromotion, MenuItem } from "@/types";
 
 import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard from "@/components/ProductCard";
 import ProductNotFound from "@/components/ProductNotFound";
 import MenuCategory from "@/components/MenuCategory";
 import ErrorDisplay from "@/components/ErrorDisplay";
+import { categoryService, comboService, productService } from "@/services";
+import { pricePromotionService } from "@/services/pricePromotion.service";
+import { PREFIX_IMAGE } from "@/constants";
 
 // --- CONSTANTS ---
-const API_BASE = "http://localhost:3000/v1";
-const IMAGE_BASE = "http://localhost:3000";
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
 const ITEMS_PER_PAGE = 12;
@@ -114,16 +109,17 @@ export default function FoodyMenuContent() {
     try {
       setLoading(true);
       setError(null);
-      const catPromise = fetch(`${API_BASE}/categories`);
-      const promoPromise = fetch(
-        `${API_BASE}/price-promotions?populate=product;combo&isActive=true&limit=10`
-      );
-      const [catRes, promoRes] = await Promise.all([catPromise, promoPromise]);
-      if (!catRes.ok || !promoRes.ok) {
-        throw new Error("Không thể tải dữ liệu cần thiết từ máy chủ.");
-      }
-      const catData = await catRes.json();
-      const promoData = await promoRes.json();
+      const catPromise = categoryService.getAll({});
+      const promoPromise = pricePromotionService.getAll({
+        populate: "product;combo",
+        isActive: true,
+        limit: 10,
+      });
+      const [catData, promoData] = await Promise.all([
+        catPromise,
+        promoPromise,
+      ]);
+
       setCategories(buildCategoryTree(catData.results || []));
       const validPromotions = (promoData.results || []).filter(
         (p: PricePromotion) =>
@@ -144,29 +140,23 @@ export default function FoodyMenuContent() {
     else if (!isInitialLoad) setLoadingMore(true);
     if (!isInitialLoad) setError(null);
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
+      const params = {
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
         ...(activeTab.type === "category" &&
           activeTab.id !== "all" && { category: activeTab.id }),
         ...(searchQuery && { search: searchQuery }),
         sortBy: sortBy,
-        minPrice: priceRange.min.toString(),
-        maxPrice: priceRange.max.toString(),
-      });
-      const endpoint = activeTab.type === "combo" ? "combos" : "products";
-      const response = await fetch(`${API_BASE}/${endpoint}?${params}`);
-      if (!response.ok) {
-        throw new Error(
-          `Không thể tải danh sách ${
-            activeTab.type === "combo" ? "combo" : "món ăn"
-          }.`
-        );
-      }
-      const data = await response.json();
+        minPrice: priceRange.min,
+        maxPrice: priceRange.max,
+      };
+      const data =
+        activeTab.type === "combo"
+          ? await comboService.getAll(params)
+          : await productService.getAll(params);
       const formattedItems = data.results.map((item: any) => ({
         ...item,
-        thumbnailUrl: `${IMAGE_BASE}${item.thumbnailUrl}`,
+        thumbnailUrl: `${PREFIX_IMAGE}${item.thumbnailUrl}`,
       }));
       if (activeTab.type === "combo") {
         setCombos(
@@ -195,7 +185,7 @@ export default function FoodyMenuContent() {
       .filter((c: Category) => !c.parent)
       .map((parent: Category) => ({
         ...parent,
-        image: parent.image ? `${IMAGE_BASE}${parent.image}` : "",
+        image: parent.image ? `${PREFIX_IMAGE}${parent.image}` : "",
       }));
   };
 
@@ -456,7 +446,7 @@ export default function FoodyMenuContent() {
                   <div key={promo.id} className="flex-shrink-0 w-full pr-4">
                     <div className="flex items-start space-x-4">
                       <img
-                        src={`${IMAGE_BASE}${item.thumbnailUrl}`}
+                        src={`${PREFIX_IMAGE}${item.thumbnailUrl}`}
                         alt={item.name}
                         onError={handleImageError}
                         className="w-20 h-20 rounded-lg object-cover border-2 border-white shadow-md"

@@ -5,45 +5,14 @@ import { useMemo, useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { MenuItem, OptionItem } from "@/types/product";
+import { couponService } from "@/services";
+import { Coupon } from "@/types";
+import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 
 const API_URL = "http://localhost:3000/v1";
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
 
-/** ===== Coupon & Condition types (giữ tương thích) ===== */
-interface Condition {
-  id: string;
-  fieldId: string; // "category_id" | "customer_is_new" | "customer_age" | ...
-  operator: string; // "IN" | "EQUALS" | ...
-  value: any;
-}
-interface ConditionGroup {
-  id: string;
-  operator: "AND" | "OR";
-  conditions: (Condition | ConditionGroup)[];
-}
-export interface Coupon {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  type: "discount_code" | "freeship" | "gift";
-  value: number;
-  valueType: "percentage" | "fixed";
-  maxDiscountAmount?: number;
-  minOrderAmount?: number;
-  maxUses: number;
-  usedCount: number;
-  maxUsesPerUser: number;
-  public: boolean;
-  claimable: boolean;
-  autoApply: boolean;
-  stackable: boolean;
-  conditions: ConditionGroup | null;
-  status: "ACTIVE" | "INACTIVE" | "EXPIRED";
-  startDate: string;
-  endDate: string;
-}
 interface UserData {
   isNew: boolean;
   age: number | null;
@@ -128,77 +97,6 @@ const buildVariantKey = (
 
   const noteSig = (note ?? "").trim();
   return `${product.id}::${optionSig}::${noteSig}`;
-};
-
-/** ===== Eligibility check giữ nguyên logic tổng quát ===== */
-const checkCouponEligibility = (
-  coupon: Coupon,
-  cart: { items: CartLine[]; subtotal: number },
-  user: UserData
-): EligibilityStatus => {
-  if (coupon.minOrderAmount && cart.subtotal < coupon.minOrderAmount) {
-    return {
-      isEligible: false,
-      reason: `Cần mua thêm ${(
-        coupon.minOrderAmount - cart.subtotal
-      ).toLocaleString("vi-VN")}đ`,
-    };
-  }
-
-  if (coupon.conditions && coupon.conditions.conditions.length > 0) {
-    for (const condition of coupon.conditions.conditions) {
-      if ("fieldId" in condition) {
-        const { fieldId, operator, value } = condition;
-
-        switch (fieldId) {
-          case "category_id": {
-            if (operator === "IN") {
-              const itemCategoryIds = new Set(
-                cart.items.flatMap((i) => i.categoryIds || [])
-              );
-              const required = new Set(value);
-              const ok = [...itemCategoryIds].some((x) => required.has(x));
-              if (!ok) {
-                return {
-                  isEligible: false,
-                  reason: "Cần có sản phẩm thuộc danh mục yêu cầu (vd: Pizza)",
-                };
-              }
-            }
-            break;
-          }
-          case "customer_is_new": {
-            if (operator === "EQUALS" && String(user.isNew) !== String(value)) {
-              return {
-                isEligible: false,
-                reason: "Chỉ dành cho khách hàng mới",
-              };
-            }
-            break;
-          }
-          case "customer_age": {
-            if (user.age === null) {
-              return {
-                isEligible: false,
-                reason: "Không thể xác định tuổi của bạn",
-              };
-            }
-            if (operator === "EQUALS" && user.age !== value) {
-              return {
-                isEligible: false,
-                reason: `Chỉ dành cho khách hàng ${value} tuổi`,
-              };
-            }
-            break;
-          }
-          default:
-            console.warn(`Unknown condition fieldId: ${fieldId}`);
-        }
-      }
-    }
-  }
-
-  return { isEligible: true, reason: null };
 };
 
 /** ===== Initial state ===== */
@@ -336,7 +234,7 @@ export const useCartStore = create<CartState & CartActions>()(
 
         if (
           appliedCoupons.some(
-            (c) => c.code.toUpperCase() === code.toUpperCase()
+            (c) => c?.code?.toUpperCase() === code.toUpperCase()
           )
         ) {
           const msg = "Mã này đã được áp dụng.";
@@ -378,10 +276,9 @@ export const useCartStore = create<CartState & CartActions>()(
       fetchPublicCoupons: async () => {
         try {
           set({ isLoadingPublicCoupons: true });
-          const response = await fetch(`${API_URL}/coupons/available`);
-          const data = await response.json();
+          const data = await couponService.getAvailables({});
           set({
-            publicCoupons: (data?.coupons ?? data ?? []) as Coupon[],
+            publicCoupons: data.results || [],
             isLoadingPublicCoupons: false,
           });
         } catch (e) {

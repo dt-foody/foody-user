@@ -5,6 +5,7 @@ import Input from "@/shared/Input";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { authService } from "@/services";
 
 export interface PageLoginProps {}
 
@@ -83,23 +84,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
       };
 
       // Call login API
-      const response = await fetch(`http://localhost:3000/v1/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // MỚI: Bắt buộc phải có nếu bạn dùng HttpOnly cookie
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Đăng nhập thất bại");
-      }
-
-      // ----- MỚI: Xử lý điều hướng sau khi đăng nhập thành công -----
+      const data = await authService.login(formData);
 
       // (Tùy chọn: Lưu data.user, data.permissions vào global state/context)
       useAuthStore.getState().setUser(data.user);

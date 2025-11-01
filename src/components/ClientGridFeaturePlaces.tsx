@@ -6,17 +6,9 @@ import { ShoppingCart, Star, Loader } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import HeaderFilter from "./HeaderFilter";
 import { productService } from "@/services/product.service";
-import { Product } from "@/types/product";
-import { Category } from "@/types/category";
+import { Product, Category, MenuItem } from "@/types";
 import { useCart } from "@/stores/useCartStore";
-
-type MenuItem = Product & {
-  price: number;
-  image: string;
-  type: "product";
-  reviews: number;
-  rating: string;
-};
+import { PREFIX_IMAGE } from "@/constants";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
@@ -44,9 +36,7 @@ export default function ClientGridFeaturePlaces({
   const getImageUrl = (url: string): string => {
     if (!url) return PLACEHOLDER_IMAGE;
     if (url.startsWith("http")) return url;
-    return `${process.env.NEXT_PUBLIC_API_IMAGE}${
-      url.startsWith("/") ? "" : "/"
-    }${url}`;
+    return `${PREFIX_IMAGE}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
   // CHANGED: convertToMenuItem is now wrapped in useCallback
@@ -110,7 +100,7 @@ export default function ClientGridFeaturePlaces({
     if (!append) setLoading(true);
 
     try {
-      const data = await productService.getProducts({
+      const data = await productService.getAll({
         page: pageNum,
         limit: 8,
         category: categoryId,

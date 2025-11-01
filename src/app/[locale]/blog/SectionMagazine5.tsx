@@ -1,21 +1,7 @@
 import React, { FC } from "react";
 import Image from "next/image";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-interface BlogPost {
-  _id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  coverImage: string;
-  coverImageAlt: string;
-  publishedAt: string;
-  isPinned: boolean;
-  isFeatured: boolean;
-  categories: string[];
-  tags: string[];
-}
+import { BlogPost } from "@/types";
+import { blogPostService } from "@/services";
 
 export interface SectionMagazine5Props {
   posts: BlogPost[];
@@ -23,18 +9,11 @@ export interface SectionMagazine5Props {
 
 async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const response = await fetch(
-      `${API_BASE}/v1/blog-posts?isPinned=true&limit=5&sortBy=publishedAt:desc`,
-      {
-        next: { revalidate: 3600 }, // Revalidate mỗi 1 giờ
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch blog posts");
-    }
-
-    const data = await response.json();
+    const data = await blogPostService.getAll({
+      isPinned: true,
+      limit: 5,
+      sortBy: "publishedAt:desc",
+    });
 
     return data.results || [];
   } catch (error) {
@@ -54,6 +33,9 @@ const SectionMagazine5: FC = async () => {
   const otherPosts = blogPosts.slice(1);
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) {
+      return "";
+    }
     const date = new Date(dateStr);
     return date.toLocaleDateString("vi-VN", {
       day: "2-digit",
@@ -72,7 +54,7 @@ const SectionMagazine5: FC = async () => {
               <a href={`/blog/${featuredPost.slug}`}>
                 <div className="relative w-full h-80">
                   <Image
-                    src={featuredPost.coverImage}
+                    src={featuredPost.coverImage || ""}
                     alt={featuredPost.coverImageAlt || featuredPost.title}
                     fill
                     className="object-cover"
@@ -82,7 +64,7 @@ const SectionMagazine5: FC = async () => {
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-2">
                     <p className="text-sm text-gray-500">
-                      {formatDate(featuredPost.publishedAt)}
+                      {formatDate(featuredPost.publishedAt || "")}
                     </p>
                     {featuredPost.isPinned && (
                       <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
@@ -110,13 +92,13 @@ const SectionMagazine5: FC = async () => {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
             {otherPosts.map((post) => (
               <a
-                key={post._id}
+                key={post.id}
                 href={`/blog/${post.slug}`}
                 className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition"
               >
                 <div className="relative w-full h-40">
                   <Image
-                    src={post.coverImage}
+                    src={post.coverImage || ""}
                     alt={post.coverImageAlt || post.title}
                     fill
                     className="object-cover"
@@ -125,7 +107,7 @@ const SectionMagazine5: FC = async () => {
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm text-gray-500">
-                      {formatDate(post.publishedAt)}
+                      {formatDate(post.publishedAt || "")}
                     </p>
                     {post.isPinned && (
                       <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">

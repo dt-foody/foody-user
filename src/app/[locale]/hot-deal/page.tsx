@@ -16,13 +16,9 @@ import MenuCategory from "@/components/MenuCategory";
 import ErrorDisplay from "@/components/ErrorDisplay";
 import SkeletonCard from "@/components/SkeletonCard";
 
-import {
-  MenuItem,
-  Category,
-  Product,
-  Combo,
-  PricePromotion,
-} from "@/types/product";
+import { categoryService } from "@/services";
+import { pricePromotionService } from "@/services/pricePromotion.service";
+import { Category, Combo, MenuItem, PricePromotion, Product } from "@/types";
 
 // --- CONSTANTS ---
 const API_BASE = "http://localhost:3000/v1";
@@ -66,19 +62,18 @@ export default function HotDealsPage() {
       setLoading(true);
       setError(null);
 
-      const catPromise = fetch(`${API_BASE}/categories`);
-      const promoPromise = fetch(
-        `${API_BASE}/price-promotions?populate=product;combo&isActive=true&page=1&limit=${ITEMS_PER_PAGE}`
-      );
+      const catPromise = categoryService.getAll({});
+      const promoPromise = pricePromotionService.getAll({
+        populate: ["product", "combo"].join(";"),
+        isActive: true,
+        page: 1,
+        limit: ITEMS_PER_PAGE,
+      });
 
-      const [catRes, promoRes] = await Promise.all([catPromise, promoPromise]);
-
-      if (!catRes.ok || !promoRes.ok) {
-        throw new Error("Không thể tải dữ liệu từ máy chủ");
-      }
-
-      const catData = await catRes.json();
-      const promoData = await promoRes.json();
+      const [catData, promoData] = await Promise.all([
+        catPromise,
+        promoPromise,
+      ]);
 
       setCategories(buildCategoryTree(catData.results || []));
 
@@ -104,17 +99,14 @@ export default function HotDealsPage() {
     setError(null);
 
     try {
-      const params = new URLSearchParams({
+      const params = {
         populate: "product;combo",
         isActive: "true",
-        page: currentPage.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
-      });
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      };
 
-      const response = await fetch(`${API_BASE}/price-promotions?${params}`);
-      if (!response.ok) throw new Error("Không thể tải danh sách khuyến mãi");
-
-      const data = await response.json();
+      const data = await pricePromotionService.getAll(params);
       const validPromotions = (data.results || []).filter(
         (p: PricePromotion) =>
           (p.product && typeof p.product === "object") ||
@@ -285,7 +277,6 @@ export default function HotDealsPage() {
     setActiveTab({ type, id });
   };
 
-
   const activeDealCount = dealItems.length;
 
   const sortOptions = [
@@ -294,7 +285,8 @@ export default function HotDealsPage() {
     { value: "price:desc", label: "Giá cao - thấp" },
   ];
 
-  const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || "Sắp xếp";
+  const currentSortLabel =
+    sortOptions.find((opt) => opt.value === sortBy)?.label || "Sắp xếp";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -324,8 +316,8 @@ export default function HotDealsPage() {
             {/* Categories */}
             <MenuCategory
               categories={categories}
-              activeTab={ activeTab }
-              onTabClick={ handleTabClick }
+              activeTab={activeTab}
+              onTabClick={handleTabClick}
             />
 
             {/* Sort Dropdown */}
@@ -338,7 +330,11 @@ export default function HotDealsPage() {
                 <span className="text-sm font-medium text-gray-700">
                   {currentSortLabel}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                    showSortMenu ? "rotate-180" : ""
+                  }`}
+                />
               </button>
 
               {showSortMenu && (
@@ -373,8 +369,8 @@ export default function HotDealsPage() {
           <Tag className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm text-gray-700">
-              <span className="font-semibold text-orange-700">Mẹo:</span> Các ưu đãi có thể kết thúc bất cứ lúc nào. 
-              Đặt hàng ngay để không bỏ lỡ!
+              <span className="font-semibold text-orange-700">Mẹo:</span> Các ưu
+              đãi có thể kết thúc bất cứ lúc nào. Đặt hàng ngay để không bỏ lỡ!
             </p>
           </div>
         </div>
@@ -425,8 +421,8 @@ export default function HotDealsPage() {
 
       {/* Click outside to close dropdown */}
       {showSortMenu && (
-        <div 
-          className="fixed inset-0 z-30" 
+        <div
+          className="fixed inset-0 z-30"
           onClick={() => setShowSortMenu(false)}
         />
       )}

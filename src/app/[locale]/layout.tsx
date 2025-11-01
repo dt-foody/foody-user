@@ -11,8 +11,7 @@ import FooterNav from "@/components/FooterNav";
 import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
-import { getUserFromCookie } from "@/lib/getUserFromCookie";
-
+import authService from "@/services/auth.service"; // 💡 1. IMPORT
 const poppins = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -65,8 +64,7 @@ export default async function RootLayout({
   const dir = params.locale === "ar" ? "rtl" : "ltr";
   // const dir = "ltr";
 
-  const user = await getUserFromCookie(); // 🧠 Lấy user từ cookie SSR
-  console.log("user", user);
+  const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
@@ -75,7 +73,7 @@ export default async function RootLayout({
           <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}
           {/* <CartProvider> */}
             <ClientCommons />
-            <SiteHeader ssrUser={user} />
+            <SiteHeader ssrUser={data ? data.user : null } />
             {children}
             <FooterNav />
             <Footer />

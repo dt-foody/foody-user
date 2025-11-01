@@ -3,39 +3,16 @@ import Avatar from "@/shared/Avatar";
 import Badge from "@/shared/Badge";
 import SocialsList from "@/shared/SocialsList";
 import RelatedPosts from "./RelatedPosts"; // Client Component
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  content: string;
-  coverImage: string;
-  coverImageAlt: string;
-  publishedAt: string;
-  isPinned: boolean;
-  isFeatured: boolean;
-  categories: any[];
-  tags: any[];
-  views: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: {
-    id: string;
-    name: string;
-    avatar?: string;
-    bio?: string;
-  };
-}
+import { blogPostService } from "@/services";
 
 interface PageProps {
   params: { slug: string };
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | undefined) => {
+  if (!dateString) {
+    return "";
+  }
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     year: "numeric",
@@ -52,11 +29,10 @@ const calculateReadTime = (content: string) => {
 };
 
 const Page = async ({ params }: PageProps) => {
-  const res = await fetch(
-    `${API_BASE}/v1/blog-posts/${params.slug}?populate=createdBy;categories;tags`
-    // { next: { revalidate: 60 } } // ISR 60s
-  );
-  if (!res.ok) {
+  const post = await blogPostService.getBySlug(params.slug, {
+    populate: "createdBy;categories;tags",
+  });
+  if (!post) {
     return (
       <div className="nc-PageSingle pt-8 lg:pt-16">
         <div className="container text-center py-16">
@@ -65,10 +41,6 @@ const Page = async ({ params }: PageProps) => {
       </div>
     );
   }
-
-  const post: BlogPost = await res.json();
-
-  console.log("post", post);
 
   const authorName = post.createdBy ? `${post.createdBy.name}` : "Anonymous";
 
@@ -125,13 +97,15 @@ const Page = async ({ params }: PageProps) => {
 
       {/* Cover Image */}
       <div className="container max-w-screen-md my-10 sm:my-12 w-full relative">
-        <Image
-          src={post.coverImage}
-          alt={post.coverImageAlt || post.title}
-          width={1200} // chỉ cần width chuẩn desktop
-          height={800} // tạm lấy ratio gần đúng
-          className="w-full h-auto rounded-xl object-cover"
-        />
+        {post.coverImage ? (
+          <Image
+            src={post.coverImage}
+            alt={post.coverImageAlt || post.title}
+            width={1200} // chỉ cần width chuẩn desktop
+            height={800} // tạm lấy ratio gần đúng
+            className="w-full h-auto rounded-xl object-cover"
+          />
+        ) : null}
       </div>
 
       {/* Content */}

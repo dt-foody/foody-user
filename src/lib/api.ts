@@ -1,5 +1,7 @@
 // services/apiService.js
 
+import { API_URL } from "@/constants";
+
 /**
  * A generic fetch function to call the backend API.
  * @param {string} endpoint - The endpoint to call.
@@ -10,7 +12,6 @@ export const apiFetch = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const url = `${API_URL}${endpoint}`;
 
   const defaultHeaders: HeadersInit = {

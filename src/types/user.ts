@@ -1,52 +1,29 @@
-// Base User type
+import { Customer } from "./customer";
+import { Employee } from "./employee";
+
+// src/types/user.ts
 export interface User {
-  id: string;
+  id: string; // mapped from id/_id on fetch
   email: string;
-  name: string;
-  avatar?: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+  role: "customer" | "staff" | "admin" | "manager";
+  isEmailVerified: boolean;
 
-// User roles
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-  GUEST = 'GUEST',
-  MODERATOR = 'MODERATOR',
-}
+  // IDs from backend (ObjectId as string)
+  rolesCustom: string[];
+  extraPermissions: string[];
+  excludePermissions: string[];
 
-// DTOs cho API requests
-export interface CreateUserDto {
-  email: string;
-  name: string;
-  password: string;
-  role?: UserRole;
-}
+  // ISO timestamps from API
+  createdAt?: string;
+  updatedAt?: string;
 
-export interface UpdateUserDto {
-  email?: string;
+  // optional display fields if your API adds them
   name?: string;
   avatar?: string;
-  role?: UserRole;
-  isActive?: boolean;
 }
 
-export interface LoginDto {
-  email: string;
-  password: string;
-}
-
-// API Response types
-export interface UserResponse {
-  user: User;
-  message?: string;
-}
-
-export interface UsersResponse {
-  users: User[];
-  total: number;
-  page: number;
+export interface GetMeResponse {
+  user: User,
+  me: Customer | Employee,
+  permissions: []
 }

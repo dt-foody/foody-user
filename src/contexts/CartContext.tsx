@@ -1,5 +1,8 @@
 "use client";
 
+import { couponService } from "@/services";
+import { Coupon, CouponCondition, CouponConditionClause } from "@/types";
+import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import React, {
   createContext,
   useContext,
@@ -15,48 +18,6 @@ import React, {
 const API_URL = "http://localhost:3000/v1";
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
-
-// =============================
-// 🧩 INTERFACE ĐỊNH NGHĨA
-// =============================
-
-// Điều kiện (cho coupon)
-interface Condition {
-  id: string;
-  fieldId: string;
-  operator: string;
-  value: any;
-}
-
-interface ConditionGroup {
-  id: string;
-  operator: "AND" | "OR";
-  conditions: (Condition | ConditionGroup)[];
-}
-
-// Coupon
-export interface Coupon {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  type: "discount_code" | "freeship" | "gift";
-  value: number;
-  valueType: "percentage" | "fixed";
-  maxDiscountAmount?: number;
-  minOrderAmount?: number;
-  maxUses: number;
-  usedCount: number;
-  maxUsesPerUser: number;
-  public: boolean;
-  claimable: boolean;
-  autoApply: boolean;
-  stackable: boolean;
-  conditions: ConditionGroup | null;
-  status: "ACTIVE" | "INACTIVE" | "EXPIRED";
-  startDate: string;
-  endDate: string;
-}
 
 interface UserData {
   isNew: boolean;
@@ -113,79 +74,6 @@ interface CartContextType {
     note: string
   ) => void;
 }
-
-// =============================
-// 🧮 HÀM CHECK COUPON
-// =============================
-const checkCouponEligibility = (
-  coupon: Coupon,
-  cart: CartData,
-  user: UserData
-): EligibilityStatus => {
-  if (coupon.minOrderAmount && cart.subtotal < coupon.minOrderAmount) {
-    return {
-      isEligible: false,
-      reason: `Cần mua thêm ${(
-        coupon.minOrderAmount - cart.subtotal
-      ).toLocaleString("vi-VN")}đ`,
-    };
-  }
-
-  if (coupon.conditions && coupon.conditions.conditions.length > 0) {
-    for (const condition of coupon.conditions.conditions) {
-      if ("fieldId" in condition) {
-        const { fieldId, operator, value } = condition;
-
-        switch (fieldId) {
-          case "category_id":
-            if (operator === "IN") {
-              const itemCategoryIds = new Set(
-                cart.items.flatMap((item) => item.categoryIds || [])
-              );
-              const requiredCategoryIds = new Set(value);
-              const intersection = new Set(
-                [...itemCategoryIds].filter((x) => requiredCategoryIds.has(x))
-              );
-              if (intersection.size === 0) {
-                return {
-                  isEligible: false,
-                  reason: "Cần có sản phẩm thuộc danh mục yêu cầu (vd: Pizza)",
-                };
-              }
-            }
-            break;
-          case "customer_is_new":
-            if (operator === "EQUALS" && String(user.isNew) !== String(value)) {
-              return {
-                isEligible: false,
-                reason: "Chỉ dành cho khách hàng mới",
-              };
-            }
-            break;
-          case "customer_age":
-            if (user.age === null) {
-              return {
-                isEligible: false,
-                reason: "Không thể xác định tuổi của bạn",
-              };
-            }
-            if (operator === "EQUALS" && user.age !== value) {
-              return {
-                isEligible: false,
-                reason: `Chỉ dành cho khách hàng ${value} tuổi`,
-              };
-            }
-            break;
-          default:
-            console.warn(`Unknown condition fieldId: ${fieldId}`);
-        }
-      }
-    }
-  }
-
-  return { isEligible: true, reason: null };
-};
-
 // =============================
 // 🧩 CART PROVIDER
 // =============================
@@ -225,9 +113,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const fetchPublicCoupons = async () => {
       try {
         setIsLoadingPublicCoupons(true);
-        const response = await fetch(`${API_URL}/coupons/available`);
-        const data = await response.json();
-        setPublicCoupons(data.coupons || data || []);
+        const data = await couponService.getAvailables({});
+        setPublicCoupons(data.results || []);
       } catch (e) {
         console.error("Failed to fetch public coupons:", e);
       } finally {
@@ -345,7 +232,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (code: string) => {
       setCouponStatus({ isLoading: true, error: null });
       if (
-        appliedCoupons.some((c) => c.code.toUpperCase() === code.toUpperCase())
+        appliedCoupons.some(
+          (c) => c?.code?.toUpperCase() === code.toUpperCase()
+        )
       ) {
         const msg = "Mã này đã được áp dụng.";
         setCouponStatus({ isLoading: false, error: msg });

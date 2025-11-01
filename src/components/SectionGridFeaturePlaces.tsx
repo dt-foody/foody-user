@@ -10,7 +10,7 @@ export const revalidate = 300; // ISR 5 phút
 export default async function SectionGridFeaturePlaces() {
   try {
     // 1) Lấy categories level 1 (parent categories)
-    const catRes = await categoryService.getCategories({ level: 1 });
+    const catRes = await categoryService.getAll({ level: 1 });
     const categories: Category[] = catRes?.results ?? [];
 
     // Lọc chỉ lấy parent categories (không có parent)
@@ -33,7 +33,7 @@ export default async function SectionGridFeaturePlaces() {
     let initialProducts: Product[] = [];
     let initialHasMore = false;
 
-    const proRes = await productService.getProducts({
+    const proRes = await productService.getAll({
       page: 1,
       limit: 8,
       category: firstCategoryId,

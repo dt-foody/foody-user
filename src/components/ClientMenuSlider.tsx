@@ -11,22 +11,15 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-
-type Category = {
-  id: string;
-  name: string;
-  description?: string;
-  image?: string;
-};
+import { PREFIX_IMAGE } from "@/constants";
+import { Category } from "@/types";
 
 // REMOVED: Xóa 2 component NextArrow và PrevArrow vì chúng ta sẽ render trực tiếp
 
 export default function ClientMenuSlider({
   categories,
-  assetBase,
 }: {
   categories: Category[];
-  assetBase?: string;
 }) {
   // CHANGED: Thêm ref để điều khiển slider từ bên ngoài
   const sliderRef = useRef<Slider>(null);
@@ -97,7 +90,7 @@ export default function ClientMenuSlider({
             const src = cat.image
               ? cat.image.startsWith("http")
                 ? cat.image
-                : `${assetBase ?? ""}${cat.image}`
+                : `${PREFIX_IMAGE ?? ""}${cat.image}`
               : null;
 
             return (

@@ -1,4 +1,6 @@
 // src/stores/useAuthStore.ts
+import { API_URL } from "@/constants";
+import { authService } from "@/services";
 import { create } from "zustand";
 
 interface AuthState {
@@ -18,13 +20,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearUser: () => set({ user: null }),
   fetchUser: async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        credentials: "include",
-      });
-      if (!res.ok) return set({ user: null });
-      const data = await res.json();
-      set({ user: data.user });
-      set({ me: data.me });
+      const data = await authService.getMe();
+      if (data) {
+        set({ user: data.user });
+        set({ me: data.me });
+      }
     } catch (e) {
       set({ user: null });
     }

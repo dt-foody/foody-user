@@ -1,18 +1,11 @@
 "use client";
 import React, { FC, useRef, useState } from "react";
-import facebookSvg from "@/images/Facebook.svg";
-import googleSvg from "@/images/Google.svg";
 import Input from "@/shared/Input";
 import ButtonPrimary from "@/shared/ButtonPrimary";
-import Image from "next/image";
 import Link from "next/link";
+import { authService } from "@/services";
 
 export interface PageSignUpProps {}
-
-const loginSocials = [
-  { name: "Continue with Facebook", href: "#", icon: facebookSvg },
-  { name: "Continue with Google", href: "#", icon: googleSvg },
-];
 
 interface FormErrors {
   name?: string;
@@ -121,14 +114,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       if (birthDate) requestBody.birthDate = birthDate; // Format: YYYY-MM-DD
       if (gender) requestBody.gender = gender;
 
-      const response = await fetch(
-        "http://localhost:3000/v1/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await authService.register(requestBody);
       const data = await response.json();
 
       if (response.ok) {

@@ -5,51 +5,9 @@ import Pagination from "@/shared/Pagination";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import SkeletonCard from "@/components/SkeletonCard";
 import Link from "next/link"; // Sử dụng Link của Next.js để tối ưu điều hướng
+import { BlogPost } from "@/types";
+import { blogPostService } from "@/services";
 
-// API Base URL
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-// =================================================================
-// 1. TYPE DEFINITIONS (Định nghĩa kiểu dữ liệu)
-// =================================================================
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  backgroundColor: string;
-  textColor: string;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  backgroundColor: string;
-  textColor: string;
-}
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  coverImage: string;
-  coverImageAlt: string;
-  publishedAt: string;
-  isFeatured: boolean;
-  categories: Category[];
-  tags: Tag[];
-  views: number;
-}
-interface ApiResponse {
-  results: BlogPost[];
-  page: number;
-  limit: number;
-  totalPages: number;
-  totalResults: number;
-}
-
-// =================================================================
 // 2. MAIN COMPONENT (Component chính)
 // =================================================================
 const SectionLatestPosts = ({ sidebar }: { sidebar: React.ReactNode }) => {
@@ -66,22 +24,20 @@ const SectionLatestPosts = ({ sidebar }: { sidebar: React.ReactNode }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `${API_BASE}/v1/blog-posts?limit=5&page=${pageNum}&sortBy=publishedAt:desc&status=published&populate=categories;tags`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
-      }
-
-      const data: ApiResponse = await response.json();
+      const response = await blogPostService.getAll({
+        limit: 5,
+        page: pageNum,
+        sortBy: "publishedAt:desc",
+        status: "published",
+        populate: "categories;tags",
+      });
 
       // Nếu là trang 1 thì thay thế, từ trang 2 trở đi thì nối vào danh sách cũ
       setPosts((prevPosts) =>
-        pageNum === 1 ? data.results : [...prevPosts, ...data.results]
+        pageNum === 1 ? response.results : [...prevPosts, ...response.results]
       );
-      setTotalPages(data.totalPages);
-      setPage(data.page);
+      setTotalPages(response.totalPages);
+      setPage(response.page);
     } catch (err) {
       console.error("Lỗi khi tải bài viết:", err);
       setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -196,9 +152,11 @@ const SectionLatestPosts = ({ sidebar }: { sidebar: React.ReactNode }) => {
 
                         {/* Meta Info */}
                         <div className="flex items-center text-xs text-neutral-500 dark:text-neutral-400 space-x-4">
-                          <time dateTime={post.publishedAt}>
-                            {formatDate(post.publishedAt)}
-                          </time>
+                          {post.publishedAt ? (
+                            <time dateTime={post.publishedAt}>
+                              {formatDate(post.publishedAt)}
+                            </time>
+                          ) : null}
                           <span>•</span>
                           <span>{post.views || 0} lượt xem</span>
                           {post.isFeatured && (

@@ -5,7 +5,7 @@ import ButtonClose from "@/shared/ButtonClose";
 import Logo from "@/shared/Logo";
 import { Disclosure } from "@headlessui/react";
 import { NavItemType } from "./NavigationItem";
-import { NAVIGATION_DEMO } from "@/data/navigation";
+import { NAVIGATION_DEMO } from "@/constants/navigation";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import SocialsList from "@/shared/SocialsList";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";

@@ -4,22 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Badge from "@/shared/Badge";
 import { Route } from "@/routers/types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  coverImage: string;
-  coverImageAlt: string;
-  publishedAt: string;
-  categories: any[];
-  createdBy?: {
-    id: string;
-    name: string;
-  };
-}
+import { blogPostService } from "@/services";
+import { BlogPost } from "@/types";
 
 interface RelatedPostsProps {
   authorId?: string;
@@ -27,6 +13,9 @@ interface RelatedPostsProps {
 }
 
 const formatDate = (dateString: string) => {
+  if (!dateString) {
+    return "";
+  }
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     year: "numeric",
@@ -42,15 +31,15 @@ const RelatedPosts = ({ authorId, currentPostId }: RelatedPostsProps) => {
     if (!authorId) return;
 
     const fetchRelated = async () => {
-      const res = await fetch(
-        `${API_BASE}/v1/blog-posts?createdBy=${authorId}&limit=5&sortBy=publishedAt:desc&populate=createdBy;categories`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const filtered =
-          data.results?.filter((p: BlogPost) => p.id !== currentPostId) || [];
-        setRelatedPosts(filtered.slice(0, 4));
-      }
+      const res = await blogPostService.getAll({
+        createdBy: authorId,
+        limit: 5,
+        sortBy: "publishedAt:desc",
+        populate: ["createdBy", "categories"].join(";"),
+      });
+      const filtered =
+        res.results?.filter((p: BlogPost) => p.id !== currentPostId) || [];
+      setRelatedPosts(filtered.slice(0, 4));
     };
 
     fetchRelated();
@@ -76,13 +65,15 @@ const RelatedPosts = ({ authorId, currentPostId }: RelatedPostsProps) => {
               >
                 {/* Image Section */}
                 <div className="relative aspect-w-4 aspect-h-3 w-full overflow-hidden">
-                  <Image
-                    className="object-cover w-full h-48 transform group-hover:scale-105 transition-transform duration-300"
-                    src={post.coverImage}
-                    width={400}
-                    height={300}
-                    alt={post.coverImageAlt || post.title}
-                  />
+                  {post.coverImage ? (
+                    <Image
+                      className="object-cover w-full h-48 transform group-hover:scale-105 transition-transform duration-300"
+                      src={post.coverImage}
+                      width={400}
+                      height={300}
+                      alt={post.coverImageAlt || post.title}
+                    />
+                  ) : null}
                 </div>
 
                 {/* Content Section */}
@@ -97,7 +88,7 @@ const RelatedPosts = ({ authorId, currentPostId }: RelatedPostsProps) => {
                     <span className="font-medium truncate">{authorName}</span>
                     <span className="mx-2">·</span>
                     <span className="truncate">
-                      {formatDate(post.publishedAt)}
+                      {formatDate(post.publishedAt || "")}
                     </span>
                   </div>
 
