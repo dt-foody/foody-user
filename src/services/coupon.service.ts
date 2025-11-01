@@ -17,4 +17,7 @@ export const couponService = {
 
     return await apiFetch<CouponPaginate>(url);
   },
+  validate: async (code: string): Promise<Coupon> => {
+    return await apiFetch(`/coupons/validate/${code}`);
+  }
 };

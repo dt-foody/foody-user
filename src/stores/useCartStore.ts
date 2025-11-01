@@ -4,12 +4,10 @@
 import { useMemo, useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { MenuItem, OptionItem } from "@/types/product";
 import { couponService } from "@/services";
-import { Coupon } from "@/types";
+import { Coupon, MenuItem, OptionItem } from "@/types";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 
-const API_URL = "http://localhost:3000/v1";
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
 
@@ -243,17 +241,9 @@ export const useCartStore = create<CartState & CartActions>()(
         }
 
         try {
-          const res = await fetch(
-            `${API_URL}/coupons/validate?code=${encodeURIComponent(
-              code
-            )}&orderValue=${subtotal}`
-          );
-          const validatedCoupon = await res.json();
-          if (!res.ok)
-            throw new Error(validatedCoupon.message || "Mã không hợp lệ.");
-
+          const res = await couponService.validate(code);
           set((state) => ({
-            appliedCoupons: [...state.appliedCoupons, validatedCoupon],
+            appliedCoupons: [...state.appliedCoupons, res],
           }));
           set({ couponStatus: { isLoading: false, error: null } });
           return { success: true, message: "Áp dụng thành công!" };

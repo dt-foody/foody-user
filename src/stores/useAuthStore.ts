@@ -1,5 +1,4 @@
 // src/stores/useAuthStore.ts
-import { API_URL } from "@/constants";
 import { authService } from "@/services";
 import { create } from "zustand";
 
