@@ -66,6 +66,7 @@ export default async function RootLayout({
   // const dir = "ltr";
 
   const user = await getUserFromCookie(); // 🧠 Lấy user từ cookie SSR
+  console.log("user", user);
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>

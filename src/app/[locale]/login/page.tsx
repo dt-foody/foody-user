@@ -103,6 +103,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
 
       // (Tùy chọn: Lưu data.user, data.permissions vào global state/context)
       useAuthStore.getState().setUser(data.user);
+      useAuthStore.getState().setMe(data.me);
 
       // 1. Lấy redirect_uri từ URL, ví dụ: /login?redirect_uri=/dashboard
       const redirectUri = searchParams.get("redirect_uri");

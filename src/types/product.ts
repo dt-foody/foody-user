@@ -65,6 +65,7 @@ export interface MenuItem extends Product {
   rating: string;
   sold?: number;
   timeLeft?: string;
+  categoryIds?: string[];
 }
 
 export interface ProductResponse {

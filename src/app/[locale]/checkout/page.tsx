@@ -91,7 +91,7 @@ export default function CheckoutPage() {
           onSubmit={handleSubmitOrder}
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 lg:col-span-3">
+          <h1 className="text-xl font-bold text-gray-800 lg:col-span-3">
             Xác nhận đơn hàng
           </h1>
 

@@ -1,36 +1,27 @@
+// /stores/useCartStore.ts
 "use client";
 
-import React, { useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { MenuItem, OptionItem } from "@/types/product";
 
-// =============================
-// ⚙️ CẤU HÌNH CƠ BẢN
-// =============================
 const API_URL = "http://localhost:3000/v1";
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
 
-// =============================
-// 🧩 INTERFACE ĐỊNH NGHĨA
-// (Giữ nguyên tất cả các interface của bạn)
-// =============================
-
-// Điều kiện (cho coupon)
+/** ===== Coupon & Condition types (giữ tương thích) ===== */
 interface Condition {
   id: string;
-  fieldId: string;
-  operator: string;
+  fieldId: string; // "category_id" | "customer_is_new" | "customer_age" | ...
+  operator: string; // "IN" | "EQUALS" | ...
   value: any;
 }
-
 interface ConditionGroup {
   id: string;
   operator: "AND" | "OR";
   conditions: (Condition | ConditionGroup)[];
 }
-
-// Coupon
 export interface Coupon {
   id: string;
   name: string;
@@ -53,29 +44,96 @@ export interface Coupon {
   startDate: string;
   endDate: string;
 }
-
 interface UserData {
   isNew: boolean;
   age: number | null;
 }
-
 export interface EligibilityStatus {
   isEligible: boolean;
   reason: string | null;
 }
 
-// Dữ liệu tạm cho giỏ hàng
-interface CartData {
-  items: any[];
-  subtotal: number;
+/** ===== Line item trong giỏ ===== */
+interface CartLine {
+  cartId: string; // variantKey
+  productId: string;
+  name: string;
+  basePrice: number;
+  image?: string;
+  quantity: number;
+  totalPrice: number; // đơn giá sau option (chưa nhân quantity)
+  categoryIds: string[];
+  note?: string;
+  selectedOptions?: OptionItem[];
 }
 
-// =============================
-// 🧮 HÀM CHECK COUPON (Giữ nguyên)
-// =============================
+/** ===== Cart state & actions ===== */
+interface CartState {
+  cartItems: CartLine[];
+  showCart: boolean;
+  publicCoupons: Coupon[];
+  appliedCoupons: Coupon[];
+  isLoadingPublicCoupons: boolean;
+  couponStatus: { isLoading: boolean; error: string | null };
+  productForOptions: MenuItem | null;
+  currentUser: UserData;
+}
+interface CartActions {
+  /** Quyết định mở modal hay add thẳng */
+  startAddToCart: (product: MenuItem) => void;
+
+  /** Thêm sản phẩm không option */
+  addToCart: (item: MenuItem) => void;
+
+  /** Thêm sản phẩm có option + totalPrice đã tính */
+  addToCartWithOptions: (
+    product: MenuItem,
+    selectedOptions: Record<string, OptionItem[]>,
+    totalPrice: number,
+    note: string
+  ) => void;
+
+  updateQuantity: (cartId: string, amount: number) => void;
+  clearCart: () => void;
+
+  applyPublicCoupon: (coupon: Coupon) => void;
+  applyPrivateCoupon: (
+    code: string
+  ) => Promise<{ success: boolean; message: string }>;
+  removeCoupon: (id: string) => void;
+
+  setShowCart: (show: boolean) => void;
+  setProductForOptions: (product: MenuItem | null) => void;
+
+  fetchPublicCoupons: () => Promise<void>;
+
+  updateItemNote: (cartId: string, note: string) => void;
+  removeItem: (cartId: string) => void;
+}
+
+/** ===== Helpers ===== */
+const hasSelectableOptions = (p: MenuItem) =>
+  Array.isArray(p.optionGroups) &&
+  p.optionGroups.some((g) => Array.isArray(g.options) && g.options.length > 0);
+
+const buildVariantKey = (
+  product: MenuItem,
+  chosen?: OptionItem[],
+  note?: string
+) => {
+  const optionSig = (chosen ?? [])
+    .map((o) => `${o.name}:${o.type}:${o.priceModifier}`)
+    .sort()
+    .join("|");
+
+  const noteSig = (note ?? "").trim();
+  return `${product.id}::${optionSig}::${noteSig}`;
+};
+
+/** ===== Eligibility check giữ nguyên logic tổng quát ===== */
 const checkCouponEligibility = (
   coupon: Coupon,
-  cart: CartData,
+  cart: { items: CartLine[]; subtotal: number },
   user: UserData
 ): EligibilityStatus => {
   if (coupon.minOrderAmount && cart.subtotal < coupon.minOrderAmount) {
@@ -93,16 +151,14 @@ const checkCouponEligibility = (
         const { fieldId, operator, value } = condition;
 
         switch (fieldId) {
-          case "category_id":
+          case "category_id": {
             if (operator === "IN") {
               const itemCategoryIds = new Set(
-                cart.items.flatMap((item) => item.categoryIds || [])
+                cart.items.flatMap((i) => i.categoryIds || [])
               );
-              const requiredCategoryIds = new Set(value);
-              const intersection = new Set(
-                [...itemCategoryIds].filter((x) => requiredCategoryIds.has(x))
-              );
-              if (intersection.size === 0) {
+              const required = new Set(value);
+              const ok = [...itemCategoryIds].some((x) => required.has(x));
+              if (!ok) {
                 return {
                   isEligible: false,
                   reason: "Cần có sản phẩm thuộc danh mục yêu cầu (vd: Pizza)",
@@ -110,7 +166,8 @@ const checkCouponEligibility = (
               }
             }
             break;
-          case "customer_is_new":
+          }
+          case "customer_is_new": {
             if (operator === "EQUALS" && String(user.isNew) !== String(value)) {
               return {
                 isEligible: false,
@@ -118,7 +175,8 @@ const checkCouponEligibility = (
               };
             }
             break;
-          case "customer_age":
+          }
+          case "customer_age": {
             if (user.age === null) {
               return {
                 isEligible: false,
@@ -132,6 +190,7 @@ const checkCouponEligibility = (
               };
             }
             break;
+          }
           default:
             console.warn(`Unknown condition fieldId: ${fieldId}`);
         }
@@ -142,42 +201,7 @@ const checkCouponEligibility = (
   return { isEligible: true, reason: null };
 };
 
-// =============================
-// 🧠 ZUSTAND STATE & ACTIONS
-// =============================
-
-interface CartState {
-  cartItems: any[];
-  showCart: boolean;
-  publicCoupons: Coupon[];
-  appliedCoupons: Coupon[];
-  isLoadingPublicCoupons: boolean;
-  couponStatus: { isLoading: boolean; error: string | null };
-  productForOptions: any | null;
-  currentUser: UserData;
-}
-
-interface CartActions {
-  addToCart: (item: any) => void;
-  updateQuantity: (cartId: string, amount: number) => void;
-  clearCart: () => void;
-  applyPublicCoupon: (coupon: Coupon) => void;
-  applyPrivateCoupon: (
-    code: string
-  ) => Promise<{ success: boolean; message: string }>;
-  removeCoupon: (id: string) => void;
-  setShowCart: (show: boolean) => void;
-  setProductForOptions: (product: any | null) => void;
-  addToCartWithOptions: (
-    product: any,
-    selectedOptions: Record<string, any[]>,
-    totalPrice: number,
-    note: string
-  ) => void;
-  fetchPublicCoupons: () => Promise<void>;
-}
-
-// ⚡ State ban đầu
+/** ===== Initial state ===== */
 const initialState: CartState = {
   cartItems: [],
   showCart: false,
@@ -186,71 +210,84 @@ const initialState: CartState = {
   isLoadingPublicCoupons: true,
   couponStatus: { isLoading: false, error: null },
   productForOptions: null,
-  currentUser: {
-    isNew: true,
-    age: 18,
-  },
+  currentUser: { isNew: true, age: 18 },
 };
 
-// ⚡ Tạo store với middleware `persist` để lưu localStorage
 export const useCartStore = create<CartState & CartActions>()(
   persist(
     (set, get) => ({
       ...initialState,
 
-      // === ACTIONS ===
-      addToCart: (item: any) => {
+      startAddToCart: (product) => {
+        if (hasSelectableOptions(product)) {
+          set({ productForOptions: product, showCart: false });
+        } else {
+          get().addToCart(product);
+        }
+      },
+
+      addToCart: (item) => {
+        const cartId = buildVariantKey(item);
         set((state) => {
-          const existing = state.cartItems.find((i) => i.id === item.id);
-          if (existing) {
+          const exists = state.cartItems.find((i) => i.cartId === cartId);
+          if (exists) {
             return {
               cartItems: state.cartItems.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i
               ),
+              showCart: true,
             };
           }
+          const line: CartLine = {
+            cartId,
+            productId: item.id,
+            name: item.name,
+            basePrice: item.price,
+            image: item.image,
+            quantity: 1,
+            totalPrice: item.price,
+            categoryIds: item.categoryIds || [],
+          };
+          return { cartItems: [...state.cartItems, line], showCart: true };
+        });
+      },
+
+      addToCartWithOptions: (product, selectedOptions, totalPrice, note) => {
+        const chosenOptions = Object.values(selectedOptions).flat();
+        const cartId = buildVariantKey(product, chosenOptions, note);
+
+        set((state) => {
+          const exists = state.cartItems.find((i) => i.cartId === cartId);
+          if (exists) {
+            return {
+              cartItems: state.cartItems.map((i) =>
+                i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i
+              ),
+              productForOptions: null,
+              showCart: true,
+            };
+          }
+          const line: CartLine = {
+            cartId,
+            productId: product.id,
+            name: product.name,
+            basePrice: product.price,
+            image: product.image,
+            quantity: 1,
+            totalPrice,
+            note,
+            selectedOptions: chosenOptions,
+            categoryIds: product.categoryIds || [],
+          };
           return {
-            cartItems: [
-              ...state.cartItems,
-              {
-                ...item,
-                cartId: item.id,
-                quantity: 1,
-                totalPrice: item.price,
-                categoryIds: item.categoryIds || [],
-              },
-            ],
+            cartItems: [...state.cartItems, line],
+            productForOptions: null,
+            showCart: true,
           };
         });
-        set({ showCart: true });
       },
 
-      addToCartWithOptions: (
-        product: any,
-        selectedOptions: Record<string, any[]>,
-        totalPrice: number,
-        note: string
-      ) => {
-        const chosenOptions = Object.values(selectedOptions).flat();
-        set((state) => ({
-          cartItems: [
-            ...state.cartItems,
-            {
-              ...product,
-              cartId: `${product.id}-${Date.now()}`,
-              quantity: 1,
-              totalPrice,
-              note,
-              selectedOptions: chosenOptions,
-              categoryIds: product.categoryIds || [],
-            },
-          ],
-          productForOptions: null,
-          showCart: true,
-        }));
-      },
-
-      updateQuantity: (cartId: string, amount: number) => {
+      updateQuantity: (cartId, amount) => {
         set((state) => ({
           cartItems: state.cartItems
             .map((i) =>
@@ -260,12 +297,12 @@ export const useCartStore = create<CartState & CartActions>()(
         }));
       },
 
-      clearCart: () => {
-        set({ cartItems: [], appliedCoupons: [] });
-      },
+      clearCart: () => set({ cartItems: [], appliedCoupons: [] }),
 
-      applyPublicCoupon: (coupon: Coupon) => {
-        if (get().appliedCoupons.some((c) => c.id === coupon.id)) return;
+      applyPublicCoupon: (coupon) => {
+        const current = get().appliedCoupons;
+        if (current.some((c) => c.id === coupon.id)) return;
+
         set((state) => {
           const others = state.appliedCoupons.filter((c) => c.id !== coupon.id);
           if (coupon.type === "freeship") {
@@ -291,12 +328,9 @@ export const useCartStore = create<CartState & CartActions>()(
       applyPrivateCoupon: async (code: string) => {
         set({ couponStatus: { isLoading: true, error: null } });
 
-        // Lấy state MỚI NHẤT
         const { cartItems, appliedCoupons } = get();
-
-        // Tính toán subtotal bên trong action
         const subtotal = cartItems.reduce(
-          (sum, item) => sum + item.totalPrice * (item.quantity || 1),
+          (sum, i) => sum + i.totalPrice * i.quantity,
           0
         );
 
@@ -309,88 +343,93 @@ export const useCartStore = create<CartState & CartActions>()(
           set({ couponStatus: { isLoading: false, error: msg } });
           return { success: false, message: msg };
         }
+
         try {
           const res = await fetch(
-            `${API_URL}/coupons/validate?code=${code}&orderValue=${subtotal}`
+            `${API_URL}/coupons/validate?code=${encodeURIComponent(
+              code
+            )}&orderValue=${subtotal}`
           );
           const validatedCoupon = await res.json();
-          if (!res.ok) {
-             throw new Error(validatedCoupon.message || "Mã không hợp lệ.");
-          }
+          if (!res.ok)
+            throw new Error(validatedCoupon.message || "Mã không hợp lệ.");
+
           set((state) => ({
             appliedCoupons: [...state.appliedCoupons, validatedCoupon],
           }));
           set({ couponStatus: { isLoading: false, error: null } });
           return { success: true, message: "Áp dụng thành công!" };
         } catch (err: any) {
-          const msg = err.message || "Mã không hợp lệ.";
+          const msg = err?.message || "Mã không hợp lệ.";
           set({ couponStatus: { isLoading: false, error: msg } });
           return { success: false, message: msg };
         }
       },
 
-      removeCoupon: (id: string) => {
+      removeCoupon: (id) => {
         set((state) => ({
           appliedCoupons: state.appliedCoupons.filter((c) => c.id !== id),
         }));
       },
 
-      setShowCart: (show: boolean) => {
-        set({ showCart: show });
-      },
-
-      setProductForOptions: (product: any | null) => {
-        set({ productForOptions: product });
-      },
+      setShowCart: (show) => set({ showCart: show }),
+      setProductForOptions: (product) => set({ productForOptions: product }),
 
       fetchPublicCoupons: async () => {
         try {
           set({ isLoadingPublicCoupons: true });
           const response = await fetch(`${API_URL}/coupons/available`);
           const data = await response.json();
-          set({ publicCoupons: data.coupons || data || [], isLoadingPublicCoupons: false });
+          set({
+            publicCoupons: (data?.coupons ?? data ?? []) as Coupon[],
+            isLoadingPublicCoupons: false,
+          });
         } catch (e) {
           console.error("Failed to fetch public coupons:", e);
           set({ isLoadingPublicCoupons: false });
         }
       },
+
+      updateItemNote: (cartId, note) => {
+        useCartStore.setState((state) => ({
+          cartItems: state.cartItems.map((i) =>
+            i.cartId === cartId ? { ...i, note } : i
+          ),
+        }));
+      },
+
+      removeItem: (cartId) => {
+        useCartStore.setState((state) => ({
+          cartItems: state.cartItems.filter((i) => i.cartId !== cartId),
+        }));
+      },
     }),
     {
-      name: CART_STORAGE_KEY, // Tên key trong localStorage
+      name: CART_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      // Chỉ lưu `cartItems` vào localStorage, giống hệt logic cũ
+      // chỉ persist cartItems như cũ
       partialize: (state) => ({ cartItems: state.cartItems }),
     }
   )
 );
 
-// =============================
-// 🚀 CUSTOM HOOK (Giữ nguyên API)
-// =============================
+/** ===== Public hook: giữ API quen thuộc ===== */
 export function useCart() {
-  // ⚡ Lấy state và actions từ store
   const {
     cartItems,
     appliedCoupons,
     currentUser,
     publicCoupons,
-    ...actionsAndState // Lấy tất cả state và actions còn lại
-  } = useCartStore((state) => state);
-
-  // ⚡ Tính toán các giá trị phát sinh (derived state) bằng useMemo
-  // (Logic này giống hệt như trong CartContext cũ)
+    ...actionsAndState
+  } = useCartStore((s) => s);
 
   const subtotal = useMemo(
-    () =>
-      cartItems.reduce(
-        (sum, item) => sum + item.totalPrice * (item.quantity || 1),
-        0
-      ),
+    () => cartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
     [cartItems]
   );
 
   const cartCount = useMemo(
-    () => cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0),
+    () => cartItems.reduce((sum, i) => sum + i.quantity, 0),
     [cartItems]
   );
 
@@ -437,7 +476,6 @@ export function useCart() {
   const finalShippingFee = Math.max(0, SHIPPING_FEE - shippingDiscount);
   const finalTotal = Math.max(0, subtotal - itemDiscount + finalShippingFee);
 
-  // ⚡ Trả về một object có cấu trúc y hệt như CartContextType
   return {
     ...actionsAndState,
     cartItems,
@@ -454,23 +492,11 @@ export function useCart() {
   };
 }
 
-
-// =============================
-// 🔄 STORE INITIALIZER
-// =============================
-/**
- * Component này dùng để gọi action `fetchPublicCoupons` một lần
- * khi ứng dụng được tải.
- * Hãy thêm component này vào file layout.tsx chính của bạn.
- */
+/** ===== Initializer để fetch coupon public một lần ===== */
 export function CartStoreInitializer() {
-  // Lấy action từ store
-  const fetchPublicCoupons = useCartStore((state) => state.fetchPublicCoupons);
-
+  const fetchPublicCoupons = useCartStore((s) => s.fetchPublicCoupons);
   useEffect(() => {
-    // Gọi action fetch một lần khi component mount
     fetchPublicCoupons();
   }, [fetchPublicCoupons]);
-
-  return null; // Component này không render ra gì cả
+  return null;
 }

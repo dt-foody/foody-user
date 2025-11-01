@@ -11,7 +11,7 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
       <div className="border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
         <Nav />
       </div>
-      <div className="container py-12">{children}</div>
+      <div className="container py-4">{children}</div>
     </div>
   );
 };
