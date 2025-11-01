@@ -1,114 +1,201 @@
-# 🍜 Foody - Food Ordering App (User Version)
+# 🍜 Foody — Food Ordering App (User Web)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg?logo=nextdotjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-blue.svg?logo=tailwindcss)
 ![Zustand](https://img.shields.io/badge/Zustand-4-green.svg)
+![i18n](https://img.shields.io/badge/i18n-next--intl-purple.svg)
 
-This is the repository for the client-side user interface of the Foody project, a food ordering and delivery platform built with Next.js and Tailwind CSS.
+Client‑side UI for **Foody**, a modern food ordering & delivery platform built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, and **Zustand**. This repository focuses on the **customer** experience (browse menu, cart, checkout, account).
+
+> **Status:** Active development. Production‑ready core flows (Cart + Checkout) are implemented.
+
+---
 
 ## ✨ Key Features
 
-* **Next.js 14 App Router:** Utilizes the latest Next.js architecture with Server and Client Components.
-* **State Management:** Uses **Zustand** for lightweight global state management (e.g., `useCartStore`, `useAuthStore`).
-* **Cart & Checkout:** Complete cart (`CartSidebar.tsx`) and checkout (`checkout/page.tsx`) flow.
-* **Multi-language (i18n):** Supports multiple locales (e.g., Vietnamese, English) via `[locale]` routing and `messages/`.
-* **Modern UI:** Built with **Tailwind CSS** and icons from `lucide-react`.
-* **Clean Architecture:** Clear separation of API logic (`src/services`), components (`src/components`), and state (`src/stores`).
-* **User Authentication:** Includes login and registration pages (`login`, `signup`).
-* **Blog Integration:** Features a blog module (`src/app/[locale]/blog/...`).
+- **Next.js 14 App Router** — Server/Client Components, layouts, and streaming where appropriate.
+- **State Management** — Lightweight global state with **Zustand** (`useCartStore`, `useAuthStore`).
+- **Cart & Checkout** — Complete cart sidebar and checkout page with promotion/coupon support.
+- **Multi‑language (i18n)** — Locale routing via `[locale]` and JSON messages (EN, VI).
+- **Modern UI** — Tailwind CSS + `lucide-react` icons.
+- **Auth‑Ready** — Login/Signup pages; `useAuthStore.fetchUser()` reads `/auth/me` with credentials.
+- **Clean Architecture** — Clear split: services, components, stores, types, messages.
+
+---
 
 ## 🛠 Tech Stack
 
-* **Framework:** [Next.js](https://nextjs.org/) 14+ (App Router)
-* **Language:** [TypeScript](https://www.typescriptlang.org/)
-* **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-* **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-* **Icons:** [Lucide React](https://lucide.dev/)
-* **i18n:** [next-intl](https://next-intl.vercel.app/) (inferred from `[locale]` structure and `middleware.ts`)
+- **Framework:** [Next.js 14+ (App Router)](https://nextjs.org/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **State:** [Zustand](https://github.com/pmndrs/zustand)
+- **Icons:** [lucide-react](https://lucide.dev/)
+- **i18n:** [next-intl](https://next-intl.vercel.app/)
+
+---
 
 ## 🚀 Getting Started
 
-Follow these steps to run the project locally.
+### 1) Prerequisites
+- Node.js **>= 18**
+- One of: `pnpm`, `yarn`, or `npm`
 
-### 1. Prerequisites
-* [Node.js](https://nodejs.org/) (version 18.x or higher)
-* `pnpm`, `yarn`, or `npm`
+### 2) Install
+```bash
+git clone https://github.com/your-username/foody-user.git
+cd foody-user
+pnpm install # or yarn install / npm install
+```
 
-### 2. Installation
+### 3) Environment Variables
+Create `.env.local` from the example and fill in values:
+```bash
+cp .env.local.example .env.local
+```
 
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/your-username/foody-user.git](https://github.com/your-username/foody-user.git)
-    cd foody-user
-    ```
+**Minimum required:**
+```env
+# Base URL of your backend gateway (used by useAuthStore, services, etc.)
+NEXT_PUBLIC_API_URL=https://api.your-foody.com
 
-2.  Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    # or
-    pnpm install
-    ```
+# Public app URL (for redirects, OAuth callback, etc.)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-### 3. Configure Environment Variables
+# Optional: default locale for next-intl
+NEXT_PUBLIC_DEFAULT_LOCALE=vi
+```
 
-1.  Create a `.env.local` file from the example:
-    ```bash
-    cp .env.local.example .env.local
-    ```
+> If you previously used `NEXT_PUBLIC_API_ENDPOINT`, align everything to **`NEXT_PUBLIC_API_URL`** for consistency (store & services).
 
-2.  Open the `.env.local` file and fill in the values. These are crucial for connecting to the backend API.
-    ```.env
-    NEXT_PUBLIC_API_ENDPOINT=[http://your-backend-api-url.com](http://your-backend-api-url.com)
-    NEXT_PUBLIC_APP_URL=http://localhost:3000
-    
-    # (Add any other variables present in your .env.local.example file)
-    ```
+### 4) Run
+```bash
+pnpm dev # or yarn dev / npm run dev
+```
+Open **http://localhost:3000**
 
-### 4. Run the Project
+---
 
-Run the development server: npm run dev
+## 📂 Folder Structure
 
-Open http://localhost:3000 (or the specified port) in your browser to see the application.
-
-📂 Folder Structure
-Here is an overview of the key directories in the project:
+```
 src/
-├── app/
-│   ├── [locale]/                   # Handles multi-locale (i18n) routing
-│   │   ├── (account-pages)/      # Layout and pages for user accounts
-│   │   ├── blog/                 # Blog-related pages
-│   │   ├── checkout/             # Checkout page
-│   │   ├── login/                # Login page
-│   │   ├── menu/                 # Menu page
-│   │   ├── layout.tsx            # Main layout
-│   │   └── page.tsx              # Homepage
-│   └── api/                      # API routes (if any)
+├─ app/
+│  ├─ [locale]/                 # i18n routing scope (vi, en, ...)
+│  │  ├─ (account-pages)/       # Account-related pages/layouts
+│  │  ├─ blog/                  # Blog module
+│  │  ├─ checkout/              # Checkout page
+│  │  ├─ login/                 # Auth pages
+│  │  ├─ menu/                  # Menu/catalog
+│  │  ├─ layout.tsx             # Root layout per-locale
+│  │  └─ page.tsx               # Homepage
+│  └─ api/                      # Next.js API routes (if any)
 │
-├── components/                   # Reusable components (UI)
-│   ├── CartSidebar.tsx           # Cart component
-│   ├── ProductCard.tsx           # Product card component
-│   └── ...
+├─ components/                  # Reusable UI components
+│  ├─ CartSidebar.tsx
+│  ├─ ProductCard.tsx
+│  └─ ProductOptionsModal.tsx
 │
-├── services/                     # API service layer
-│   ├── auth.service.ts
-│   ├── product.service.ts
-│   └── ...
+├─ services/                    # API calls (fetch wrappers)
+│  ├─ auth.service.ts
+│  ├─ product.service.ts
+│  └─ coupon.service.ts
 │
-├── stores/                       # State management (Zustand)
-│   ├── useAuthStore.ts
-│   └── useCartStore.ts
+├─ stores/                      # Zustand stores
+│  ├─ useAuthStore.ts
+│  └─ useCartStore.ts
 │
-├── lib/                          # Helper functions, utils
-├── types/                        # Type definitions (TypeScript)
-├── messages/                     # JSON files for i18n
-│   ├── en.json
-│   └── vi.json
-│
-└── middleware.ts                 # Middleware for i18n and auth
-npm run dev
-# or
-yarn dev
+├─ types/                       # Shared TS types (CartLine, MenuItem, ...)
+├─ messages/                    # i18n message JSON (en.json, vi.json)
+├─ lib/                         # Utils/helpers
+└─ middleware.ts                # i18n + auth middleware
+```
+
+---
+
+## 🧩 Core Modules
+
+### Cart
+- **ProductCard**: if product has configurable options → open **ProductOptionsModal**; else add directly.
+- **CartSidebar**: inline quantity controls, per‑item notes, coupon apply/remove, delivery options.
+- **useCartStore**: persists `cartItems` (localStorage) and exposes totals (`subtotal`, `finalTotal`, discounts).
+
+### Checkout
+- Prefills shipping info from **useAuthStore.me.addresses** (default address).
+- Validates phone format; supports order note; submits to `/api/orders`.
+- Includes sticky desktop footer + mobile submit.
+
+### Auth
+- `useAuthStore.fetchUser()` calls `GET {NEXT_PUBLIC_API_URL}/auth/me` with `credentials: 'include'`.
+- Store holds `user` & `me`; `clearUser()` for logout flows.
+
+---
+
+## 🧪 Scripts
+
+```jsonc
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }
+}
+```
+
+---
+
+## 🔧 Configuration Notes
+
+- **API base URL** — import from `process.env.NEXT_PUBLIC_API_URL`. Avoid hardcoding (e.g., `"http://localhost:3000/v1"`).
+- **Zustand persistence** — cart items persisted via `localStorage` key (e.g., `foody_cart_v5`).
+- **i18n** — locale prefixing via `[locale]` + `middleware.ts`. Strings live in `messages/`.
+
+---
+
+## 🗺 Roadmap (User App)
+
+- [ ] Saved payment methods
+- [ ] Order history & reorder
+- [ ] Realtime order status (SSE/WebSocket)
+- [ ] Address book integration on checkout (edit/add inline)
+- [ ] SEO polish, structured data
+
+(For the Admin/Restaurant app, see the sibling repository.)
+
+---
+
+## 🤝 Contributing
+
+PRs are welcome. Please follow:
+- Conventional commits (e.g., `feat:`, `fix:`, `docs:`)
+- Add/adjust types in `src/types/`
+- Keep UI changes accessible and responsive
+
+---
+
+## 📜 License
+
+**MIT** — see `LICENSE` for details.
+
+---
+
+## 🙌 Acknowledgements
+
+- Next.js team & community
+- pmndrs (Zustand)
+- Tailwind Labs
+- lucide-react
+- next-intl
+
+---
+
+### Screenshots (optional)
+
+> Drop your screenshots/gifs here later for the Store page & README.
+> - Home
+> - Menu
+> - Cart & Options Modal
+> - Checkout
