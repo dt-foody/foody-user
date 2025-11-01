@@ -9,3 +9,26 @@
 .slick-dots {
   bottom: -40px !important;
 }
+
+/* Áp dụng cho Chrome, Edge, Safari */
+/* Thiết lập chung cho scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Phần nền (track) của scrollbar */
+::-webkit-scrollbar-track {
+  background: transparent; /* Hoặc #fafafa nếu muốn có nền mờ */
+}
+
+/* Phần con trượt (thumb) */
+::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* Tương đương Tailwind gray-300 */
+  border-radius: 10px;
+}
+
+/* Khi hover vào con trượt */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* Tương đương Tailwind gray-400 */
+}
