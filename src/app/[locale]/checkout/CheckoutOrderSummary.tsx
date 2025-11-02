@@ -18,8 +18,10 @@ import {
   Pencil,
 } from "lucide-react";
 import { useCart } from "@/stores/useCartStore";
-import type { Coupon, EligibilityStatus } from "@/stores/useCartStore";
+import type { EligibilityStatus } from "@/stores/useCartStore";
 import type { DeliveryOption } from "./page"; // Import type từ trang checkout
+import Image from "next/image";
+import { Coupon } from "@/types";
 
 /* ===========================
    Hoisted sub-components (memo)
@@ -268,11 +270,13 @@ export default function CheckoutOrderSummary({
               className="p-2.5 bg-white rounded-lg border hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-3">
-                <img
-                  src={item.image}
+                <Image
+                  src={item.image || ""}
                   alt={item.name}
                   onError={handleImageError}
-                  className="w-14 h-14 object-cover rounded-md flex-shrink-0"
+                  width={56}
+                  height={56}
+                  className="object-cover rounded-md flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -493,7 +497,7 @@ export default function CheckoutOrderSummary({
           </div>
           <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
         </button>
-        
+
         {/* Chúng ta XÓA phần "Order summary" (tạm tính, phí ship...) 
             vì trang checkout page đã có phần này rồi */}
       </div>

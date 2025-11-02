@@ -6,15 +6,15 @@ import Header from "./Header";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
-  const { user, setUser, fetchUser } = useAuthStore();
+  const { setUser, fetchUser } = useAuthStore();
 
   useEffect(() => {
     if (ssrUser) setUser(ssrUser);
     else fetchUser(); // fallback nếu chưa có user
-  }, [ssrUser]);
-  
+  }, [ssrUser, , setUser, fetchUser]);
+
   const renderHeader = () => {
-    return <Header/>;
+    return <Header />;
   };
 
   return <>{renderHeader()}</>;

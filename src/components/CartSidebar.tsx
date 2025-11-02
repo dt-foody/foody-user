@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
-import type { Coupon, EligibilityStatus } from "@/stores/useCartStore";
+import type { EligibilityStatus } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-
+import Image from "next/image";
+import { Coupon } from "@/types";
 type DeliveryOption = "immediate" | "scheduled";
 
 /* ===========================
@@ -317,11 +318,13 @@ export default function CartSidebar() {
                     className="p-2.5 bg-white rounded-lg border hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center gap-3">
-                      <img
-                        src={item.image}
+                      <Image
+                        src={item.image || ""}
                         alt={item.name}
                         onError={handleImageError}
-                        className="w-14 h-14 object-cover rounded-md flex-shrink-0"
+                        width={56}
+                        height={56}
+                        className="object-cover rounded-md flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search,
   Plus,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Category, Product, Combo, PricePromotion, MenuItem } from "@/types";
+import Image from "next/image";
 
 import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard from "@/components/ProductCard";
@@ -57,55 +58,64 @@ export default function FoodyMenuContent() {
   });
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  // --- DATA FETCHING ---
-  useEffect(() => {
-    loadInitialData();
+  const buildCategoryTree = useCallback((cats: Category[]): Category[] => {
+    return cats
+      .filter((c: Category) => !c.parent)
+      .map((parent: Category) => ({
+        ...parent,
+        image: parent.image ? `${PREFIX_IMAGE}${parent.image}` : "",
+      }));
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      loadItems();
-    }
-  }, [activeTab, currentPage]);
-
-  useEffect(() => {
-    if (searchTimeout) clearTimeout(searchTimeout);
-    const timeout = setTimeout(() => {
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      } else {
-        loadItems();
+  const loadItems = useCallback(
+    async (isInitialLoad = false): Promise<void> => {
+      if (currentPage === 1 && !isInitialLoad) setLoading(true);
+      else if (!isInitialLoad) setLoadingMore(true);
+      if (!isInitialLoad) setError(null);
+      try {
+        const params = {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          ...(activeTab.type === "category" &&
+            activeTab.id !== "all" && { category: activeTab.id }),
+          ...(searchQuery && { search: searchQuery }),
+          sortBy: sortBy,
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
+        };
+        const data =
+          activeTab.type === "combo"
+            ? await comboService.getAll(params)
+            : await productService.getAll(params);
+        const formattedItems = data.results.map((item: any) => ({
+          ...item,
+          thumbnailUrl: `${PREFIX_IMAGE}${item.thumbnailUrl}`,
+        }));
+        if (activeTab.type === "combo") {
+          setCombos(
+            currentPage === 1
+              ? formattedItems
+              : (prev) => [...prev, ...formattedItems]
+          );
+        } else {
+          setProducts(
+            currentPage === 1
+              ? formattedItems
+              : (prev) => [...prev, ...formattedItems]
+          );
+        }
+        setTotalPages(data.totalPages || 1);
+      } catch (err: any) {
+        setError(err.message || "Một lỗi không xác định đã xảy ra.");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    }, 500);
-    setSearchTimeout(timeout);
-    return () => clearTimeout(timeout);
-  }, [searchQuery]);
+    },
+    [currentPage, activeTab, searchQuery, sortBy, priceRange]
+  );
 
-  useEffect(() => {
-    if (!loading) {
-      setCurrentPage(1);
-      setProducts([]);
-      setCombos([]);
-      loadItems();
-    }
-  }, [sortBy, priceRange]);
-
-  useEffect(() => {
-    if (promotions.length > 1) {
-      const interval = setInterval(() => {
-        setPromoIndex((prev) => (prev + 1) % promotions.length);
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [promotions]);
-
-  const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
-  ) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
-
-  const loadInitialData = async (): Promise<void> => {
+  const loadInitialData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -120,73 +130,71 @@ export default function FoodyMenuContent() {
         promoPromise,
       ]);
 
+      // 👇 Hàm này phải được bọc trong useCallback trước
       setCategories(buildCategoryTree(catData.results || []));
+
       const validPromotions = (promoData.results || []).filter(
         (p: PricePromotion) =>
           (p.product && typeof p.product === "object") ||
           (p.combo && typeof p.combo === "object")
       );
       setPromotions(validPromotions);
+
+      // 👇 Hàm này đã được bọc trong useCallback ở bước trước
       await loadItems(true);
     } catch (err: any) {
       setError(err.message || "Một lỗi không xác định đã xảy ra.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildCategoryTree, loadItems]);
 
-  const loadItems = async (isInitialLoad = false): Promise<void> => {
-    if (currentPage === 1 && !isInitialLoad) setLoading(true);
-    else if (!isInitialLoad) setLoadingMore(true);
-    if (!isInitialLoad) setError(null);
-    try {
-      const params = {
-        page: currentPage,
-        limit: ITEMS_PER_PAGE,
-        ...(activeTab.type === "category" &&
-          activeTab.id !== "all" && { category: activeTab.id }),
-        ...(searchQuery && { search: searchQuery }),
-        sortBy: sortBy,
-        minPrice: priceRange.min,
-        maxPrice: priceRange.max,
-      };
-      const data =
-        activeTab.type === "combo"
-          ? await comboService.getAll(params)
-          : await productService.getAll(params);
-      const formattedItems = data.results.map((item: any) => ({
-        ...item,
-        thumbnailUrl: `${PREFIX_IMAGE}${item.thumbnailUrl}`,
-      }));
-      if (activeTab.type === "combo") {
-        setCombos(
-          currentPage === 1
-            ? formattedItems
-            : (prev) => [...prev, ...formattedItems]
-        );
-      } else {
-        setProducts(
-          currentPage === 1
-            ? formattedItems
-            : (prev) => [...prev, ...formattedItems]
-        );
-      }
-      setTotalPages(data.totalPages || 1);
-    } catch (err: any) {
-      setError(err.message || "Một lỗi không xác định đã xảy ra.");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+  // --- DATA FETCHING ---
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    if (!loading) {
+      loadItems();
     }
-  };
+  }, [activeTab, currentPage, loadItems, loading]);
 
-  const buildCategoryTree = (cats: Category[]): Category[] => {
-    return cats
-      .filter((c: Category) => !c.parent)
-      .map((parent: Category) => ({
-        ...parent,
-        image: parent.image ? `${PREFIX_IMAGE}${parent.image}` : "",
-      }));
+  useEffect(() => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    const timeout = setTimeout(() => {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        loadItems();
+      }
+    }, 500);
+    setSearchTimeout(timeout);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, searchTimeout, currentPage, loadItems]);
+
+  useEffect(() => {
+    if (!loading) {
+      setCurrentPage(1);
+      setProducts([]);
+      setCombos([]);
+      loadItems();
+    }
+  }, [sortBy, priceRange, loading, loadItems]);
+
+  useEffect(() => {
+    if (promotions.length > 1) {
+      const interval = setInterval(() => {
+        setPromoIndex((prev) => (prev + 1) % promotions.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [promotions]);
+
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
   const allItems = useMemo((): MenuItem[] => {
@@ -445,11 +453,13 @@ export default function FoodyMenuContent() {
                 return (
                   <div key={promo.id} className="flex-shrink-0 w-full pr-4">
                     <div className="flex items-start space-x-4">
-                      <img
+                      <Image
                         src={`${PREFIX_IMAGE}${item.thumbnailUrl}`}
                         alt={item.name}
                         onError={handleImageError}
-                        className="w-20 h-20 rounded-lg object-cover border-2 border-white shadow-md"
+                        width={80}
+                        height={80}
+                        className="rounded-lg object-cover border-2 border-white shadow-md"
                       />
                       <div>
                         <h4 className="font-bold text-lg text-gray-900">

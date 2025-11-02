@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Flame,
   Loader,
@@ -21,7 +21,6 @@ import { pricePromotionService } from "@/services/pricePromotion.service";
 import { Category, Combo, MenuItem, PricePromotion, Product } from "@/types";
 
 // --- CONSTANTS ---
-const API_BASE = "http://localhost:3000/v1";
 const IMAGE_BASE = "http://localhost:3000";
 const ITEMS_PER_PAGE = 12;
 
@@ -47,17 +46,49 @@ export default function HotDealsPage() {
     id: string;
   }>({ type: "category", id: "all" });
 
-  useEffect(() => {
-    loadInitialData();
+  const buildCategoryTree = useCallback((cats: Category[]): Category[] => {
+    return cats
+      .filter((c: Category) => !c.parent)
+      .map((parent: Category) => ({
+        ...parent,
+        image: parent.image ? `${IMAGE_BASE}${parent.image}` : "",
+      }));
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      loadDeals();
-    }
-  }, [activeTab, currentPage, sortBy]);
+  const processPromotions = useCallback(
+    (promos: PricePromotion[], append = false): void => {
+      const productsList: Product[] = [];
+      const combosList: Combo[] = [];
 
-  const loadInitialData = async (): Promise<void> => {
+      promos.forEach((promo) => {
+        if (promo.product && typeof promo.product === "object") {
+          const product = promo.product as Product;
+          productsList.push({
+            ...product,
+            thumbnailUrl: `${IMAGE_BASE}${product.thumbnailUrl}`,
+          });
+        }
+        if (promo.combo && typeof promo.combo === "object") {
+          const combo = promo.combo as Combo;
+          combosList.push({
+            ...combo,
+            thumbnailUrl: `${IMAGE_BASE}${combo.thumbnailUrl}`,
+          });
+        }
+      });
+
+      if (append) {
+        setProducts((prev) => [...prev, ...productsList]);
+        setCombos((prev) => [...prev, ...combosList]);
+      } else {
+        setProducts(productsList);
+        setCombos(combosList);
+      }
+    },
+    [] // 💡 Bọc hàm và thêm mảng dependency rỗng (hàm set state là ổn định)
+  );
+
+  const loadInitialData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -75,7 +106,7 @@ export default function HotDealsPage() {
         promoPromise,
       ]);
 
-      setCategories(buildCategoryTree(catData.results || []));
+      setCategories(buildCategoryTree(catData.results || [])); // 👈 Phụ thuộc
 
       const validPromotions = (promoData.results || []).filter(
         (p: PricePromotion) =>
@@ -84,16 +115,16 @@ export default function HotDealsPage() {
       );
 
       setPromotions(validPromotions);
-      processPromotions(validPromotions);
+      processPromotions(validPromotions); // 👈 Phụ thuộc
       setTotalPages(promoData.totalPages || 1);
     } catch (err: any) {
       setError(err.message || "Một lỗi không xác định đã xảy ra.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildCategoryTree, processPromotions]);
 
-  const loadDeals = async (): Promise<void> => {
+  const loadDeals = useCallback(async (): Promise<void> => {
     if (currentPage === 1) setLoading(true);
     else setLoadingMore(true);
     setError(null);
@@ -127,49 +158,17 @@ export default function HotDealsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [currentPage, processPromotions]); // 💡 Thêm state và hàm phụ thuộc
 
-  const processPromotions = (
-    promos: PricePromotion[],
-    append = false
-  ): void => {
-    const productsList: Product[] = [];
-    const combosList: Combo[] = [];
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
-    promos.forEach((promo) => {
-      if (promo.product && typeof promo.product === "object") {
-        const product = promo.product as Product;
-        productsList.push({
-          ...product,
-          thumbnailUrl: `${IMAGE_BASE}${product.thumbnailUrl}`,
-        });
-      }
-      if (promo.combo && typeof promo.combo === "object") {
-        const combo = promo.combo as Combo;
-        combosList.push({
-          ...combo,
-          thumbnailUrl: `${IMAGE_BASE}${combo.thumbnailUrl}`,
-        });
-      }
-    });
-
-    if (append) {
-      setProducts((prev) => [...prev, ...productsList]);
-      setCombos((prev) => [...prev, ...combosList]);
-    } else {
-      setProducts(productsList);
-      setCombos(combosList);
+  useEffect(() => {
+    if (!loading) {
+      loadDeals();
     }
-  };
-
-  const buildCategoryTree = (cats: Category[]): Category[] => {
-    return cats
-      .filter((c: Category) => !c.parent)
-      .map((parent: Category) => ({
-        ...parent,
-        image: parent.image ? `${IMAGE_BASE}${parent.image}` : "",
-      }));
-  };
+  }, [activeTab, currentPage, sortBy, loading, loadDeals]);
 
   const calculateTimeLeft = (endDate?: string): string => {
     if (!endDate) return "";

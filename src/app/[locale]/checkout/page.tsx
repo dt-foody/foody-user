@@ -61,7 +61,11 @@ export default function CheckoutPage() {
     if (!user) fetchUser().catch(() => void 0);
   }, [user, fetchUser]);
 
-  const savedAddresses = (me?.addresses ?? []) as Address[];
+  const savedAddresses = useMemo(
+    () => (me?.addresses ?? []) as Address[],
+    [me?.addresses]
+  );
+
   const defaultIndex = useMemo(
     () =>
       Math.max(

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Heading from "@/shared/Heading";
 import Pagination from "@/shared/Pagination";
 import ButtonPrimary from "@/shared/ButtonPrimary";
@@ -192,10 +193,11 @@ const SectionLatestPosts = ({ sidebar }: { sidebar: React.ReactNode }) => {
                         href={`/blog/${post.slug}`}
                         className="block w-full h-0 aspect-w-16 aspect-h-9 sm:aspect-h-16 rounded-2xl overflow-hidden"
                       >
-                        <img
-                          src={post.coverImage}
+                        <Image
+                          fill
+                          src={post.coverImage || ""}
                           alt={post.coverImageAlt || post.title}
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </Link>
                     </div>

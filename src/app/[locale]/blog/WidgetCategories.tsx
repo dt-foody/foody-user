@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { blogCategoryService } from "@/services";
 import { BlogCategory } from "@/types";
+import Image from "next/image";
 
 export default async function WidgetCategories() {
   let categories: BlogCategory[] = [];
@@ -44,10 +45,12 @@ export default async function WidgetCategories() {
           >
             {/* Image */}
             {c.coverImage ? (
-              <img
+              <Image
                 src={c.coverImage}
-                className="w-10 h-10 rounded-lg object-cover"
                 alt={c.name}
+                width={40}
+                height={40}
+                className="rounded-lg object-cover"
               />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 text-gray-400">

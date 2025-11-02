@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PREFIX_IMAGE } from "@/constants";
 import { Category } from "@/types";
-
+import Image from "next/image";
 // REMOVED: Xóa 2 component NextArrow và PrevArrow vì chúng ta sẽ render trực tiếp
 
 export default function ClientMenuSlider({
@@ -98,14 +98,13 @@ export default function ClientMenuSlider({
                 <div className="bg-white rounded-2xl p-8 flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 h-full min-h-[340px]">
                   {/* Image or Icon */}
                   {src ? (
-                    <div className="w-24 h-24 mb-6 overflow-hidden rounded-full border-4 border-red-100">
-                      <img
-                        src={src}
-                        alt={cat.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
+                    <Image
+                      src={src}
+                      alt={cat.name}
+                      width={96}
+                      height={96}
+                      className="mb-6 rounded-full border-4 border-red-100 object-cover"
+                    />
                   ) : (
                     <div className="w-24 h-24 flex items-center justify-center rounded-full bg-gradient-to-br from-red-50 to-orange-50 mb-6 text-red-600 border-4 border-red-100">
                       {renderIcon(index)}

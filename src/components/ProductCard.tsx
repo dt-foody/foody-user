@@ -5,7 +5,7 @@ import { Heart, ShoppingCart, Star, Clock, Flame } from "lucide-react";
 import { useState } from "react";
 import type { MenuItem } from "@/types/product";
 import { useCart } from "@/stores/useCartStore";
-
+import Image from "next/image";
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
 
@@ -36,14 +36,16 @@ export default function ProductCard({
 
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group flex flex-col h-full">
-      <div className="relative">
-        <img
-          src={product.image}
+      <div className="relative w-full h-36 sm:h-44">
+        <Image
+          fill
+          src={product.image || ""}
           alt={product.name}
           onError={handleImageError}
-          className="w-full h-36 sm:h-44 object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          // 💡 Bỏ w-full, h-36, sm:h-44 khỏi Image
         />
-
+        {/* Các thành phần "absolute" còn lại giữ nguyên */}
         {showHotDealBadge && onSale && (
           <div className="absolute top-2 left-2">
             <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 shadow-md flex items-center gap-1">
@@ -52,13 +54,11 @@ export default function ProductCard({
             </span>
           </div>
         )}
-
         {onSale && discountPercentage > 0 && (
           <div className="absolute bottom-2 right-2 bg-red-500 text-white px-2 py-0.5 rounded-full font-bold text-xs shadow-md">
             -{discountPercentage}%
           </div>
         )}
-
         <button
           onClick={() => setIsFavorite((v) => !v)}
           aria-label="Thêm vào yêu thích"

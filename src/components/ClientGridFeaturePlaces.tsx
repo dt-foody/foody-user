@@ -9,7 +9,7 @@ import { productService } from "@/services/product.service";
 import { Product, Category, MenuItem } from "@/types";
 import { useCart } from "@/stores/useCartStore";
 import { PREFIX_IMAGE } from "@/constants";
-
+import Image from "next/image";
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
 
@@ -32,12 +32,11 @@ export default function ClientGridFeaturePlaces({
 }) {
   const [categories] = useState<Category[]>(initialCategories);
 
-  // CHANGED: getImageUrl is now wrapped in useCallback
-  const getImageUrl = (url: string): string => {
+  const getImageUrl = useCallback((url: string): string => {
     if (!url) return PLACEHOLDER_IMAGE;
     if (url.startsWith("http")) return url;
     return `${PREFIX_IMAGE}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
+  }, []);
 
   // CHANGED: convertToMenuItem is now wrapped in useCallback
   // This is where the random data is generated ONCE per product
@@ -180,13 +179,13 @@ export default function ClientGridFeaturePlaces({
                     key={food.id}
                     className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group flex flex-col"
                   >
-                    <div className="relative">
-                      <img
-                        src={food.image} // CHANGED: Use the pre-built image URL
+                    <div className="relative w-full h-48">
+                      <Image
+                        fill
+                        src={`${PREFIX_IMAGE}${food.thumbnailUrl}`}
                         alt={food.name}
                         onError={handleImageError}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
 

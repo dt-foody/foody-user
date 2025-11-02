@@ -8,13 +8,13 @@ const VerifyOTP: FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
-  
+
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [isExpired, setIsExpired] = useState(false);
-  
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer for OTP expiration
@@ -47,7 +47,10 @@ const VerifyOTP: FC = () => {
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -56,7 +59,7 @@ const VerifyOTP: FC = () => {
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").slice(0, 6);
-    
+
     if (!/^\d+$/.test(pastedData)) return;
 
     const newOtp = [...otp];
@@ -66,16 +69,16 @@ const VerifyOTP: FC = () => {
       }
     });
     setOtp(newOtp);
-    
+
     const lastIndex = Math.min(pastedData.length, 5);
     inputRefs.current[lastIndex]?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const otpCode = otp.join("");
-    
+
     if (otpCode.length !== 6) {
       setError("Vui lòng nhập mã OTP gồm 6 chữ số");
       return;
@@ -161,7 +164,7 @@ const VerifyOTP: FC = () => {
             <p className="font-semibold text-neutral-900 dark:text-neutral-100">
               {email}
             </p>
-            
+
             {/* OTP Timer */}
             <div className="mt-3">
               {isExpired ? (
@@ -171,7 +174,11 @@ const VerifyOTP: FC = () => {
               ) : (
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
                   The OTP is valid for:{" "}
-                  <span className={`font-semibold ${countdown <= 10 ? 'text-red-500' : 'text-primary-600'}`}>
+                  <span
+                    className={`font-semibold ${
+                      countdown <= 10 ? "text-red-500" : "text-primary-600"
+                    }`}
+                  >
                     {countdown}s
                   </span>
                 </p>
@@ -185,7 +192,9 @@ const VerifyOTP: FC = () => {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => { inputRefs.current[index] = el; }}
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
                     type="text"
                     maxLength={1}
                     value={digit}
@@ -194,9 +203,9 @@ const VerifyOTP: FC = () => {
                     onPaste={index === 0 ? handlePaste : undefined}
                     disabled={isLoading || isExpired}
                     className={`w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-500 dark:bg-neutral-800 dark:text-neutral-100 disabled:opacity-50 ${
-                      isExpired 
-                        ? 'border-red-300 dark:border-red-600' 
-                        : 'border-neutral-300 dark:border-neutral-600'
+                      isExpired
+                        ? "border-red-300 dark:border-red-600"
+                        : "border-neutral-300 dark:border-neutral-600"
                     }`}
                   />
                 ))}
@@ -206,26 +215,25 @@ const VerifyOTP: FC = () => {
               )}
             </div>
 
-            <ButtonPrimary 
-              type="submit" 
-              disabled={isLoading || isExpired} 
+            <ButtonPrimary
+              type="submit"
+              disabled={isLoading || isExpired}
               className="w-full"
             >
               {isLoading ? "Verifying..." : "Verify Your Email"}
             </ButtonPrimary>
           </form>
 
-
           <div className="text-center text-sm">
             <p className="text-neutral-600 dark:text-neutral-400">
-                You didn't receive the code?{" "}
-               <button
-              onClick={handleResend}
-              disabled={isLoading}
-              className="text-sm font-semibold text-primary-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Sending..." : "Resend OTP"}
-            </button>
+              You didn&apos;t receive the code?{" "}
+              <button
+                onClick={handleResend}
+                disabled={isLoading}
+                className="text-sm font-semibold text-primary-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Sending..." : "Resend OTP"}
+              </button>
             </p>
           </div>
         </div>
