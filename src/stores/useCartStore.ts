@@ -267,8 +267,9 @@ export const useCartStore = create<CartState & CartActions>()(
         try {
           set({ isLoadingPublicCoupons: true });
           const data = await couponService.getAvailables({});
+          
           set({
-            publicCoupons: data.results || [],
+            publicCoupons: data || [],
             isLoadingPublicCoupons: false,
           });
         } catch (e) {

@@ -204,6 +204,7 @@ export default function CartSidebar() {
 
   // Group public coupons (top-level to avoid hook-in-render issues)
   const groupedCoupons = useMemo(() => {
+    console.log("publicCouponStatuses", publicCouponStatuses);
     const groups = publicCouponStatuses.reduce((acc, status) => {
       const key = status.coupon.type || "other";
       if (!acc[key]) acc[key] = [];

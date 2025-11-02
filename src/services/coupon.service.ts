@@ -11,11 +11,11 @@ export const couponService = {
   getById: async (id: number): Promise<Coupon> => {
     return await apiFetch(`/coupons/${id}`);
   },
-  getAvailables: async (query: { [key: string]: any }): Promise<CouponPaginate> => {
+  getAvailables: async (query: { [key: string]: any }): Promise<Coupon[]> => {
     const queryString = new URLSearchParams(query).toString();
     const url = `/coupons/available?${queryString}`;
 
-    return await apiFetch<CouponPaginate>(url);
+    return await apiFetch<Coupon[]>(url);
   },
   validate: async (code: string): Promise<Coupon> => {
     return await apiFetch(`/coupons/validate/${code}`);

@@ -161,6 +161,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
                 ref={passwordRef}
                 type="password"
                 name="password"
+                autoComplete="current-password"
                 className="mt-1"
                 onFocus={() => handleInputFocus("password")}
                 disabled={isLoading}

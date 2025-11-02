@@ -318,6 +318,7 @@ export const checkCouponEligibility = (
   cart: CartData,
   user: UserData
 ): EligibilityStatus => {
+  console.log("hahhhaha");
   // 1) Đủ tối thiểu đơn hàng?
   if (coupon.minOrderAmount && cart.subtotal < coupon.minOrderAmount) {
     return {

@@ -12,6 +12,7 @@ import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
 import authService from "@/services/auth.service"; // 💡 1. IMPORT
+import { cookies } from "next/headers";
 const poppins = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -64,7 +65,14 @@ export default async function RootLayout({
   const dir = params.locale === "ar" ? "rtl" : "ltr";
   // const dir = "ltr";
 
+  const cookieStore = cookies();
+
+  console.log('cookieStore', cookieStore);
+
+
   const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
+
+  console.log('data 111', data);
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
