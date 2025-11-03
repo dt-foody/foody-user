@@ -4,7 +4,7 @@ import { StaticImageData } from "next/image";
 //  ######  CustomLink  ######## //
 export interface CustomLink {
   label: string;
-  href: Route<string> | string;
+  href: Route;
   targetBlank?: boolean;
 }
 
@@ -12,7 +12,7 @@ export interface CustomLink {
 export interface TaxonomyType {
   id: string | number;
   name: string;
-  href: Route<string>;
+  href: Route;
   count?: number;
   thumbnail?: string;
   desc?: string;
@@ -32,7 +32,7 @@ export interface AuthorType {
   count: number;
   desc: string;
   jobName: string;
-  href: Route<string>;
+  href: Route;
   starRating?: number;
 }
 
@@ -40,7 +40,7 @@ export interface PostDataType {
   id: string | number;
   author: AuthorType;
   date: string;
-  href: Route<string>;
+  href: Route;
   categories: TaxonomyType[];
   title: string;
   featuredImage: StaticImageData | string;
@@ -66,7 +66,7 @@ export interface StayDataType {
   id: string | number;
   author: AuthorType;
   date: string;
-  href: Route<string>;
+  href: Route;
   title: string;
   featuredImage: StaticImageData | string;
   commentCount: number;
@@ -94,7 +94,7 @@ export interface ExperiencesDataType {
   id: string | number;
   author: AuthorType;
   date: string;
-  href: Route<string>;
+  href: Route;
   title: string;
   featuredImage: StaticImageData | string;
   commentCount: number;
@@ -120,7 +120,7 @@ export interface CarDataType {
   id: string | number;
   author: AuthorType;
   date: string;
-  href: Route<string>;
+  href: Route;
   title: string;
   featuredImage: StaticImageData | string;
   commentCount: number;

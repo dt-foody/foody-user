@@ -2,7 +2,7 @@ import type { Route as NextRoute } from "next";
 import { ComponentType } from "react";
 
 // Get ready to update to nextjs version 13.2 with X typedRoutes
-export type Route<T = string> = NextRoute | string | any;
+export type Route = NextRoute | string | any;
 export type PathName = Route;
 
 export interface Page {

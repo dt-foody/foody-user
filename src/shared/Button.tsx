@@ -13,7 +13,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   type?: ButtonHTMLAttributes<HTMLButtonElement>["type"];
-  href?: Route<string>;
+  href?: Route;
   targetBlank?: boolean;
   onClick?: () => void;
   children?: React.ReactNode;

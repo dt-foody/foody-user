@@ -20,7 +20,7 @@ import {
   Pencil,
 } from "lucide-react";
 // === IMPORT THÊM TYPE TỪ STORE ===
-import { SHIPPING_FEE, useCart, DeliveryOption } from "@/stores/useCartStore";
+import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";

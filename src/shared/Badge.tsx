@@ -7,7 +7,7 @@ export interface BadgeProps {
   className?: string;
   name: ReactNode;
   color?: TwMainColor;
-  href?: Route<string>;
+  href?: Route;
 }
 
 const Badge: FC<BadgeProps> = ({
