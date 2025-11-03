@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Search,
   Plus,
@@ -39,14 +39,12 @@ export default function FoodyMenuContent() {
     type: "category" | "combo";
     id: string;
   }>({ type: "category", id: "all" });
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
   const [promoIndex, setPromoIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<
@@ -57,6 +55,15 @@ export default function FoodyMenuContent() {
     max: 500000,
   });
   const [showFilters, setShowFilters] = useState<boolean>(false);
+
+  /** Cờ đã khởi tạo xong lần đầu để chặn effect tự fetch lại */
+  const initedRef = useRef(false);
+
+  /** Debounce timer cho search */
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Chống ghi đè state bởi response cũ (race) */
+  const reqIdRef = useRef(0);
 
   const buildCategoryTree = useCallback((cats: Category[]): Category[] => {
     return cats
@@ -69,9 +76,16 @@ export default function FoodyMenuContent() {
 
   const loadItems = useCallback(
     async (isInitialLoad = false): Promise<void> => {
-      if (currentPage === 1 && !isInitialLoad) setLoading(true);
-      else if (!isInitialLoad) setLoadingMore(true);
-      if (!isInitialLoad) setError(null);
+      // Mỗi lần gọi tạo ra 1 request id mới
+      const myReqId = ++reqIdRef.current;
+
+      // Quản lý loading flags (chỉ set nếu không phải initial load)
+      if (!isInitialLoad) {
+        if (currentPage === 1) setLoading(true);
+        else setLoadingMore(true);
+        setError(null);
+      }
+
       try {
         const params = {
           page: currentPage,
@@ -79,58 +93,70 @@ export default function FoodyMenuContent() {
           ...(activeTab.type === "category" &&
             activeTab.id !== "all" && { category: activeTab.id }),
           ...(searchQuery && { search: searchQuery }),
-          sortBy: sortBy,
+          sortBy,
           minPrice: priceRange.min,
           maxPrice: priceRange.max,
         };
+
         const data =
           activeTab.type === "combo"
-            ? await comboService.getAll(params)
-            : await productService.getAll(params);
-        const formattedItems = data.results.map((item: any) => ({
+            ? await comboService.getAll(params as any) // nếu service hỗ trợ {signal}, bạn có thể truyền thêm
+            : await productService.getAll(params as any);
+
+        // Nếu đã có request mới hơn hoàn tất, bỏ qua commit
+        if (reqIdRef.current !== myReqId) return;
+
+        const formattedItems = (data.results || []).map((item: any) => ({
           ...item,
-          thumbnailUrl: `${PREFIX_IMAGE}${item.thumbnailUrl}`,
+          thumbnailUrl: item?.thumbnailUrl
+            ? `${PREFIX_IMAGE}${item.thumbnailUrl}`
+            : "",
         }));
+
         if (activeTab.type === "combo") {
-          setCombos(
-            currentPage === 1
-              ? formattedItems
-              : (prev) => [...prev, ...formattedItems]
+          setCombos((prev) =>
+            currentPage === 1 ? formattedItems : [...prev, ...formattedItems]
           );
         } else {
-          setProducts(
-            currentPage === 1
-              ? formattedItems
-              : (prev) => [...prev, ...formattedItems]
+          setProducts((prev) =>
+            currentPage === 1 ? formattedItems : [...prev, ...formattedItems]
           );
         }
+
         setTotalPages(data.totalPages || 1);
       } catch (err: any) {
-        setError(err.message || "Một lỗi không xác định đã xảy ra.");
+        // Chỉ set error nếu là request hiện hành
+        if (reqIdRef.current === myReqId) {
+          setError(err?.message || "Một lỗi không xác định đã xảy ra.");
+        }
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        // Chỉ tắt loading nếu là request hiện hành
+        if (reqIdRef.current === myReqId) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
-    [currentPage, activeTab, searchQuery, sortBy, priceRange]
+    [currentPage, activeTab.type, activeTab.id, searchQuery, sortBy, priceRange]
   );
 
   const loadInitialData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
+
       const catPromise = categoryService.getAll({});
       const promoPromise = pricePromotionService.getAll({
         populate: "product;combo",
         isActive: true,
         limit: 10,
       });
+
       const [catData, promoData] = await Promise.all([
         catPromise,
         promoPromise,
       ]);
 
-      // 👇 Hàm này phải được bọc trong useCallback trước
       setCategories(buildCategoryTree(catData.results || []));
 
       const validPromotions = (promoData.results || []).filter(
@@ -140,48 +166,58 @@ export default function FoodyMenuContent() {
       );
       setPromotions(validPromotions);
 
-      // 👇 Hàm này đã được bọc trong useCallback ở bước trước
+      // Lần đầu: tự load page 1 theo state hiện tại
       await loadItems(true);
+      initedRef.current = true;
     } catch (err: any) {
-      setError(err.message || "Một lỗi không xác định đã xảy ra.");
+      setError(err?.message || "Một lỗi không xác định đã xảy ra.");
     } finally {
       setLoading(false);
     }
   }, [buildCategoryTree, loadItems]);
 
   // --- DATA FETCHING ---
+
+  // 1) Mount: chỉ chạy một lần
   useEffect(() => {
     loadInitialData();
-  }, [loadInitialData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // 2) Khi tab hoặc trang đổi: fetch (bỏ loading khỏi deps để tránh vòng lặp)
   useEffect(() => {
-    if (!loading) {
-      loadItems();
-    }
-  }, [activeTab, currentPage, loadItems, loading]);
+    if (!initedRef.current) return;
+    loadItems();
+  }, [activeTab.type, activeTab.id, currentPage, loadItems]);
 
+  // 3) Debounce search
   useEffect(() => {
-    if (searchTimeout) clearTimeout(searchTimeout);
-    const timeout = setTimeout(() => {
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      } else {
-        loadItems();
-      }
+    if (!initedRef.current) return;
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      if (currentPage !== 1) setCurrentPage(1);
+      else loadItems();
     }, 500);
-    setSearchTimeout(timeout);
-    return () => clearTimeout(timeout);
-  }, [searchQuery, searchTimeout, currentPage, loadItems]);
 
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery, currentPage, loadItems]);
+
+  // 4) Khi filter đổi (sort/price): reset list và trang, rồi fetch
   useEffect(() => {
-    if (!loading) {
-      setCurrentPage(1);
-      setProducts([]);
-      setCombos([]);
-      loadItems();
-    }
-  }, [sortBy, priceRange, loading, loadItems]);
+    if (!initedRef.current) return;
 
+    // reset dữ liệu cũ
+    setProducts([]);
+    setCombos([]);
+
+    if (currentPage !== 1) setCurrentPage(1);
+    else loadItems();
+  }, [sortBy, priceRange, currentPage, loadItems]);
+
+  // 5) Carousel promotion
   useEffect(() => {
     if (promotions.length > 1) {
       const interval = setInterval(() => {
@@ -191,50 +227,50 @@ export default function FoodyMenuContent() {
     }
   }, [promotions]);
 
-  const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
-  ) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
-
   const allItems = useMemo((): MenuItem[] => {
     const getDiscount = (id: string) =>
       promotions.find(
         (p) =>
           (p.product as Product)?.id === id || (p.combo as Combo)?.id === id
       );
+
     const itemsToMap = activeTab.type === "combo" ? combos : products;
-    let items = itemsToMap.map((item: Product | Combo): MenuItem => {
+
+    return itemsToMap.map((item: Product | Combo): MenuItem => {
       const isCombo = "comboPrice" in item;
       const discount = getDiscount(item.id);
+
       let finalPrice = isCombo
         ? (item as Combo).comboPrice
         : (item as Product).basePrice;
-      let originalPrice = undefined;
+      let originalPrice: number | undefined = undefined;
+
       if (discount) {
         originalPrice = finalPrice;
         finalPrice =
           discount.discountType === "percentage"
             ? finalPrice * (1 - discount.discountValue / 100)
             : finalPrice - discount.discountValue;
+        if (finalPrice < 0) finalPrice = 0;
       }
+
+      // rating/reviews ổn định theo id (không random mỗi render)
+      const reviews = 1000;
+      const rating = 5.0;
+
       const productItem = item as Product;
       return {
         ...productItem,
         type: (isCombo ? "combo" : "product") as "combo" | "product",
-        price: finalPrice,
+        price: Number(finalPrice),
         originalPrice,
         discount: discount || null,
         image: item.thumbnailUrl,
-        reviews: Math.floor(Math.random() * 400) + 100,
-        rating: (isCombo
-          ? 4.2 + Math.random() * 0.8
-          : 3.8 + Math.random()
-        ).toFixed(1),
+        reviews,
+        rating, // number
         optionGroups: productItem.optionGroups,
       };
     });
-    return items;
   }, [products, combos, promotions, activeTab.type]);
 
   const handleTabClick = (type: "category" | "combo", id: string) => {
@@ -249,13 +285,24 @@ export default function FoodyMenuContent() {
     setSortBy(newSortBy);
   };
 
-  const handlePriceRangeChange = (newPriceRange: typeof priceRange) => {
-    setPriceRange(newPriceRange);
+  const handlePriceRangeChange = (next: typeof priceRange) => {
+    // đảm bảo min/max hợp lệ
+    const min = Math.max(0, Number(next.min));
+    const max = Math.max(0, Number(next.max));
+    const fixed =
+      min <= max
+        ? { min, max }
+        : { min: Math.min(min, max), max: Math.max(min, max) };
+    setPriceRange(fixed);
   };
 
   const resetFilters = () => {
     setSortBy("popular");
     setPriceRange({ min: 0, max: 500000 });
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
   // --- RENDER ---
@@ -359,6 +406,7 @@ export default function FoodyMenuContent() {
                         }
                         className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Từ"
+                        min={0}
                       />
                       <span className="text-gray-400">-</span>
                       <input
@@ -372,6 +420,7 @@ export default function FoodyMenuContent() {
                         }
                         className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Đến"
+                        min={0}
                       />
                     </div>
 
@@ -454,7 +503,7 @@ export default function FoodyMenuContent() {
                   <div key={promo.id} className="flex-shrink-0 w-full pr-4">
                     <div className="flex items-start space-x-4">
                       <Image
-                        src={`${PREFIX_IMAGE}${item.thumbnailUrl}`}
+                        src={`${PREFIX_IMAGE}${item.thumbnailUrl || ""} `}
                         alt={item.name}
                         onError={handleImageError}
                         width={80}
