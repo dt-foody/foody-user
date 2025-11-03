@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"; // 💡 1. Thêm useRef
 import {
   Flame,
   Loader,
@@ -46,6 +46,9 @@ export default function HotDealsPage() {
     id: string;
   }>({ type: "category", id: "all" });
 
+  // 💡 2. Thêm cờ (ref) để đánh dấu đã khởi tạo xong
+  const initedRef = useRef(false);
+
   const buildCategoryTree = useCallback((cats: Category[]): Category[] => {
     return cats
       .filter((c: Category) => !c.parent)
@@ -85,7 +88,7 @@ export default function HotDealsPage() {
         setCombos(combosList);
       }
     },
-    [] // 💡 Bọc hàm và thêm mảng dependency rỗng (hàm set state là ổn định)
+    []
   );
 
   const loadInitialData = useCallback(async (): Promise<void> => {
@@ -97,7 +100,7 @@ export default function HotDealsPage() {
       const promoPromise = pricePromotionService.getAll({
         populate: ["product", "combo"].join(";"),
         isActive: true,
-        page: 1,
+        page: 1, // Luôn load trang 1
         limit: ITEMS_PER_PAGE,
       });
 
@@ -106,7 +109,7 @@ export default function HotDealsPage() {
         promoPromise,
       ]);
 
-      setCategories(buildCategoryTree(catData.results || [])); // 👈 Phụ thuộc
+      setCategories(buildCategoryTree(catData.results || []));
 
       const validPromotions = (promoData.results || []).filter(
         (p: PricePromotion) =>
@@ -115,18 +118,21 @@ export default function HotDealsPage() {
       );
 
       setPromotions(validPromotions);
-      processPromotions(validPromotions); // 👈 Phụ thuộc
+      processPromotions(validPromotions);
       setTotalPages(promoData.totalPages || 1);
     } catch (err: any) {
       setError(err.message || "Một lỗi không xác định đã xảy ra.");
     } finally {
       setLoading(false);
+      initedRef.current = true; // 💡 3. Đánh dấu đã khởi tạo xong
     }
-  }, [buildCategoryTree, processPromotions]);
+  }, [buildCategoryTree, processPromotions]); // Dependencies này đã ổn định
 
   const loadDeals = useCallback(async (): Promise<void> => {
-    if (currentPage === 1) setLoading(true);
-    else setLoadingMore(true);
+    // Hàm này CHỈ chịu trách nhiệm load "Xem thêm" (trang > 1)
+    if (currentPage === 1) return; // Không chạy lại trang 1
+
+    setLoadingMore(true);
     setError(null);
 
     try {
@@ -144,31 +150,39 @@ export default function HotDealsPage() {
           (p.combo && typeof p.combo === "object")
       );
 
-      setPromotions(
-        currentPage === 1
-          ? validPromotions
-          : (prev) => [...prev, ...validPromotions]
-      );
-
-      processPromotions(validPromotions, currentPage > 1);
+      setPromotions((prev) => [...prev, ...validPromotions]);
+      processPromotions(validPromotions, true); // true = append
       setTotalPages(data.totalPages || 1);
     } catch (err: any) {
       setError(err.message || "Một lỗi không xác định đã xảy ra.");
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      setLoading(false); // Tắt loading chung (nếu cần)
+      setLoadingMore(false); // Tắt loading "Xem thêm"
     }
-  }, [currentPage, processPromotions]); // 💡 Thêm state và hàm phụ thuộc
+  }, [currentPage, processPromotions]);
 
+  // --- 💡 4. SỬA CÁC USEEFFECT ---
+
+  // Effect 1: Chỉ chạy 1 lần duy nhất khi mount
   useEffect(() => {
     loadInitialData();
-  }, [loadInitialData]);
+  }, [loadInitialData]); // loadInitialData đã stable (nhờ useCallback)
 
+  // Effect 2: Chỉ chạy khi "Xem thêm" (currentPage > 1)
   useEffect(() => {
-    if (!loading) {
+    // Chờ cho Effect 1 chạy xong (initedRef = true)
+    if (!initedRef.current) return;
+
+    // Chỉ chạy khi currentPage > 1 (tức là bấm "Xem thêm")
+    // Trang 1 đã được loadInitialData xử lý
+    if (currentPage > 1) {
       loadDeals();
     }
-  }, [activeTab, currentPage, sortBy, loading, loadDeals]);
+
+    // Bỏ hết dependency thừa, chỉ phụ thuộc vào `currentPage`
+  }, [currentPage, loadDeals]);
+
+  // ------------------------------------
 
   const calculateTimeLeft = (endDate?: string): string => {
     if (!endDate) return "";
@@ -194,15 +208,19 @@ export default function HotDealsPage() {
           (p.product as Product)?.id === id || (p.combo as Combo)?.id === id
       );
 
-    const allItems = [...products, ...combos];
+    // 💡 Lọc theo tab (category/combo)
+    const itemsToFilter = activeTab.type === "combo" ? combos : products;
 
+    // 💡 Lọc theo ID category (nếu có)
     const filteredItems =
-      selectedCategory === "all"
-        ? allItems
-        : allItems.filter((item) => {
-            if ("comboPrice" in item) return false;
-            return (item as Product).category === selectedCategory;
-          });
+      activeTab.type === "category" && activeTab.id !== "all"
+        ? itemsToFilter.filter((item) => {
+            if ("comboPrice" in item) return false; // Bỏ combo nếu đang ở tab category
+            return (item as Product).category === activeTab.id;
+          })
+        : itemsToFilter;
+
+    // (Bỏ 'selectedCategory' vì đã có 'activeTab' làm việc này)
 
     let items = filteredItems.map((item): MenuItem => {
       const isCombo = "comboPrice" in item;
@@ -266,13 +284,16 @@ export default function HotDealsPage() {
     }
 
     return items;
-  }, [products, combos, promotions, selectedCategory, sortBy]);
+  }, [products, combos, promotions, activeTab, sortBy]); // 💡 Cập nhật dependency
 
   const handleTabClick = (type: "category" | "combo", id: string) => {
     if (activeTab.type === type && activeTab.id === id) return;
     setCurrentPage(1);
-    setProducts([]);
-    setCombos([]);
+
+    // 💡 Không cần reset products/combos vì useMemo sẽ lọc lại
+    // setProducts([]);
+    // setCombos([]);
+
     setActiveTab({ type, id });
   };
 
@@ -344,7 +365,7 @@ export default function HotDealsPage() {
                       onClick={() => {
                         setSortBy(option.value as any);
                         setShowSortMenu(false);
-                        setCurrentPage(1);
+                        setCurrentPage(1); // 💡 Reset page khi sort
                       }}
                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg ${
                         sortBy === option.value
@@ -380,7 +401,7 @@ export default function HotDealsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {error ? (
             <ErrorDisplay message={error} onRetry={loadInitialData} />
-          ) : loading && currentPage === 1 ? (
+          ) : loading && currentPage === 1 ? ( // 💡 Chỉ hiện skeleton khi loading trang 1
             Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           ) : dealItems.length === 0 ? (
             <ProductNotFound />
