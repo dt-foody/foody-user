@@ -11,6 +11,9 @@ import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
 
+// ĐỊNH NGHĨA TYPE DELIVERY OPTION TẠI ĐÂY
+export type DeliveryOption = "immediate" | "scheduled";
+
 interface UserData {
   isNew: boolean;
   age: number | null;
@@ -44,6 +47,10 @@ interface CartState {
   couponStatus: { isLoading: boolean; error: string | null };
   productForOptions: MenuItem | null;
   currentUser: UserData;
+
+  // === STATE MỚI ===
+  deliveryOption: DeliveryOption;
+  scheduledDate: string;
 }
 interface CartActions {
   /** Quyết định mở modal hay add thẳng */
@@ -76,6 +83,10 @@ interface CartActions {
 
   updateItemNote: (cartId: string, note: string) => void;
   removeItem: (cartId: string) => void;
+
+  // === ACTIONS MỚI ===
+  setDeliveryOption: (option: DeliveryOption) => void;
+  setScheduledDate: (date: string) => void;
 }
 
 /** ===== Helpers ===== */
@@ -107,6 +118,10 @@ const initialState: CartState = {
   couponStatus: { isLoading: false, error: null },
   productForOptions: null,
   currentUser: { isNew: true, age: 18 },
+
+  // === STATE MỚI ===
+  deliveryOption: "immediate",
+  scheduledDate: "",
 };
 
 export const useCartStore = create<CartState & CartActions>()(
@@ -267,7 +282,7 @@ export const useCartStore = create<CartState & CartActions>()(
         try {
           set({ isLoadingPublicCoupons: true });
           const data = await couponService.getAvailables({});
-          
+
           set({
             publicCoupons: data || [],
             isLoadingPublicCoupons: false,
@@ -291,12 +306,21 @@ export const useCartStore = create<CartState & CartActions>()(
           cartItems: state.cartItems.filter((i) => i.cartId !== cartId),
         }));
       },
+
+      // === IMPLEMENT ACTIONS MỚI ===
+      setDeliveryOption: (option) => set({ deliveryOption: option }),
+      setScheduledDate: (date) => set({ scheduledDate: date }),
     }),
     {
       name: CART_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      // chỉ persist cartItems như cũ
-      partialize: (state) => ({ cartItems: state.cartItems }),
+      // chỉ persist cartItems, các lựa chọn khác sẽ reset khi tải lại
+      partialize: (state) => ({
+        cartItems: state.cartItems,
+        // Optional: bạn có thể persist lựa chọn giao hàng nếu muốn
+        // deliveryOption: state.deliveryOption,
+        // scheduledDate: state.scheduledDate,
+      }),
     }
   )
 );
@@ -308,6 +332,9 @@ export function useCart() {
     appliedCoupons,
     currentUser,
     publicCoupons,
+    // === LẤY STATE MỚI RA ===
+    deliveryOption,
+    scheduledDate,
     ...actionsAndState
   } = useCartStore((s) => s);
 
@@ -377,6 +404,9 @@ export function useCart() {
     shippingDiscount,
     finalShippingFee,
     finalTotal,
+    // === TRẢ RA STATE MỚI ===
+    deliveryOption,
+    scheduledDate,
   };
 }
 

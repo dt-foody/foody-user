@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -13,71 +13,89 @@ import {
   X,
   Edit2,
   Camera,
+  Loader, // Thêm icon Loader
 } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuthStore"; // Import store
+import { customerService } from "@/services"; // Import service (giả định)
+import { CustomerForm, CustomerAddress, UpdateCustomerInput } from "@/types";
 
-// --- Interfaces ---
-interface IAddress {
-  label: string;
-  recipientName: string;
-  recipientPhone: string;
-  street: string;
-  ward: string;
-  district: string;
-  city: string;
-  fullAddress?: string;
-  isDefault: boolean;
-}
-
-interface ICustomerData {
-  name: string;
-  gender: "male" | "female" | "other";
-  email: string;
-  birthDate: string;
-  phone: string;
-  addresses: IAddress[];
-}
+// Hàm helper định dạng ngày cho input type="date"
+const formatDateForInput = (dateString: string | Date): string => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  } catch (error) {
+    return "";
+  }
+};
 
 const AccountPage = () => {
-  const [customerData, setCustomerData] = useState<ICustomerData>({
-    name: "Eden Tuan",
+  // Lấy state và action từ store
+  const { me, fetchUser } = useAuthStore();
+
+  // Khởi tạo state rỗng, đợi pre-fill
+  const [customerData, setCustomerData] = useState<CustomerForm>({
+    name: "",
     gender: "male",
-    email: "example@email.com",
-    birthDate: "1990-07-22",
-    phone: "003 888 232",
-    addresses: [
-      {
-        label: "Home",
-        recipientName: "Eden Tuan",
-        recipientPhone: "003 888 232",
-        street: "123 Main St",
-        ward: "Phường 1",
-        district: "Quận 1",
-        city: "TP. Hồ Chí Minh",
-        fullAddress: "123 Main St, Phường 1, Quận 1, TP. Hồ Chí Minh",
-        isDefault: true,
-      },
-    ],
+    email: "",
+    birthDate: "",
+    phone: "",
+    addresses: [],
   });
 
+  const [isLoading, setIsLoading] = useState(true); // State loading
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(
     null
   );
   const [newAddress, setNewAddress] = useState<
-    Omit<IAddress, "isDefault" | "fullAddress">
+    Omit<CustomerAddress, "isDefault" | "fullAddress">
   >({
     label: "",
     recipientName: "",
     recipientPhone: "",
     street: "",
     ward: "",
-    district: "",
     city: "",
   });
   const [activeTab, setActiveTab] = useState<"profile" | "addresses">(
     "profile"
   );
   const [isSaving, setIsSaving] = useState(false);
+
+  // useEffect để fetch và pre-fill dữ liệu
+  useEffect(() => {
+    const loadAndSetUser = async () => {
+      setIsLoading(true);
+      // Lấy state hiện tại từ store
+      let storeUser = useAuthStore.getState().user;
+      let storeMe = useAuthStore.getState().me;
+
+      // Nếu chưa có, fetch mới
+      if (!storeUser || !storeMe) {
+        await fetchUser();
+        storeUser = useAuthStore.getState().user;
+        storeMe = useAuthStore.getState().me;
+      }
+
+      // Nếu có dữ liệu 'me' (profile)
+      if (storeMe) {
+        setCustomerData({
+          name: storeMe.name || "",
+          gender: storeMe.gender || "male",
+          email: storeUser?.email || storeMe.email || "", // Lấy email từ user hoặc me
+          birthDate: formatDateForInput(storeMe.birthDate), // Định dạng lại ngày
+          phone: storeMe.phone || "",
+          addresses: storeMe.addresses || [],
+        });
+      }
+
+      setIsLoading(false);
+    };
+
+    loadAndSetUser();
+  }, [fetchUser]);
 
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -97,15 +115,14 @@ const AccountPage = () => {
       !newAddress.recipientPhone ||
       !newAddress.street ||
       !newAddress.ward ||
-      !newAddress.district ||
       !newAddress.city
     ) {
       alert("Vui lòng điền đầy đủ thông tin địa chỉ.");
       return;
     }
 
-    const fullAddress = `${newAddress.street}, ${newAddress.ward}, ${newAddress.district}, ${newAddress.city}`;
-    const newAddressObject: IAddress = {
+    const fullAddress = `${newAddress.street}, ${newAddress.ward}, ${newAddress.city}`;
+    const newAddressObject: CustomerAddress = {
       ...newAddress,
       fullAddress,
       isDefault: customerData.addresses.length === 0,
@@ -134,7 +151,6 @@ const AccountPage = () => {
       recipientPhone: "",
       street: "",
       ward: "",
-      district: "",
       city: "",
     });
     setShowNewAddressForm(false);
@@ -148,7 +164,6 @@ const AccountPage = () => {
       recipientPhone: addr.recipientPhone,
       street: addr.street,
       ward: addr.ward,
-      district: addr.district,
       city: addr.city,
     });
     setEditingAddressIndex(index);
@@ -189,19 +204,61 @@ const AccountPage = () => {
       recipientPhone: "",
       street: "",
       ward: "",
-      district: "",
       city: "",
     });
   };
 
+  // Cập nhật handleSubmit để gọi API
   const handleSubmit = async () => {
+    if (!customerData) return;
     setIsSaving(true);
-    setTimeout(() => {
-      console.log("Submitting data:", customerData);
-      setIsSaving(false);
+    try {
+      const payload: UpdateCustomerInput = {
+        name: customerData.name,
+        phone: customerData.phone,
+        gender: customerData.gender,
+        birthDate: customerData.birthDate || undefined,
+        addresses: customerData.addresses,
+      };
+
+      // Gửi toàn bộ customerData (state của form) lên server
+      await customerService.updateProfile(payload);
+
+      // Sau khi update, fetch lại user để đảm bảo store được đồng bộ
+      await fetchUser();
+
       alert("Đã cập nhật thông tin thành công!");
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      alert("Cập nhật thất bại, vui lòng thử lại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Trạng thái Loading
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader className="w-10 h-10 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  // Trạng thái chưa đăng nhập (sau khi load xong)
+  if (!me && !isLoading) {
+    return (
+      <div className="text-center p-10 bg-white rounded-lg shadow-sm border">
+        <h2 className="text-lg font-semibold text-gray-800">
+          Vui lòng đăng nhập
+        </h2>
+        <p className="text-sm text-gray-600 mt-2">
+          Bạn cần đăng nhập để xem và quản lý thông tin tài khoản.
+        </p>
+        {/* Bạn có thể thêm nút Login ở đây */}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -209,19 +266,19 @@ const AccountPage = () => {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 mb-1">
-            Account Information
+            Thông tin tài khoản
           </h1>
           <p className="text-sm text-gray-600">
-            Manage your profile and addresses
+            Quản lý thông tin cá nhân và địa chỉ của bạn
           </p>
         </div>
         <div className="relative group">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-lg font-semibold shadow-md">
-            {customerData.name.charAt(0).toUpperCase()}
+            {customerData.name?.charAt(0)?.toUpperCase() || "?"}
           </div>
           <div className="absolute inset-0 bg-black bg-opacity-60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
             <Camera className="w-5 h-5 text-white" />
-            <span className="text-xs text-white mt-0.5">Change</span>
+            <span className="text-xs text-white mt-0.5">Đổi</span>
           </div>
           <input
             type="file"
@@ -243,7 +300,7 @@ const AccountPage = () => {
             }`}
           >
             <User className="w-4 h-4 inline-block mr-1.5 mb-0.5" />
-            Profile
+            Hồ sơ
             {activeTab === "profile" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600" />
             )}
@@ -257,9 +314,9 @@ const AccountPage = () => {
             }`}
           >
             <MapPin className="w-4 h-4 inline-block mr-1.5 mb-0.5" />
-            Addresses
+            Địa chỉ
             <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
-              {customerData.addresses.length}
+              {customerData.addresses?.length || 0}
             </span>
             {activeTab === "addresses" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600" />
@@ -275,7 +332,7 @@ const AccountPage = () => {
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
                     <User className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-                    Full Name
+                    Họ và tên
                   </label>
                   <input
                     type="text"
@@ -289,7 +346,7 @@ const AccountPage = () => {
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
                     <Phone className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-                    Phone Number
+                    Số điện thoại
                   </label>
                   <input
                     type="tel"
@@ -303,7 +360,7 @@ const AccountPage = () => {
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
                     <Mail className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-                    Email Address
+                    Địa chỉ Email
                   </label>
                   <input
                     type="email"
@@ -314,14 +371,14 @@ const AccountPage = () => {
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Email cannot be changed
+                    Email không thể thay đổi
                   </p>
                 </div>
 
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
                     <Calendar className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-                    Date of Birth
+                    Ngày sinh
                   </label>
                   <input
                     type="date"
@@ -334,7 +391,7 @@ const AccountPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Gender
+                    Giới tính
                   </label>
                   <select
                     name="gender"
@@ -342,9 +399,9 @@ const AccountPage = () => {
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                   >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
                   </select>
                 </div>
               </div>
@@ -355,7 +412,7 @@ const AccountPage = () => {
                   disabled={isSaving}
                   className="px-5 py-2 text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-md hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? "Saving..." : "Save Changes"}
+                  {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
             </div>
@@ -393,7 +450,7 @@ const AccountPage = () => {
                           </span>
                           {address.isDefault && (
                             <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-medium rounded">
-                              Default
+                              Mặc định
                             </span>
                           )}
                         </div>
@@ -425,7 +482,7 @@ const AccountPage = () => {
                   <div className="ml-7 text-sm text-gray-600">
                     <p>{address.street}</p>
                     <p>
-                      {address.ward}, {address.district}, {address.city}
+                      {address.ward}, {address.city}
                     </p>
                   </div>
                 </div>
@@ -437,7 +494,7 @@ const AccountPage = () => {
                   className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 font-medium hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/30 transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  Add New Address
+                  Thêm địa chỉ mới
                 </button>
               )}
 
@@ -446,8 +503,8 @@ const AccountPage = () => {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-base font-semibold text-gray-900">
                       {editingAddressIndex !== null
-                        ? "Edit Address"
-                        : "Add New Address"}
+                        ? "Sửa địa chỉ"
+                        : "Thêm địa chỉ mới"}
                     </h3>
                     <button
                       onClick={handleCancelEdit}
@@ -459,9 +516,9 @@ const AccountPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Label{" "}
+                      Nhãn{" "}
                       <span className="text-gray-400 font-normal">
-                        (Optional)
+                        (VD: Nhà, Công ty)
                       </span>
                     </label>
                     <input
@@ -477,7 +534,7 @@ const AccountPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Recipient Name <span className="text-red-500">*</span>
+                        Tên người nhận <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -490,7 +547,7 @@ const AccountPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Phone Number <span className="text-red-500">*</span>
+                        Số điện thoại <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="tel"
@@ -505,12 +562,12 @@ const AccountPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Street Address <span className="text-red-500">*</span>
+                      Địa chỉ đường <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="street"
-                      placeholder="House number, street name"
+                      placeholder="Số nhà, tên đường"
                       value={newAddress.street}
                       onChange={handleNewAddressChange}
                       required
@@ -518,10 +575,10 @@ const AccountPage = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Ward <span className="text-red-500">*</span>
+                        Phường/Xã <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -534,20 +591,7 @@ const AccountPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        District <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={newAddress.district}
-                        onChange={handleNewAddressChange}
-                        required
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        City <span className="text-red-500">*</span>
+                        Tỉnh/Thành phố <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -567,14 +611,14 @@ const AccountPage = () => {
                     >
                       <Check className="w-4 h-4" />
                       {editingAddressIndex !== null
-                        ? "Update Address"
-                        : "Save Address"}
+                        ? "Cập nhật"
+                        : "Lưu địa chỉ"}
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       className="px-4 py-2 text-sm border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-all"
                     >
-                      Cancel
+                      Hủy
                     </button>
                   </div>
                 </div>

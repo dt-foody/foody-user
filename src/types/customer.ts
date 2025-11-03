@@ -16,7 +16,6 @@ export interface CustomerAddress {
   recipientPhone: string;
   street: string;
   ward: string;
-  district: string;
   city: string;
   fullAddress?: string;
   location?: GeoPoint;
@@ -61,3 +60,17 @@ export interface Customer {
 
 /** Standard paginated response shape */
 export type CustomerPaginate = Paginated<Customer>;
+
+/** Form hiển thị/sửa cho trang Account */
+export type CustomerForm = Pick<
+  Customer,
+  "name" | "phone" | "gender" | "birthDate" | "addresses"
+> & {
+  /** Chỉ để hiển thị, lấy từ User */
+  email: string;
+};
+
+/** Payload update gửi lên BE (không có email) */
+export type UpdateCustomerInput = Partial<
+  Pick<Customer, "name" | "phone" | "gender" | "birthDate" | "addresses">
+>;

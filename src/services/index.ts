@@ -5,4 +5,5 @@ export * from './blogPost.service';
 export * from './category.service';
 export * from './product.service';
 export * from './combo.service';
+export * from './customer.service';
 export * from './coupon.service';

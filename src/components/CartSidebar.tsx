@@ -19,18 +19,20 @@ import {
   MessageSquare,
   Pencil,
 } from "lucide-react";
-import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
+// === IMPORT THÊM TYPE TỪ STORE ===
+import { SHIPPING_FEE, useCart, DeliveryOption } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Image from "next/image";
 import { Coupon } from "@/types";
-type DeliveryOption = "immediate" | "scheduled";
+// type DeliveryOption = "immediate" | "scheduled"; // <-- KHÔNG CẦN NỮA
 
 /* ===========================
    Hoisted sub-components (memo)
    =========================== */
 
+// ... (OptionChips component - giữ nguyên)
 const OptionChips = memo(function OptionChips({ names }: { names: string[] }) {
   if (!names?.length) return null;
   return (
@@ -47,6 +49,7 @@ const OptionChips = memo(function OptionChips({ names }: { names: string[] }) {
   );
 });
 
+// ... (ItemNoteView component - giữ nguyên)
 const ItemNoteView = memo(function ItemNoteView({
   cartId,
   note,
@@ -137,8 +140,8 @@ export default function CartSidebar() {
     showCart,
     setShowCart,
     updateQuantity,
-    updateItemNote, // cần có trong store
-    removeItem, // cần có trong store
+    updateItemNote,
+    removeItem,
     clearCart,
     subtotal,
     itemDiscount,
@@ -151,13 +154,21 @@ export default function CartSidebar() {
     applyPublicCoupon,
     applyPrivateCoupon,
     removeCoupon,
+
+    // === LẤY STATE VÀ ACTIONS TỪ STORE ===
+    deliveryOption,
+    setDeliveryOption,
+    scheduledDate,
+    setScheduledDate,
   } = useCart();
 
   const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
   const [manualCouponCode, setManualCouponCode] = useState("");
-  const [deliveryOption, setDeliveryOption] =
-    useState<DeliveryOption>("immediate");
-  const [scheduledDate, setScheduledDate] = useState("");
+
+  // === XÓA USESTATE LOCAL CHO DELIVERY ===
+  // const [deliveryOption, setDeliveryOption] =
+  //   useState<DeliveryOption>("immediate");
+  // const [scheduledDate, setScheduledDate] = useState("");
 
   // Inline note editing state
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -411,6 +422,7 @@ export default function CartSidebar() {
                         type="radio"
                         name="delivery"
                         value="immediate"
+                        // === DÙNG STATE TỪ STORE ===
                         checked={deliveryOption === "immediate"}
                         onChange={() => setDeliveryOption("immediate")}
                         className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500 focus:ring-2"
@@ -438,6 +450,7 @@ export default function CartSidebar() {
                         type="radio"
                         name="delivery"
                         value="scheduled"
+                        // === DÙNG STATE TỪ STORE ===
                         checked={deliveryOption === "scheduled"}
                         onChange={() => setDeliveryOption("scheduled")}
                         className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500 focus:ring-2"
@@ -457,6 +470,7 @@ export default function CartSidebar() {
                       {deliveryOption === "scheduled" && (
                         <input
                           type="date"
+                          // === DÙNG STATE TỪ STORE ===
                           value={scheduledDate}
                           onChange={(e) => setScheduledDate(e.target.value)}
                           min={getMinDate()}
@@ -629,6 +643,7 @@ export default function CartSidebar() {
     </div>
   );
 
+  // ... (renderCouponPanel component - giữ nguyên)
   const renderCouponPanel = () => {
     const hasAnyCoupons = Object.keys(groupedCoupons).length > 0;
 
