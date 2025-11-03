@@ -100,10 +100,9 @@ export default function FoodyMenuContent() {
 
         const data =
           activeTab.type === "combo"
-            ? await comboService.getAll(params as any) // nếu service hỗ trợ {signal}, bạn có thể truyền thêm
+            ? await comboService.getAll(params as any)
             : await productService.getAll(params as any);
 
-        // Nếu đã có request mới hơn hoàn tất, bỏ qua commit
         if (reqIdRef.current !== myReqId) return;
 
         const formattedItems = (data.results || []).map((item: any) => ({
@@ -126,7 +125,7 @@ export default function FoodyMenuContent() {
         setTotalPages(data.totalPages || 1);
       } catch (err: any) {
         // Chỉ set error nếu là request hiện hành
-        if (reqIdRef.current === myReqId) {
+        if (reqIdRef.current !== myReqId) {
           setError(err?.message || "Một lỗi không xác định đã xảy ra.");
         }
       } finally {
@@ -174,7 +173,9 @@ export default function FoodyMenuContent() {
     } finally {
       setLoading(false);
     }
-  }, [buildCategoryTree, loadItems]);
+    // Bỏ loadItems ra khỏi deps của loadInitialData
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildCategoryTree]);
 
   // --- DATA FETCHING ---
 
@@ -184,18 +185,26 @@ export default function FoodyMenuContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2) Khi tab hoặc trang đổi: fetch (bỏ loading khỏi deps để tránh vòng lặp)
+  // 2) [FIXED] Khi tab hoặc trang đổi: fetch
+  // Đây là effect chính, chịu trách nhiệm fetch khi tab hoặc page (xem thêm) thay đổi.
   useEffect(() => {
     if (!initedRef.current) return;
     loadItems();
-  }, [activeTab.type, activeTab.id, currentPage, loadItems]);
+    // Chúng ta bỏ loadItems khỏi deps, vì nó là 1 function.
+    // Effect này CHỈ nên trigger khi tab hoặc page thay đổi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab.type, activeTab.id, currentPage]);
 
-  // 3) Debounce search
+  // 3) [FIXED] Debounce search
+  // Effect này CHỈ trigger khi searchQuery thay đổi.
   useEffect(() => {
     if (!initedRef.current) return;
 
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
+      // Khi search, ta reset về trang 1.
+      // Việc gọi setCurrentPage(1) sẽ kích hoạt effect (2) ở trên để fetch.
+      // Nếu đã ở trang 1, ta tự gọi loadItems() để fetch.
       if (currentPage !== 1) setCurrentPage(1);
       else loadItems();
     }, 500);
@@ -203,9 +212,12 @@ export default function FoodyMenuContent() {
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     };
-  }, [searchQuery, currentPage, loadItems]);
+    // Chỉ lắng nghe searchQuery. Bỏ currentPage và loadItems.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
-  // 4) Khi filter đổi (sort/price): reset list và trang, rồi fetch
+  // 4) [FIXED] Khi filter đổi (sort/price): reset list và trang, rồi fetch
+  // Effect này CHỈ trigger khi sortBy hoặc priceRange thay đổi.
   useEffect(() => {
     if (!initedRef.current) return;
 
@@ -213,9 +225,14 @@ export default function FoodyMenuContent() {
     setProducts([]);
     setCombos([]);
 
+    // Tương tự search: reset về trang 1 để kích hoạt effect (2) fetch.
+    // Nếu đã ở trang 1, tự gọi loadItems().
     if (currentPage !== 1) setCurrentPage(1);
     else loadItems();
-  }, [sortBy, priceRange, currentPage, loadItems]);
+
+    // Chỉ lắng nghe sortBy và priceRange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, priceRange]);
 
   // 5) Carousel promotion
   useEffect(() => {
