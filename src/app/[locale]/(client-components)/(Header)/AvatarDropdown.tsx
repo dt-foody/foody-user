@@ -19,7 +19,7 @@ export default function AvatarDropdown({ className = "" }: Props) {
   return (
     <>
       <Popover className={`AvatarDropdown relative flex ${className}`}>
-        {({ open, close }) => {
+        {({ close }) => {
           // ⚡ 4. Định nghĩa hàm handleLogout
           const handleLogout = async () => {
             try {
