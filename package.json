@@ -39,6 +39,7 @@
     "sass": "^1.62.1",
     "server-only": "^0.0.1",
     "slick-carousel": "^1.8.1",
+    "sonner": "^2.0.7",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

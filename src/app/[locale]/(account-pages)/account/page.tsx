@@ -18,6 +18,7 @@ import {
 import { useAuthStore } from "@/stores/useAuthStore"; // Import store
 import { customerService } from "@/services"; // Import service (giả định)
 import { CustomerForm, CustomerAddress, UpdateCustomerInput } from "@/types";
+import { toast } from 'sonner';
 
 // Hàm helper định dạng ngày cho input type="date"
 const formatDateForInput = (dateString: string | Date): string => {
@@ -227,10 +228,10 @@ const AccountPage = () => {
       // Sau khi update, fetch lại user để đảm bảo store được đồng bộ
       await fetchUser();
 
-      alert("Đã cập nhật thông tin thành công!");
+      toast.success('Cập nhật thông tin thành công!')
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("Cập nhật thất bại, vui lòng thử lại.");
+      toast.error('Cập nhật thông tin thất bại!')
     } finally {
       setIsSaving(false);
     }

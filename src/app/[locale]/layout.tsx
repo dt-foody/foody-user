@@ -12,7 +12,8 @@ import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
 import authService from "@/services/auth.service"; // 💡 1. IMPORT
-import { cookies } from "next/headers";
+import { Toaster } from 'sonner' // 💡 1. IMPORT
+
 const poppins = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -63,21 +64,14 @@ export default async function RootLayout({
   // 🟢 Load file dịch theo locale
   const messages = (await import(`../../../messages/${params.locale}.json`)).default;
   const dir = params.locale === "ar" ? "rtl" : "ltr";
-  // const dir = "ltr";
-
-  const cookieStore = cookies();
-
-  console.log('cookieStore', cookieStore);
-
 
   const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
-
-  console.log('data 111', data);
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
       <body className="bg-white text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
         <NextIntlClientProvider locale={params.locale} messages={messages}>
+          <Toaster position="top-right" richColors /> {/* 💡 2. THÊM VÀO ĐÂY */}
           <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}
           {/* <CartProvider> */}
             <ClientCommons />
