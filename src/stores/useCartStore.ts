@@ -1,7 +1,7 @@
 // /stores/useCartStore.ts
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
@@ -10,8 +10,9 @@ import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v5";
+const PUBLIC_COUPON_TTL_MS = 30_000; // TTL 30s tránh spam gọi lặp
 
-// ĐỊNH NGHĨA TYPE DELIVERY OPTION TẠI ĐÂY
+// === Delivery option ===
 export type DeliveryOption = "immediate" | "scheduled";
 
 interface UserData {
@@ -44,22 +45,19 @@ interface CartState {
   publicCoupons: Coupon[];
   appliedCoupons: Coupon[];
   isLoadingPublicCoupons: boolean;
+  /** ✅ mốc fetch gần nhất để chống gọi lặp */
+  publicCouponsFetchedAt: number;
   couponStatus: { isLoading: boolean; error: string | null };
   productForOptions: MenuItem | null;
   currentUser: UserData;
 
-  // === STATE MỚI ===
+  // Delivery
   deliveryOption: DeliveryOption;
   scheduledDate: string;
 }
 interface CartActions {
-  /** Quyết định mở modal hay add thẳng */
   startAddToCart: (product: MenuItem) => void;
-
-  /** Thêm sản phẩm không option */
   addToCart: (item: MenuItem) => void;
-
-  /** Thêm sản phẩm có option + totalPrice đã tính */
   addToCartWithOptions: (
     product: MenuItem,
     selectedOptions: Record<string, OptionItem[]>,
@@ -84,7 +82,6 @@ interface CartActions {
   updateItemNote: (cartId: string, note: string) => void;
   removeItem: (cartId: string) => void;
 
-  // === ACTIONS MỚI ===
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
 }
@@ -114,12 +111,12 @@ const initialState: CartState = {
   showCart: false,
   publicCoupons: [],
   appliedCoupons: [],
-  isLoadingPublicCoupons: true,
+  isLoadingPublicCoupons: false,
+  publicCouponsFetchedAt: 0,
   couponStatus: { isLoading: false, error: null },
   productForOptions: null,
   currentUser: { isNew: true, age: 18 },
 
-  // === STATE MỚI ===
   deliveryOption: "immediate",
   scheduledDate: "",
 };
@@ -278,18 +275,36 @@ export const useCartStore = create<CartState & CartActions>()(
       setShowCart: (show) => set({ showCart: show }),
       setProductForOptions: (product) => set({ productForOptions: product }),
 
+      /** ✅ Idempotent + TTL + no-dupe guard */
       fetchPublicCoupons: async () => {
+        const { isLoadingPublicCoupons, publicCouponsFetchedAt } = get();
+
+        // Đang load -> bỏ
+        if (isLoadingPublicCoupons) return;
+
+        // TTL chống gọi lặp (ví dụ StrictMode, re-render…)
+        const now = Date.now();
+        if (
+          publicCouponsFetchedAt &&
+          now - publicCouponsFetchedAt < PUBLIC_COUPON_TTL_MS
+        ) {
+          return;
+        }
+
         try {
           set({ isLoadingPublicCoupons: true });
           const data = await couponService.getAvailables({});
-
           set({
             publicCoupons: data || [],
             isLoadingPublicCoupons: false,
+            publicCouponsFetchedAt: now,
           });
         } catch (e) {
           console.error("Failed to fetch public coupons:", e);
-          set({ isLoadingPublicCoupons: false });
+          set({
+            isLoadingPublicCoupons: false,
+            publicCouponsFetchedAt: now,
+          });
         }
       },
 
@@ -307,32 +322,27 @@ export const useCartStore = create<CartState & CartActions>()(
         }));
       },
 
-      // === IMPLEMENT ACTIONS MỚI ===
       setDeliveryOption: (option) => set({ deliveryOption: option }),
       setScheduledDate: (date) => set({ scheduledDate: date }),
     }),
     {
       name: CART_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      // chỉ persist cartItems, các lựa chọn khác sẽ reset khi tải lại
+      // Chỉ persist giỏ (tránh persist flag loading/TTL)
       partialize: (state) => ({
         cartItems: state.cartItems,
-        // Optional: bạn có thể persist lựa chọn giao hàng nếu muốn
-        // deliveryOption: state.deliveryOption,
-        // scheduledDate: state.scheduledDate,
       }),
     }
   )
 );
 
-/** ===== Public hook: giữ API quen thuộc ===== */
+/** ===== Public hook ===== */
 export function useCart() {
   const {
     cartItems,
     appliedCoupons,
     currentUser,
     publicCoupons,
-    // === LẤY STATE MỚI RA ===
     deliveryOption,
     scheduledDate,
     ...actionsAndState
@@ -404,17 +414,21 @@ export function useCart() {
     shippingDiscount,
     finalShippingFee,
     finalTotal,
-    // === TRẢ RA STATE MỚI ===
     deliveryOption,
     scheduledDate,
   };
 }
 
-/** ===== Initializer để fetch coupon public một lần ===== */
+/** ===== Initializer: chỉ chạy 1 lần kể cả StrictMode ===== */
 export function CartStoreInitializer() {
   const fetchPublicCoupons = useCartStore((s) => s.fetchPublicCoupons);
+  const ranRef = useRef(false);
+
   useEffect(() => {
+    if (ranRef.current) return; // ✅ chặn lần mount thứ 2 của StrictMode (dev)
+    ranRef.current = true;
     fetchPublicCoupons();
   }, [fetchPublicCoupons]);
+
   return null;
 }

@@ -19,6 +19,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearUser: () => set({ user: null }),
   fetchUser: async () => {
     try {
+      console.log("heheheheeeeee");
       const data = await authService.getMe();
       if (data) {
         set({ user: data.user });

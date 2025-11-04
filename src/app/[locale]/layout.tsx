@@ -11,8 +11,10 @@ import FooterNav from "@/components/FooterNav";
 import CartSidebar from '@/components/CartSidebar';
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
-import authService from "@/services/auth.service"; // 💡 1. IMPORT
+// import authService from "@/services/auth.service"; // 💡 1. IMPORT
 import { Toaster } from 'sonner' // 💡 1. IMPORT
+import { serverApiFetch } from "@/lib/serverApi";
+import { GetMeResponse } from "@/types";
 
 const poppins = Inter({
   subsets: ["latin"],
@@ -64,8 +66,15 @@ export default async function RootLayout({
   // 🟢 Load file dịch theo locale
   const messages = (await import(`../../../messages/${params.locale}.json`)).default;
   const dir = params.locale === "ar" ? "rtl" : "ltr";
+  
+  // const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
 
-  const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
+  let data;
+  try {
+    data = await serverApiFetch<GetMeResponse>("/auth/me");
+  } catch (err) {
+    console.log("ERROR", err);
+  }
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
