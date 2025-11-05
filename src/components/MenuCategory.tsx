@@ -20,7 +20,7 @@ export default function MenuCategory({
   onTabClick,
 }: MenuCategoryProps) {
   const tabs: Category[] = [
-    { id: 'all', name: '🍽️ Tất cả', type: 'category' },
+    { id: 'all', name: '🍽️ Thực đơn', type: 'category' },
     { id: 'combo', name: '🎁 Combo', type: 'combo' },
     ...categories.map((c) => ({
       id: c.id,

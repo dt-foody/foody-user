@@ -8,11 +8,11 @@ import "@/styles/index.scss";
 import "rc-slider/assets/index.css";
 import Footer from "@/components/Footer";
 import FooterNav from "@/components/FooterNav";
-import CartSidebar from '@/components/CartSidebar';
+import CartSidebar from "@/components/CartSidebar";
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
 // import authService from "@/services/auth.service"; // 💡 1. IMPORT
-import { Toaster } from 'sonner' // 💡 1. IMPORT
+import { Toaster } from "sonner"; // 💡 1. IMPORT
 import { serverApiFetch } from "@/lib/serverApi";
 import { GetMeResponse } from "@/types";
 
@@ -22,8 +22,13 @@ const poppins = Inter({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const messages = (await import(`../../../messages/${params.locale}.json`)).default;
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}) {
+  const messages = (await import(`../../../messages/${params.locale}.json`))
+    .default;
 
   return {
     title: messages.metadata.siteTitle,
@@ -51,7 +56,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       images: ["https://foody-user.vercel.app/images/logo.png"],
     },
     verification: {
-      "google": "tNXgCsyw3HWELlE_scnMxLvRfx1WQ8dIkjJU4gDrjGE",
+      google: "tNXgCsyw3HWELlE_scnMxLvRfx1WQ8dIkjJU4gDrjGE",
     },
   };
 }
@@ -64,9 +69,10 @@ export default async function RootLayout({
   params: { locale: string };
 }) {
   // 🟢 Load file dịch theo locale
-  const messages = (await import(`../../../messages/${params.locale}.json`)).default;
+  const messages = (await import(`../../../messages/${params.locale}.json`))
+    .default;
   const dir = params.locale === "ar" ? "rtl" : "ltr";
-  
+
   // const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
 
   let data;
@@ -82,17 +88,14 @@ export default async function RootLayout({
         <NextIntlClientProvider locale={params.locale} messages={messages}>
           <Toaster position="top-right" richColors /> {/* 💡 2. THÊM VÀO ĐÂY */}
           <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}
-          {/* <CartProvider> */}
-            <ClientCommons />
-            <SiteHeader ssrUser={data ? data.user : null } />
-            {children}
-            <FooterNav />
-            <Footer />
-
-            {/* Global Cart Components */}
-            <CartSidebar />
-            <ProductOptionsModal />
-          {/* </CartProvider> */}
+          <ClientCommons />
+          <SiteHeader ssrUser={data ? data.user : null} />
+          {children}
+          <FooterNav />
+          {/* <Footer /> */}
+          {/* Global Cart Components */}
+          <CartSidebar />
+          <ProductOptionsModal />
         </NextIntlClientProvider>
       </body>
     </html>

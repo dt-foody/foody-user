@@ -17,19 +17,8 @@ const BlogPage: React.FC = () => {
 
   return (
     <div className="nc-BlogPage overflow-hidden relative">
-      {/* ======== BG GLASS ======== */}
-      <BgGlassmorphism />
-      {/* ======== ALL SECTIONS ======== */}
-      {/* ======= START CONTAINER ============= */}
       <div className="container relative">
-        {/* === SECTION 1 === */}
-        <SectionAds />
-
-        {/* === SECTION 8 === */}
         <SectionLatestPosts sidebar={sidebarContent} />
-
-        {/* === SECTION 1 === */}
-        <SectionSubscribe2 className="pb-16 lg:pb-28" />
       </div>
     </div>
   );

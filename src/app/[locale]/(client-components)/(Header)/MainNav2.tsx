@@ -14,10 +14,10 @@ export interface MainNav2Props {
 
 const NAV_ITEMS = [
   { href: "/menu", label: "Thực đơn" },
-  { href: "/hot-deal", label: "Khuyến mãi" },
-  { href: "/blog", label: "Blog & Mẹo ẩm thực" },
-  { href: "/membership", label: "Thành viên" },
-  { href: "/about", label: "Giới thiệu" },
+  // { href: "/hot-deal", label: "Khuyến mãi" },
+  { href: "/blog", label: "1001 đêm" },
+  // { href: "/membership", label: "Thành viên" },
+  { href: "/about", label: "Ấn tượng" },
 ];
 
 const MainNav2: FC<MainNav2Props> = ({
@@ -25,8 +25,6 @@ const MainNav2: FC<MainNav2Props> = ({
 }) => {
   const { cartCount, setShowCart } = useCart();
   const { user } = useAuthStore();
-
-  console.log("user", user);
 
   return (
     <div className={`MainNav2 relative z-10 ${className}`}>
@@ -72,7 +70,7 @@ const MainNav2: FC<MainNav2Props> = ({
             )}
           </button>
 
-          <NotifyDropdown />
+          <NotifyDropdown user={user} />
 
           {user ? <AvatarDropdown /> : <LoginButton />}
         </div>

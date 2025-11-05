@@ -8,7 +8,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
   const { setUser, fetchUser } = useAuthStore();
 
-  console.log("ssrUser", ssrUser);
   useEffect(() => {
     if (ssrUser) setUser(ssrUser);
     else fetchUser(); // fallback nếu chưa có user

@@ -16,7 +16,7 @@ function PageHome() {
         <SectionMenu/>
         <SectionGridFeaturePlaces/>
         <SectionBlog/>
-        <SectionSubscribe2 />
+        {/* <SectionSubscribe2 /> */}
         <div className="relative py-16">
           <BackgroundSection />
           <SectionClientSay />

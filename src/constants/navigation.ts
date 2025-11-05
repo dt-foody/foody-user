@@ -15,31 +15,17 @@ export const NAVIGATION_DEMO: NavItemType[] = [
     href: "/menu",
     name: "Thực đơn",
     type: "megaMenu",
-    // megaMenu: megaMenuDemo, // có thể thêm mega menu nếu cần
-  },
-  {
-    id: ncNanoId(),
-    href: "/hot-deal",
-    name: "Khuyến mãi",
-    type: "megaMenu",
   },
   {
     id: ncNanoId(),
     href: "/blog",
-    name: "Blog & Mẹo ẩm thực",
-    type: "dropdown",
-    // children: otherPageChildMenus, // thêm con nếu muốn
-  },
-  {
-    id: ncNanoId(),
-    href: "/membership",
-    name: "Thành viên",
+    name: "1001 đêm",
     type: "dropdown",
   },
   {
     id: ncNanoId(),
     href: "/about",
-    name: "Giới thiệu",
+    name: "Ấn tượng",
     type: "megaMenu",
   },
 ];
