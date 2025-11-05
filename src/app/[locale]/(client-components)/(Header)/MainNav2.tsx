@@ -72,7 +72,7 @@ const MainNav2: FC<MainNav2Props> = ({
 
           <NotifyDropdown user={user} />
 
-          {user ? <AvatarDropdown /> : <LoginButton />}
+          {user ? <AvatarDropdown user={user} /> : <LoginButton />}
         </div>
       </div>
     </div>

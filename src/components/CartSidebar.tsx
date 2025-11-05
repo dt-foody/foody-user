@@ -278,8 +278,8 @@ export default function CartSidebar() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-orange-50 to-white">
         <div className="flex items-center gap-2">
-          <ShoppingCart size={18} className="text-orange-500" />
-          <h2 className="text-base font-bold text-gray-800">
+          <ShoppingCart size={20} className="text-orange-500" />
+          <h2 className="text-base font-bold text-gray-800 text-lg">
             Giỏ hàng <span className="text-orange-500">({cartCount})</span>
           </h2>
         </div>
@@ -309,8 +309,8 @@ export default function CartSidebar() {
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
               <ShoppingCart className="w-10 h-10 text-gray-300" />
             </div>
-            <p className="text-sm text-gray-500 font-medium">Giỏ hàng trống</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-lg text-gray-500 font-medium">Giỏ hàng trống</p>
+            <p className="text-md text-gray-400 mt-1">
               Thêm sản phẩm để bắt đầu mua sắm
             </p>
           </div>

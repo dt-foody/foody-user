@@ -10,11 +10,14 @@ import authService from "@/services/auth.service"; // ⚡ 2. Import authService
 import { useAuthStore } from "@/stores/useAuthStore";
 
 interface Props {
+  user?: any;
   className?: string;
 }
 
-export default function AvatarDropdown({ className = "" }: Props) {
+export default function AvatarDropdown({ user = null, className = "" }: Props) {
   const router = useRouter(); // ⚡ 3. Khởi tạo router
+
+  const { me } = useAuthStore();
 
   return (
     <>
@@ -23,14 +26,10 @@ export default function AvatarDropdown({ className = "" }: Props) {
           // ⚡ 4. Định nghĩa hàm handleLogout
           const handleLogout = async () => {
             try {
-              console.log("logout");
               await authService.logout(); //
 
               // Đóng popover
               close();
-
-              // Làm mới trang. Server sẽ xử lý việc xoá cookie
-              // và render lại trang ở trạng thái logged-out
               useAuthStore.getState().clearUser();
               router.refresh();
             } catch (error) {
@@ -62,8 +61,8 @@ export default function AvatarDropdown({ className = "" }: Props) {
                       <div className="flex items-center space-x-3">
                         <Avatar sizeClass="w-12 h-12" />
                         <div className="flex-grow">
-                          <h4 className="font-semibold">Eden Smith</h4>
-                          <p className="text-xs mt-0.5">Los Angeles, CA</p>
+                          <h4 className="font-semibold">{me.name}</h4>
+                          <p className="text-xs mt-0.5">{user.email}</p>
                         </div>
                       </div>
 
@@ -100,14 +99,14 @@ export default function AvatarDropdown({ className = "" }: Props) {
                           </svg>
                         </div>
                         <div className="ml-4">
-                          <p className="text-sm font-medium ">{"My Account"}</p>
+                          <p className="text-sm font-medium ">{"Tài khoản"}</p>
                         </div>
                       </Link>
 
                       <div className="w-full border-b border-neutral-200 dark:border-neutral-700" />
 
                       {/* ------------------ 2 --------------------- */}
-                      <div className="flex items-center justify-between p-2 -m-3 transition duration-150 ease-in-out rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus-visible:ring focus-visible:ring-orange-500 focus-visible:ring-opacity-50">
+                      {/* <div className="flex items-center justify-between p-2 -m-3 transition duration-150 ease-in-out rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus-visible:ring focus-visible:ring-orange-500 focus-visible:ring-opacity-50">
                         <div className="flex items-center">
                           <div className="flex items-center justify-center flex-shrink-0 text-neutral-500 dark:text-neutral-300">
                             <svg
@@ -147,7 +146,7 @@ export default function AvatarDropdown({ className = "" }: Props) {
                           </div>
                         </div>
                         <SwitchDarkMode2 />
-                      </div>
+                      </div> */}
 
                       {/* ⚡ 5. Thay thế <Link> bằng <button> và gán handleLogout */}
                       <button
@@ -186,7 +185,7 @@ export default function AvatarDropdown({ className = "" }: Props) {
                           </svg>
                         </div>
                         <div className="ml-4">
-                          <p className="text-sm font-medium ">{"Log out"}</p>
+                          <p className="text-sm font-medium ">{"Đăng xuất"}</p>
                         </div>
                       </button>
                     </div>

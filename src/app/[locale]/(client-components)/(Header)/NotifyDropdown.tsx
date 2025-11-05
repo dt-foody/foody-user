@@ -61,7 +61,7 @@ const NotifyDropdown: FC<Props> = ({ user = null, className = "" }) => {
               } group self-center w-10 h-10 sm:w-12 sm:h-12 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-full inline-flex items-center justify-center text-base font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 relative`}
             >
               {isLoggedIn && (
-                <span className="w-2 h-2 bg-blue-500 absolute top-2 right-2 rounded-full"></span>
+                <span className="w-2 h-2 bg-primary-500 absolute top-2 right-2 rounded-full"></span>
               )}
               <BellIcon className="h-6 w-6" />
             </Popover.Button>
@@ -92,7 +92,7 @@ const NotifyDropdown: FC<Props> = ({ user = null, className = "" }) => {
                     </div>
                   ) : (
                     // ----- TRƯỜNG HỢP 2: ĐÃ ĐĂNG NHẬP -----
-                    <div className="relative grid gap-8 bg-white dark:bg-neutral-800 p-7">
+                    <div className="relative grid gap-6 bg-white dark:bg-neutral-800 p-6">
                       {/* --- THAY ĐỔI --- */}
                       <h3 className="text-xl font-semibold">Thông báo</h3>
                       {/* --- KẾT THÚC THAY ĐỔI --- */}
@@ -120,7 +120,7 @@ const NotifyDropdown: FC<Props> = ({ user = null, className = "" }) => {
                             </p>
                           </div>
                           {/* Dấu chấm 'chưa đọc' - bạn có thể thêm logic cho cái này */}
-                          <span className="absolute right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500"></span>
+                          <span className="absolute right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full bg-primary-500"></span>
                         </a>
                       ))}
                     </div>

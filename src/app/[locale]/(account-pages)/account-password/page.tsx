@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+// Giữ nguyên import icon từ lucide-react
 import { Lock, Eye, EyeOff, Check, AlertCircle, Shield } from "lucide-react";
 
 interface PasswordStrength {
   score: number;
-  label: string;
+  label: string; // Nhãn này sẽ được dịch
   color: string;
 }
 
@@ -27,7 +28,7 @@ const AccountPass = () => {
     confirm: "",
   });
 
-  // Password strength calculator
+  // Tính toán độ mạnh mật khẩu (đã dịch nhãn)
   const calculatePasswordStrength = (password: string): PasswordStrength => {
     if (!password) return { score: 0, label: "", color: "" };
 
@@ -35,13 +36,15 @@ const AccountPass = () => {
     if (password.length >= 8) score++;
     if (password.length >= 12) score++;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
+    if (/\d]/.test(password)) score++;
     if (/[^a-zA-Z0-9]/.test(password)) score++;
 
-    if (score <= 2) return { score, label: "Weak", color: "bg-red-500" };
-    if (score <= 3) return { score, label: "Fair", color: "bg-yellow-500" };
-    if (score <= 4) return { score, label: "Good", color: "bg-blue-500" };
-    return { score, label: "Strong", color: "bg-green-500" };
+    // Đã dịch các nhãn độ mạnh
+    if (score <= 2) return { score, label: "Yếu", color: "bg-red-500" };
+    if (score <= 3)
+      return { score, label: "Trung bình", color: "bg-yellow-500" };
+    if (score <= 4) return { score, label: "Tốt", color: "bg-blue-500" };
+    return { score, label: "Mạnh", color: "bg-green-500" };
   };
 
   const passwordStrength = calculatePasswordStrength(passwords.new);
@@ -51,8 +54,6 @@ const AccountPass = () => {
     value: string
   ) => {
     setPasswords((prev) => ({ ...prev, [field]: value }));
-
-    // Clear error when user types
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -62,31 +63,32 @@ const AccountPass = () => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
+  // Validate form (đã dịch thông báo lỗi)
   const validateForm = (): boolean => {
     const newErrors = { current: "", new: "", confirm: "" };
     let isValid = true;
 
     if (!passwords.current) {
-      newErrors.current = "Current password is required";
+      newErrors.current = "Vui lòng nhập mật khẩu hiện tại";
       isValid = false;
     }
 
     if (!passwords.new) {
-      newErrors.new = "New password is required";
+      newErrors.new = "Vui lòng nhập mật khẩu mới";
       isValid = false;
     } else if (passwords.new.length < 8) {
-      newErrors.new = "Password must be at least 8 characters";
+      newErrors.new = "Mật khẩu phải có ít nhất 8 ký tự";
       isValid = false;
     } else if (passwords.new === passwords.current) {
-      newErrors.new = "New password must be different from current password";
+      newErrors.new = "Mật khẩu mới phải khác mật khẩu hiện tại";
       isValid = false;
     }
 
     if (!passwords.confirm) {
-      newErrors.confirm = "Please confirm your password";
+      newErrors.confirm = "Vui lòng xác nhận mật khẩu";
       isValid = false;
     } else if (passwords.new !== passwords.confirm) {
-      newErrors.confirm = "Passwords do not match";
+      newErrors.confirm = "Mật khẩu không khớp";
       isValid = false;
     }
 
@@ -99,14 +101,15 @@ const AccountPass = () => {
 
     setIsSaving(true);
 
-    // Simulate API call
+    // Mô phỏng API call
     setTimeout(() => {
       console.log("Updating password:", {
         current: passwords.current,
         new: passwords.new,
       });
       setIsSaving(false);
-      alert("Password updated successfully!");
+      // Đã dịch thông báo
+      alert("Cập nhật mật khẩu thành công!");
 
       // Reset form
       setPasswords({ current: "", new: "", confirm: "" });
@@ -114,16 +117,17 @@ const AccountPass = () => {
     }, 1000);
   };
 
+  // Danh sách yêu cầu (đã dịch)
   const requirements = [
-    { met: passwords.new.length >= 8, text: "At least 8 characters" },
+    { met: passwords.new.length >= 8, text: "Ít nhất 8 ký tự" },
     {
       met: /[a-z]/.test(passwords.new) && /[A-Z]/.test(passwords.new),
-      text: "Upper & lowercase letters",
+      text: "Chữ hoa & chữ thường",
     },
-    { met: /\d/.test(passwords.new), text: "At least one number" },
+    { met: /\d/.test(passwords.new), text: "Ít nhất một số" },
     {
       met: /[^a-zA-Z0-9]/.test(passwords.new),
-      text: "At least one special character",
+      text: "Ít nhất một ký tự đặc biệt",
     },
   ];
 
@@ -134,22 +138,22 @@ const AccountPass = () => {
         <div className="flex items-center gap-2 mb-1">
           <Shield className="w-5 h-5 text-orange-500" />
           <h1 className="text-xl font-semibold text-gray-900">
-            Update Password
+            Cập nhật Mật khẩu
           </h1>
         </div>
         <p className="text-sm text-gray-600">
-          Keep your account secure by using a strong password
+          Giữ tài khoản của bạn an toàn bằng cách sử dụng mật khẩu mạnh
         </p>
       </div>
 
       {/* Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="space-y-5">
-          {/* Current Password */}
+          {/* Mật khẩu hiện tại */}
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <Lock className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-              Current Password
+              Mật khẩu hiện tại
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
@@ -162,7 +166,7 @@ const AccountPass = () => {
                 className={`w-full px-3 py-2 pr-10 text-sm border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all ${
                   errors.current ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="Enter current password"
+                placeholder="Nhập mật khẩu hiện tại"
               />
               <button
                 type="button"
@@ -184,14 +188,14 @@ const AccountPass = () => {
             )}
           </div>
 
-          {/* Divider */}
+          {/* Dấu gạch phân cách */}
           <div className="border-t border-gray-200" />
 
-          {/* New Password */}
+          {/* Mật khẩu mới */}
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <Lock className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-              New Password
+              Mật khẩu mới
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
@@ -202,7 +206,7 @@ const AccountPass = () => {
                 className={`w-full px-3 py-2 pr-10 text-sm border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all ${
                   errors.new ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="Enter new password"
+                placeholder="Nhập mật khẩu mới"
               />
               <button
                 type="button"
@@ -223,12 +227,12 @@ const AccountPass = () => {
               </p>
             )}
 
-            {/* Password Strength */}
+            {/* Độ mạnh mật khẩu */}
             {passwords.new && !errors.new && (
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-600">
-                    Password Strength:
+                    Độ mạnh mật khẩu:
                   </span>
                   <span
                     className={`text-xs font-medium ${
@@ -259,11 +263,11 @@ const AccountPass = () => {
               </div>
             )}
 
-            {/* Password Requirements */}
+            {/* Yêu cầu mật khẩu */}
             {passwords.new && (
               <div className="mt-3 p-3 bg-gray-50 rounded-md">
                 <p className="text-xs font-medium text-gray-700 mb-2">
-                  Password Requirements:
+                  Yêu cầu mật khẩu:
                 </p>
                 <div className="space-y-1">
                   {requirements.map((req, index) => (
@@ -289,11 +293,11 @@ const AccountPass = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
+          {/* Xác nhận mật khẩu mới */}
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
               <Lock className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-              Confirm New Password
+              Xác nhận mật khẩu mới
               <span className="text-red-500 ml-1">*</span>
             </label>
             <div className="relative">
@@ -306,7 +310,7 @@ const AccountPass = () => {
                 className={`w-full px-3 py-2 pr-10 text-sm border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all ${
                   errors.confirm ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="Confirm new password"
+                placeholder="Xác nhận mật khẩu mới"
               />
               <button
                 type="button"
@@ -331,12 +335,12 @@ const AccountPass = () => {
               passwords.new === passwords.confirm && (
                 <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
                   <Check className="w-3 h-3" />
-                  Passwords match
+                  Mật khẩu đã khớp
                 </p>
               )}
           </div>
 
-          {/* Submit Button */}
+          {/* Nút gửi */}
           <div className="flex justify-end pt-3 border-t border-gray-100">
             <button
               type="button"
@@ -347,31 +351,17 @@ const AccountPass = () => {
               {isSaving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Updating...
+                  Đang cập nhật...
                 </>
               ) : (
                 <>
                   <Shield className="w-4 h-4" />
-                  Update Password
+                  Cập nhật Mật khẩu
                 </>
               )}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Security Tips */}
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" />
-          Security Tips
-        </h3>
-        <ul className="space-y-1 text-xs text-blue-800">
-          <li>• Never share your password with anyone</li>
-          <li>• Use a unique password for this account</li>
-          <li>• Change your password regularly</li>
-          <li>• Avoid using personal information in your password</li>
-        </ul>
       </div>
     </div>
   );
