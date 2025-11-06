@@ -1,7 +1,7 @@
 "use client";
 
 import React, { FC, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation"; // ✅ Thêm useRouter
 import Logo from "@/shared/Logo";
 import NotifyDropdown from "./NotifyDropdown";
 import AvatarDropdown from "./AvatarDropdown";
@@ -31,6 +31,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
   const { cartCount, setShowCart } = useCart();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("menu");
+  const router = useRouter(); // ✅ Khởi tạo router
 
   return (
     <header className={`MainNav2 relative z-20 w-full bg-white ${className}`}>
@@ -45,9 +46,12 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                 return (
                   <li
                     key={item.id}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      router.push(item.href); // ✅ Chuyển trang khi click
+                    }}
                     className={`
-                      relative px-8 flex items-center h-full cursor-pointer
+                      relative px-8 flex items-center h-full cursor-pointer select-none
                       ${
                         isActive
                           ? "bg-neutral-50 rounded-t-xl border-2 border-b-0 border-black"
@@ -76,8 +80,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                     </span>
 
                     {/* Tab Label */}
-                    <Link
-                      href={item.href}
+                    <div
                       className={`
                         flex items-center gap-2 no-underline transition-colors duration-300 text-black
                         ${isActive ? "font-semibold" : "font-medium"}
@@ -90,7 +93,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                           {item.sublabel}
                         </span>
                       )}
-                    </Link>
+                    </div>
                   </li>
                 );
               })}

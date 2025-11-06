@@ -61,8 +61,8 @@ export default function AvatarDropdown({ user = null, className = "" }: Props) {
                       <div className="flex items-center space-x-3">
                         <Avatar sizeClass="w-12 h-12" />
                         <div className="flex-grow">
-                          <h4 className="font-semibold">{me.name}</h4>
-                          <p className="text-xs mt-0.5">{user.email}</p>
+                          <h4 className="font-semibold">{me?.name}</h4>
+                          <p className="text-xs mt-0.5">{user?.email}</p>
                         </div>
                       </div>
 

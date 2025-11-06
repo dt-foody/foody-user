@@ -36,6 +36,9 @@ module.exports = {
         base: ['14px'],
       },
       colors: {
+        category: {
+          active: customColors("--c-category-active"),
+        },
         primary: {
           50: customColors("--c-primary-50"),
           100: customColors("--c-primary-100"),

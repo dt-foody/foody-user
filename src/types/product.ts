@@ -65,3 +65,9 @@ export interface MenuItem extends Product {
 }
 
 export type ProductPaginate = Paginated<Product>;
+
+export interface GroupedCategory {
+  category: Category | null; // phòng trường hợp category bị null
+  totalProducts: number;
+  products: Product[];
+}

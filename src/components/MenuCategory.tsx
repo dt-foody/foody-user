@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 interface Category {
   id: string;
   name: string;
-  type: 'category' | 'combo';
+  type: "category" | "combo";
 }
 
 interface MenuCategoryProps {
   categories: { id: string; name: string }[];
-  activeTab: { id: string; type: 'category' | 'combo' };
-  onTabClick: (type: 'category' | 'combo', id: string) => void;
+  activeTab: { id: string; type: "category" | "combo" };
+  onTabClick: (type: "category" | "combo", id: string) => void;
 }
 
 export default function MenuCategory({
@@ -20,12 +20,12 @@ export default function MenuCategory({
   onTabClick,
 }: MenuCategoryProps) {
   const tabs: Category[] = [
-    { id: 'all', name: '🍽️ Thực đơn', type: 'category' },
-    { id: 'combo', name: '🎁 Combo', type: 'combo' },
+    { id: "all", name: "Thực đơn", type: "category" },
+    { id: "combo", name: "Combo", type: "combo" },
     ...categories.map((c) => ({
       id: c.id,
       name: c.name,
-      type: 'category' as const,
+      type: "category" as const,
     })),
   ];
 
@@ -35,12 +35,10 @@ export default function MenuCategory({
         <button
           key={tab.id}
           onClick={() => onTabClick(tab.type, tab.id)}
-          className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+          className={`flex-shrink-0 px-6 py-2 rounded-2xl font-semibold ${
             activeTab.type === tab.type && activeTab.id === tab.id
-              ? tab.type === 'combo'
-                ? 'bg-purple-500 text-white shadow-lg scale-105'
-                : 'bg-orange-500 text-white shadow-lg scale-105'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border'
+              ? "bg-category-active text-black scale-105"
+              : "bg-white text-black hover:bg-gray-100 border"
           }`}
         >
           {tab.name}

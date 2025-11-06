@@ -143,7 +143,7 @@ export const useCartStore = create<CartState & CartActions>()(
               cartItems: state.cartItems.map((i) =>
                 i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i
               ),
-              showCart: true,
+              showCart: false,
             };
           }
           const line: CartLine = {
@@ -156,7 +156,7 @@ export const useCartStore = create<CartState & CartActions>()(
             totalPrice: item.price,
             categoryIds: item.categoryIds || [],
           };
-          return { cartItems: [...state.cartItems, line], showCart: true };
+          return { cartItems: [...state.cartItems, line], showCart: false };
         });
       },
 

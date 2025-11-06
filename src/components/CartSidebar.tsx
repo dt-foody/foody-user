@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ShoppingCart,
   X,
@@ -13,34 +13,32 @@ import {
   ChevronLeft,
   XCircle,
   Check,
-  Clock,
-  Zap,
-  Calendar,
   MessageSquare,
   Pencil,
 } from "lucide-react";
-// === IMPORT THÊM TYPE TỪ STORE ===
-import { SHIPPING_FEE, useCart } from "@/stores/useCartStore";
-import { useRouter } from "next/navigation";
-import type { EligibilityStatus } from "@/stores/useCartStore";
-import { useAuthStore } from "@/stores/useAuthStore";
 import Image from "next/image";
-import { Coupon } from "@/types";
-// type DeliveryOption = "immediate" | "scheduled"; // <-- KHÔNG CẦN NỮA
+import { useRouter } from "next/navigation";
+import { useCart, SHIPPING_FEE } from "@/stores/useCartStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import type { EligibilityStatus } from "@/stores/useCartStore";
+import type { Coupon } from "@/types";
 
-/* ===========================
-   Hoisted sub-components (memo)
-   =========================== */
+/* -----------------------------
+   Local memo components
+----------------------------- */
 
-// ... (OptionChips component - giữ nguyên)
-const OptionChips = memo(function OptionChips({ names }: { names: string[] }) {
+const OptionChips = React.memo(function OptionChips({
+  names,
+}: {
+  names: string[];
+}) {
   if (!names?.length) return null;
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
-      {names.map((n, idx) => (
+      {names.map((n, i) => (
         <span
-          key={`${n}-${idx}`}
-          className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-orange-700 border border-orange-200"
+          key={i}
+          className="px-2 py-0.5 text-[11px] font-medium rounded-full border border-primary-200 bg-primary-50 text-primary-700"
         >
           {n}
         </span>
@@ -49,8 +47,7 @@ const OptionChips = memo(function OptionChips({ names }: { names: string[] }) {
   );
 });
 
-// ... (ItemNoteView component - giữ nguyên)
-const ItemNoteView = memo(function ItemNoteView({
+const ItemNoteView = React.memo(function ItemNoteView({
   cartId,
   note,
   isEditing,
@@ -98,22 +95,18 @@ const ItemNoteView = memo(function ItemNoteView({
 
   return (
     <div className="mt-1.5">
-      <label className="sr-only" htmlFor={`note-${cartId}`}>
-        Ghi chú
-      </label>
       <textarea
-        id={`note-${cartId}`}
         value={noteDraft}
         onChange={(e) => setNoteDraft(e.target.value)}
         rows={2}
         placeholder="Ghi chú cho quán (vd: ít đường, không cay...)"
-        className="w-full p-2 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+        className="w-full p-2 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition"
       />
       <div className="mt-1.5 flex items-center gap-2">
         <button
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => saveNote(cartId)}
-          className="px-2.5 py-1 rounded-md text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600"
+          className="px-2.5 py-1 rounded-md text-xs font-semibold bg-primary-500 text-white hover:bg-primary-600"
         >
           Lưu
         </button>
@@ -129,9 +122,9 @@ const ItemNoteView = memo(function ItemNoteView({
   );
 });
 
-/* ===========================
-   Main component
-   =========================== */
+/* -----------------------------
+   Main Component
+----------------------------- */
 
 export default function CartSidebar() {
   const {
@@ -154,28 +147,15 @@ export default function CartSidebar() {
     applyPublicCoupon,
     applyPrivateCoupon,
     removeCoupon,
-
-    // === LẤY STATE VÀ ACTIONS TỪ STORE ===
-    deliveryOption,
-    setDeliveryOption,
-    scheduledDate,
-    setScheduledDate,
   } = useCart();
-
-  const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
-  const [manualCouponCode, setManualCouponCode] = useState("");
-
-  // === XÓA USESTATE LOCAL CHO DELIVERY ===
-  // const [deliveryOption, setDeliveryOption] =
-  //   useState<DeliveryOption>("immediate");
-  // const [scheduledDate, setScheduledDate] = useState("");
-
-  // Inline note editing state
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [noteDraft, setNoteDraft] = useState("");
 
   const router = useRouter();
   const { user } = useAuthStore();
+
+  const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
+  const [manualCouponCode, setManualCouponCode] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
 
   const handleApplyPrivateCoupon = async () => {
     if (!manualCouponCode) return;
@@ -184,38 +164,25 @@ export default function CartSidebar() {
   };
 
   const handleTogglePublicCoupon = (coupon: Coupon) => {
-    if (appliedCoupons.some((c) => c.id === coupon.id)) {
-      removeCoupon(coupon.id);
-    } else {
-      applyPublicCoupon(coupon);
-    }
+    if (appliedCoupons.some((c) => c.id === coupon.id)) removeCoupon(coupon.id);
+    else applyPublicCoupon(coupon);
   };
 
   const handlePlaceOrder = () => {
     setShowCart(false);
-    if (!user) {
-      router.push("/login?redirect_uri=/checkout");
-      return;
-    }
-    router.push("/checkout");
+    if (!user) router.push("/login?redirect_uri=/checkout");
+    else router.push("/checkout");
   };
 
-  const handleImageError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
-  ) => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src =
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80";
+      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
   };
 
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
-  };
-
-  // Group public coupons (top-level to avoid hook-in-render issues)
+  /* -----------------------------
+     Group Coupons
+  ----------------------------- */
   const groupedCoupons = useMemo(() => {
-    console.log("publicCouponStatuses", publicCouponStatuses);
     const groups = publicCouponStatuses.reduce((acc, status) => {
       const key = status.coupon.type || "other";
       if (!acc[key]) acc[key] = [];
@@ -225,27 +192,15 @@ export default function CartSidebar() {
 
     for (const key in groups) {
       groups[key].sort((a, b) => {
-        if (a.isEligible && !b.isEligible) return -1;
-        if (!a.isEligible && b.isEligible) return 1;
-
-        const getDiscountValue = (coupon: Coupon) => {
-          if (coupon.type === "freeship") return coupon.value;
-          if (coupon.valueType === "percentage") {
-            return Math.min(
-              subtotal * (coupon.value / 100),
-              coupon.maxDiscountAmount || Infinity
-            );
-          }
-          return coupon.value;
-        };
-
-        const discountA = getDiscountValue(a.coupon);
-        const discountB = getDiscountValue(b.coupon);
-        return discountB - discountA;
+        const getValue = (coupon: Coupon) =>
+          coupon.valueType === "percentage"
+            ? coupon.value
+            : coupon.value ?? 0;
+        return getValue(b.coupon) - getValue(a.coupon);
       });
     }
     return groups;
-  }, [publicCouponStatuses, subtotal]);
+  }, [publicCouponStatuses]);
 
   const groupTitles: Record<string, string> = {
     discount_code: "Mã Giảm Giá",
@@ -258,29 +213,33 @@ export default function CartSidebar() {
     return `${coupon.value.toLocaleString("vi-VN")}đ`;
   };
 
-  // Note edit handlers
-  const beginEditNote = (cartId: string, current?: string) => {
-    setEditingNoteId(cartId);
-    setNoteDraft(current ?? "");
+  /* -----------------------------
+     Note Handlers
+  ----------------------------- */
+  const beginEditNote = (id: string, cur?: string) => {
+    setEditingNoteId(id);
+    setNoteDraft(cur ?? "");
   };
   const cancelEditNote = () => {
     setEditingNoteId(null);
     setNoteDraft("");
   };
-  const saveNote = (cartId: string) => {
-    updateItemNote(cartId, noteDraft.trim());
-    setEditingNoteId(null);
-    setNoteDraft("");
+  const saveNote = (id: string) => {
+    updateItemNote(id, noteDraft.trim());
+    cancelEditNote();
   };
 
+  /* -----------------------------
+     Cart Content
+  ----------------------------- */
   const renderCartContent = () => (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-orange-50 to-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-primary-50 to-white">
         <div className="flex items-center gap-2">
-          <ShoppingCart size={20} className="text-orange-500" />
+          <ShoppingCart size={20} className="text-primary-600" />
           <h2 className="text-base font-bold text-gray-800 text-lg">
-            Giỏ hàng <span className="text-orange-500">({cartCount})</span>
+            Giỏ hàng <span className="text-primary-600">({cartCount})</span>
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -295,7 +254,6 @@ export default function CartSidebar() {
           <button
             onClick={() => setShowCart(false)}
             className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Đóng giỏ hàng"
           >
             <X size={20} />
           </button>
@@ -309,8 +267,10 @@ export default function CartSidebar() {
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
               <ShoppingCart className="w-10 h-10 text-gray-300" />
             </div>
-            <p className="text-lg text-gray-500 font-medium">Giỏ hàng trống</p>
-            <p className="text-md text-gray-400 mt-1">
+            <p className="text-lg text-gray-500 font-medium">
+              Giỏ hàng trống
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
               Thêm sản phẩm để bắt đầu mua sắm
             </p>
           </div>
@@ -319,8 +279,7 @@ export default function CartSidebar() {
             <div className="p-3 space-y-2.5">
               {cartItems.map((item) => {
                 const options =
-                  item.selectedOptions?.map((o) => o.name).filter(Boolean) ??
-                  [];
+                  item.selectedOptions?.map((o) => o.name).filter(Boolean) ?? [];
                 const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
 
@@ -345,23 +304,16 @@ export default function CartSidebar() {
                           </h4>
                           <button
                             onClick={() => removeItem(item.cartId)}
-                            aria-label="Xóa sản phẩm"
-                            className="flex-shrink-0 p-1 rounded-full hover:bg-red-50"
-                            title="Xóa"
+                            className="p-1 rounded-full hover:bg-red-50"
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </button>
                         </div>
 
-                        {/* Unit price */}
                         <p className="text-[12px] text-gray-500">
                           {item.totalPrice.toLocaleString("vi-VN")}đ / món
                         </p>
-
-                        {/* Options */}
                         <OptionChips names={options} />
-
-                        {/* Note */}
                         <ItemNoteView
                           cartId={item.cartId}
                           note={item.note}
@@ -374,13 +326,11 @@ export default function CartSidebar() {
                         />
                       </div>
 
-                      {/* Qty & line total */}
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-1">
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => updateQuantity(item.cartId, -1)}
-                            className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                            aria-label="Giảm số lượng"
+                            className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
                           >
                             <Minus size={14} />
                           </button>
@@ -389,8 +339,7 @@ export default function CartSidebar() {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.cartId, 1)}
-                            className="w-7 h-7 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center transition-colors"
-                            aria-label="Tăng số lượng"
+                            className="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center hover:bg-primary-600"
                           >
                             <Plus size={14} />
                           </button>
@@ -404,18 +353,147 @@ export default function CartSidebar() {
                 );
               })}
             </div>
+
+            {/* Coupon & Summary */}
+            <div className="px-3 pb-3 space-y-2.5">
+              {/* Private Input */}
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <label className="font-semibold text-xs text-gray-700 mb-2 block flex items-center gap-1.5">
+                  <Tag size={13} className="text-primary-500" />
+                  Mã khuyến mãi
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={manualCouponCode}
+                    onChange={(e) =>
+                      setManualCouponCode(e.target.value.toUpperCase())
+                    }
+                    placeholder="Nhập mã của bạn"
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                  <button
+                    onClick={handleApplyPrivateCoupon}
+                    disabled={couponStatus.isLoading || !manualCouponCode}
+                    className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {couponStatus.isLoading ? (
+                      <Loader className="animate-spin mx-auto" size={16} />
+                    ) : (
+                      "Áp dụng"
+                    )}
+                  </button>
+                </div>
+                {couponStatus.error && (
+                  <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    <XCircle size={12} />
+                    {couponStatus.error}
+                  </p>
+                )}
+              </div>
+
+              {/* Applied Coupons */}
+              {appliedCoupons.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-xs text-gray-700 flex items-center gap-1">
+                    <Check size={12} className="text-green-600" />
+                    Đã áp dụng ({appliedCoupons.length})
+                  </p>
+                  {appliedCoupons.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
+                    >
+                      <div>
+                        <p className="text-green-800 font-semibold text-xs">
+                          {c.name}
+                        </p>
+                        <p className="text-xs text-gray-600 font-mono">
+                          {c.code}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeCoupon(c.id)}
+                        className="p-1 hover:bg-red-100 rounded-full"
+                      >
+                        <XCircle size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Public Coupon List */}
+              <button
+                onClick={() => setIsCouponPanelOpen(true)}
+                className="flex justify-between items-center w-full p-2.5 bg-white hover:bg-primary-50 border border-gray-200 hover:border-primary-300 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <Tag className="w-4 h-4 text-primary-600" />
+                  </div>
+                  <span className="font-semibold text-sm text-gray-800">
+                    Khuyến mãi khác
+                  </span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
+
+              {/* Order Summary */}
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-3 border space-y-1.5">
+                <h3 className="font-semibold text-sm text-gray-800 mb-2 pb-2 border-b">
+                  Chi tiết đơn hàng
+                </h3>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Tạm tính</span>
+                  <span className="font-medium">
+                    {subtotal.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Phí vận chuyển</span>
+                  <span className="font-medium">
+                    {SHIPPING_FEE.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+                {itemDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Giảm sản phẩm</span>
+                    <span className="font-semibold">
+                      -{itemDiscount.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+                {shippingDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Giảm phí ship</span>
+                    <span className="font-semibold">
+                      -{shippingDiscount.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-2 mt-2 border-t">
+                  <span className="text-sm font-semibold text-gray-900">
+                    Tổng cộng
+                  </span>
+                  <span className="text-lg font-bold text-primary-600">
+                    {finalTotal.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+              </div>
+            </div>
           </>
         )}
       </div>
 
       {/* Footer */}
       {cartItems.length > 0 && (
-        <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)] flex-shrink-0">
+        <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
           <button
             onClick={handlePlaceOrder}
             className={`w-full py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg ${
               user
-                ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                ? "bg-primary-500 text-white hover:bg-primary-600"
                 : "bg-gray-200 text-gray-600 hover:bg-gray-300"
             }`}
           >
@@ -426,17 +504,18 @@ export default function CartSidebar() {
     </div>
   );
 
-  // ... (renderCouponPanel component - giữ nguyên)
+  /* -----------------------------
+     Coupon Panel
+  ----------------------------- */
   const renderCouponPanel = () => {
-    const hasAnyCoupons = Object.keys(groupedCoupons).length > 0;
+    const hasCoupons = Object.keys(groupedCoupons).length > 0;
 
     return (
-      <div className="flex flex-col h-full bg-gradient-to-b from-orange-50 to-gray-50">
-        <div className="flex items-center px-4 py-3 border-b bg-white shadow-sm flex-shrink-0">
+      <div className="flex flex-col h-full bg-gradient-to-b from-primary-50 to-gray-50">
+        <div className="flex items-center px-4 py-3 border-b bg-white shadow-sm">
           <button
             onClick={() => setIsCouponPanelOpen(false)}
-            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors -ml-1"
-            aria-label="Quay lại giỏ hàng"
+            className="p-1.5 hover:bg-gray-100 rounded-full"
           >
             <ChevronLeft size={20} />
           </button>
@@ -449,12 +528,12 @@ export default function CartSidebar() {
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {isLoadingPublicCoupons ? (
             <div className="flex justify-center items-center h-full">
-              <Loader className="animate-spin text-orange-500" size={28} />
+              <Loader className="animate-spin text-primary-500" size={28} />
             </div>
-          ) : !hasAnyCoupons ? (
+          ) : !hasCoupons ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
-              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-3">
-                <Tag className="w-10 h-10 text-orange-400" />
+              <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mb-3">
+                <Tag className="w-10 h-10 text-primary-400" />
               </div>
               <h3 className="text-base font-semibold text-gray-700 mb-1">
                 Chưa có khuyến mãi
@@ -467,7 +546,7 @@ export default function CartSidebar() {
                 <div className="flex items-center gap-2 mb-2">
                   <div
                     className={`w-1 h-4 rounded-full ${
-                      type === "freeship" ? "bg-blue-500" : "bg-orange-500"
+                      type === "freeship" ? "bg-blue-500" : "bg-primary-500"
                     }`}
                   />
                   <h3 className="font-bold text-sm text-gray-800">
@@ -476,102 +555,63 @@ export default function CartSidebar() {
                 </div>
 
                 <div className="space-y-2">
-                  {coupons.map((status) => {
-                    const { coupon, isEligible, reason } = status;
+                  {coupons.map((s) => {
+                    const { coupon, isEligible } = s;
+
+                    console.log("appliedCoupons", appliedCoupons);
+                    console.log("coupon", coupon);
                     const isApplied = appliedCoupons.some(
                       (c) => c.id === coupon.id
                     );
-                    const isDisabledByFreeshipRule =
-                      coupon.type === "freeship" &&
-                      !isApplied &&
-                      appliedCoupons.some((c) => c.type === "freeship");
                     const isDisabled =
-                      (!isEligible && !isApplied) || isDisabledByFreeshipRule;
-                    const bgGradient =
-                      type === "freeship"
-                        ? "from-blue-500 to-blue-600"
-                        : "from-orange-500 to-orange-600";
-
+                      (!isEligible && !isApplied) ||
+                      (coupon.type === "freeship" &&
+                        !isApplied &&
+                        appliedCoupons.some((c) => c.type === "freeship"));
                     return (
                       <label
                         key={coupon.id}
-                        htmlFor={coupon.id}
-                        className={`block relative overflow-hidden rounded-lg transition-all duration-200 ${
-                          isDisabled
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer hover:shadow-md hover:scale-[1.01]"
-                        } ${
+                        className={`block relative overflow-hidden rounded-lg border transition-all ${
                           isApplied
-                            ? "ring-2 ring-orange-500 shadow-md"
-                            : "shadow-sm"
+                            ? "ring-2 ring-primary-500 shadow-md"
+                            : "hover:shadow-md"
+                        } ${
+                          isDisabled ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                       >
-                        <div
-                          className={`absolute inset-0 bg-gradient-to-r ${bgGradient} ${
-                            isApplied ? "opacity-10" : "opacity-5"
-                          }`}
-                        />
-
-                        <div className="relative bg-white p-3 flex gap-3">
-                          <div
-                            className={`flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br ${bgGradient} flex flex-col items-center justify-center text-white shadow-sm`}
-                          >
+                        <div className="bg-white p-3 flex gap-3">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex flex-col items-center justify-center text-white shadow-sm">
                             <Tag className="w-5 h-5 mb-0.5" />
-                            <span className="text-[10px] font-bold text-center px-1 leading-tight">
+                            <span className="text-[10px] font-bold">
                               {formatDiscountValue(coupon)}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="font-bold text-gray-900 text-sm leading-tight">
+                            <div className="flex items-start justify-between mb-1">
+                              <h4 className="font-bold text-sm text-gray-900">
                                 {coupon.name}
                               </h4>
-
-                              {isApplied ? (
-                                <span className="flex-shrink-0 px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-semibold rounded flex items-center gap-0.5">
-                                  <Check size={10} />
+                              {isApplied && (
+                                <span className="text-[10px] bg-green-100 text-green-700 font-semibold px-1.5 py-0.5 rounded">
                                   Đang dùng
-                                </span>
-                              ) : !isEligible ? (
-                                <span className="flex-shrink-0 px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-semibold rounded">
-                                  Chưa đủ ĐK
-                                </span>
-                              ) : (
-                                <span className="flex-shrink-0 px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-semibold rounded">
-                                  Có thể dùng
                                 </span>
                               )}
                             </div>
-
                             <p className="text-xs text-gray-600 mb-1.5 line-clamp-2">
                               {coupon.description}
                             </p>
-
-                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded text-[11px] font-mono font-semibold text-gray-700">
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded text-[11px] font-mono text-gray-700">
                               <Tag size={10} />
                               {coupon.code}
                             </div>
-
-                            {!isEligible && reason && !isApplied && (
-                              <p className="text-[11px] text-red-500 font-medium mt-1.5">
-                                • {reason}
-                              </p>
-                            )}
-                            {isDisabledByFreeshipRule && (
-                              <p className="text-[11px] text-blue-600 font-medium mt-1.5">
-                                • Chỉ áp dụng 1 mã Freeship
-                              </p>
-                            )}
                           </div>
 
                           <div
-                            className={`flex-shrink-0 flex items-center justify-center w-5 h-5 border-2 rounded-full transition-all ${
+                            className={`w-5 h-5 flex items-center justify-center border-2 rounded-full ${
                               isApplied
-                                ? "bg-orange-500 border-orange-500"
-                                : "bg-white border-gray-300"
-                            } ${
-                              isDisabled ? "bg-gray-100 border-gray-200" : ""
+                                ? "bg-primary-500 border-primary-500"
+                                : "border-gray-300"
                             }`}
                           >
                             {isApplied && (
@@ -586,7 +626,6 @@ export default function CartSidebar() {
 
                         <input
                           type="checkbox"
-                          id={coupon.id}
                           className="hidden"
                           checked={isApplied}
                           disabled={isDisabled}

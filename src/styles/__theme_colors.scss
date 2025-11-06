@@ -551,7 +551,7 @@
   --c-secondary-900: 89, 28, 23;
 
   /* NEUTRAL (Warm Neutral – Dusty Gray Brown) */
-  --c-neutral-50: 255, 250, 242; /* 👈 #fffaf2 - background chính */
+  --c-neutral-50: 255, 250, 242;
   --c-neutral-100: 240, 236, 233;
   --c-neutral-200: 224, 216, 211;
   --c-neutral-300: 198, 183, 176;
@@ -561,4 +561,7 @@
   --c-neutral-700: 79, 67, 61;
   --c-neutral-800: 54, 45, 41;
   --c-neutral-900: 33, 28, 25;
+
+  // button category
+  --c-category-active: 198, 181, 163;
 }
