@@ -407,7 +407,7 @@ export default function HotDealsPage() {
             <ProductNotFound />
           ) : (
             dealItems.map((item) => (
-              <ProductCard key={item.id} product={item} showHotDealBadge />
+              <ProductCard key={item.id} product={item} />
             ))
           )}
         </div>
