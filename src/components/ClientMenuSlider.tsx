@@ -61,9 +61,6 @@ export default function ClientMenuSlider({
   return (
     // CHANGED: Padding đã được làm responsive (px-8 trên mobile, px-12 trên desktop)
     <div className="relative px-8 md:px-12">
-      {/* --- MŨI TÊN ĐIỀU KHIỂN BÊN NGOÀI --- */}
-      {/* Đây là các mũi tên được render BÊN NGOÀI <Slider> */}
-      {/* Chúng sẽ lấy "relative" của div cha làm gốc */}
       <button
         onClick={() => sliderRef.current?.slickPrev()}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-2 md:p-3 hover:bg-red-600 hover:text-white transition"
@@ -81,8 +78,6 @@ export default function ClientMenuSlider({
         <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
       </button>
       {/* ------------------------------------ */}
-
-      {/* Khung cố định chiều cao để tránh CLS khi slider mount */}
       <div style={{ minHeight: 380 }}>
         {/* CHANGED: Thêm ref vào Slider */}
         <Slider {...settings} ref={sliderRef}>

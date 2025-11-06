@@ -6,13 +6,11 @@ import "./globals.css";
 import "@/fonts/line-awesome-1.3.0/css/line-awesome.css";
 import "@/styles/index.scss";
 import "rc-slider/assets/index.css";
-import Footer from "@/components/Footer";
 import FooterNav from "@/components/FooterNav";
 import CartSidebar from "@/components/CartSidebar";
 import ProductOptionsModal from "@/components/ProductOptionsModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
-// import authService from "@/services/auth.service"; // 💡 1. IMPORT
-import { Toaster } from "sonner"; // 💡 1. IMPORT
+import { Toaster } from "sonner";
 import { serverApiFetch } from "@/lib/serverApi";
 import { GetMeResponse } from "@/types";
 
@@ -92,8 +90,6 @@ export default async function RootLayout({
           <SiteHeader ssrUser={data ? data.user : null} />
           {children}
           <FooterNav />
-          {/* <Footer /> */}
-          {/* Global Cart Components */}
           <CartSidebar />
           <ProductOptionsModal />
         </NextIntlClientProvider>

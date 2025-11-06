@@ -15,10 +15,16 @@ export interface MainNav2Props {
 }
 
 const NAV_ITEMS = [
-  { id: "homepage", label: "Lưu chi", sublabel: "Cà phê chi rứa?", href: "/" },
-  { id: "menu", label: "Thực đơn", href: "/menu" },
-  { id: "blog", label: "1001 đêm", href: "/blog" },
-  { id: "about", label: "Ấn tượng", href: "/about" },
+  {
+    id: "homepage",
+    label: "Lưu chi",
+    sizeLabel: "1.5rem",
+    sublabel: "Cà phê chi rứa?",
+    href: "/",
+  },
+  { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
+  { id: "blog", label: "1001 đêm", sizeLabel: "1rem", href: "/blog" },
+  { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
 ];
 
 const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
@@ -42,7 +48,11 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                     onClick={() => setActiveTab(item.id)}
                     className={`
                       relative px-8 flex items-center h-full cursor-pointer
-                      ${isActive ? "bg-neutral-50 rounded-t-xl border border-b-0 border-black" : "bg-white border-b border-black"}
+                      ${
+                        isActive
+                          ? "bg-neutral-50 rounded-t-xl border-2 border-b-0 border-black"
+                          : "bg-white border-b-2 border-black"
+                      }
                     `}
                   >
                     {/* Left Curve */}
@@ -52,7 +62,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                         ${isActive ? "opacity-100 bg-neutral-50" : "opacity-0"}
                       `}
                     >
-                      <span className="absolute inset-0 bg-white rounded-br-xl border border-black border-t-0 border-l-0" />
+                      <span className="absolute inset-0 bg-white rounded-br-xl border-2 border-black border-t-0 border-l-0" />
                     </span>
 
                     {/* Right Curve */}
@@ -62,7 +72,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                         ${isActive ? "opacity-100 bg-neutral-50" : "opacity-0"}
                       `}
                     >
-                      <span className="absolute inset-0 bg-white rounded-bl-xl border border-black border-t-0 border-r-0" />
+                      <span className="absolute inset-0 bg-white rounded-bl-xl border-2 border-black border-t-0 border-r-0" />
                     </span>
 
                     {/* Tab Label */}
@@ -72,6 +82,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                         flex items-center gap-2 no-underline transition-colors duration-300 text-black
                         ${isActive ? "font-semibold" : "font-medium"}
                       `}
+                      style={{ fontSize: item.sizeLabel || "1rem" }}
                     >
                       {item.label}
                       {item.sublabel && (
@@ -88,7 +99,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
         </div>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center flex-1 justify-end space-x-2 text-primary-600 h-full border-b border-black pr-3">
+        <div className="flex items-center flex-1 justify-end space-x-2 text-primary-600 h-full border-b-2 border-black pr-3">
           <button
             onClick={() => setShowCart(true)}
             className="relative rounded-full flex items-center justify-center transition-colors"
