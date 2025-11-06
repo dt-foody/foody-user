@@ -84,7 +84,7 @@ export default async function RootLayout({
 
   return (
     <html lang={params.locale} className={poppins.className} dir={dir}>
-      <body className="bg-white text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
+      <body className="bg-neutral-50 text-base dark:bg-neutral-900 text-neutral-900 dark:text-neutral-200">
         <NextIntlClientProvider locale={params.locale} messages={messages}>
           <Toaster position="top-right" richColors /> {/* 💡 2. THÊM VÀO ĐÂY */}
           <CartStoreInitializer /> {/* ⚡ MỚI: Thêm vào đây */}

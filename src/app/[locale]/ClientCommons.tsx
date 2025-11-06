@@ -22,7 +22,7 @@ const ClientCommons = () => {
     if (pathname === "/home-2") {
       newBodyClass = "theme-cyan-blueGrey";
     }
-    newBodyClass = "theme-orange-grey";
+    newBodyClass = "theme-custom";
 
     newBodyClass && $body.classList.add(newBodyClass);
     return () => {

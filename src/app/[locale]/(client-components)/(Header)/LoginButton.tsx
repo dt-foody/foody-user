@@ -13,7 +13,7 @@ const LoginButton = () => {
 
   return (
     <div className="self-center">
-      <ButtonPrimary onClick={handleLogin}>
+      <ButtonPrimary className="!py-2" onClick={handleLogin}>
         Đăng nhập
       </ButtonPrimary>
     </div>
