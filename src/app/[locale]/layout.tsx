@@ -32,6 +32,9 @@ export async function generateMetadata({
     title: messages.metadata.siteTitle,
     description: messages.metadata.siteDescription,
     keywords: messages.metadata.keywords,
+    icons: {
+      icon: '/favicon.ico', // Hoặc .png, .svg...
+    },
     openGraph: {
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
