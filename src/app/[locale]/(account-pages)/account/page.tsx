@@ -73,9 +73,6 @@ const AccountPage = () => {
       let storeUser = useAuthStore.getState().user;
       let storeMe = useAuthStore.getState().me;
 
-      console.log("storeMe", storeMe);
-      console.log("storeUser", storeUser);
-
       // Nếu chưa có, fetch mới
       if (!storeUser || !storeMe) {
         await fetchUser();

@@ -1,4 +1,4 @@
-import { BlogPost, BlogPostPaginate } from "@/types";
+import { BlogPost, BlogPostPaginate, GroupedBlog } from "@/types";
 import { apiFetch } from "@/lib/api"; // Giả sử apiFetch là một hàm gọi API chuẩn.
 
 export const blogPostService = {
@@ -17,4 +17,13 @@ export const blogPostService = {
     const queryString = new URLSearchParams(query).toString();
     return await apiFetch(`/blog-posts/${slug}?${queryString}`);
   },
+
+  groupByCategory: async (query: {
+      [key: string]: any;
+    }): Promise<GroupedBlog[]> => {
+      const queryString = new URLSearchParams(query).toString();
+      const url = `/blog-posts/group-by-category?${queryString}`;
+  
+      return await apiFetch<GroupedBlog[]>(url);
+    },
 };

@@ -15,6 +15,7 @@ interface NavItem {
 
 export const Nav = () => {
   const pathname = usePathname();
+  const normalizedPath = pathname.replace(/^\/(vi|en)(?=\/|$)/, "");
 
   // 2. CẬP NHẬT DANH SÁCH NAV VỚI TEXT TIẾNG VIỆT
   // (Bạn không cần khai báo kiểu `Route[]` nữa,
@@ -22,9 +23,7 @@ export const Nav = () => {
   const listNav: NavItem[] = [
     { href: "/account", label: "Thông tin tài khoản" },
     { href: "/account-password", label: "Đổi mật khẩu" },
-    // Bạn có thể dễ dàng thêm các mục khác
-    // { href: "/account-orders", label: "Đơn hàng của tôi" },
-    // { href: "/account-address", label: "Sổ địa chỉ" },
+    { href: "/account-orders", label: "Đơn hàng" },
   ];
 
   return (
@@ -32,7 +31,7 @@ export const Nav = () => {
       <div className="flex space-x-8 md:space-x-14 overflow-x-auto hiddenScrollbar">
         {listNav.map((item) => {
           // 3. SO SÁNH PATHNAME VỚI item.href
-          const isActive = pathname === item.href;
+          const isActive = normalizedPath === item.href;
           return (
             <Link
               // 4. SỬ DỤNG item.href CHO key VÀ href
@@ -44,9 +43,7 @@ export const Nav = () => {
                   : "border-transparent"
               }
               `}
-              // Xóa 'capitalize' vì chúng ta đã tự định nghĩa text
             >
-              {/* 5. HIỂN THỊ TEXT TỪ item.label */}
               {item.label}
             </Link>
           );

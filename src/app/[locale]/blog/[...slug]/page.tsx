@@ -2,7 +2,6 @@ import Image from "next/image";
 import Avatar from "@/shared/Avatar";
 import Badge from "@/shared/Badge";
 import SocialsList from "@/shared/SocialsList";
-import RelatedPosts from "./RelatedPosts"; // Client Component
 import { blogPostService } from "@/services";
 
 interface PageProps {
@@ -162,39 +161,7 @@ const Page = async ({ params }: PageProps) => {
         )}
 
         <div className="mb"></div>
-
-        {/* Comments */}
-        {/* <div className="max-w-screen-md mx-auto pt-5">
-          <h3 className="text-xl font-semibold text-neutral-800 dark:text-neutral-200">
-            Responses (14)
-          </h3>
-          <div className="nc-SingleCommentForm mt-5">
-            <Textarea />
-            <div className="mt-2 space-x-3">
-              <ButtonPrimary>Submit</ButtonPrimary>
-              <ButtonSecondary>Cancel</ButtonSecondary>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-screen-md mx-auto">
-          <ul className="nc-SingleCommentLists space-y-5">
-            <li>
-              <Comment />
-              <ul className="pl-4 mt-5 space-y-5 md:pl-11">
-                <li>
-                  <Comment isSmall />
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </div> */}
       </div>
-
-      {/* Related posts */}
-      {post.createdBy?.id && (
-        <RelatedPosts authorId={post.createdBy.id} currentPostId={post.id} />
-      )}
     </div>
   );
 };

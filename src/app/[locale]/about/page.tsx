@@ -1,132 +1,103 @@
-'use client';
-import { useState } from 'react';
-import { Heart, Users, Award, Clock, Utensils, Shield, ChevronRight, MapPin, Star, Smartphone, TrendingUp, Gift, Phone, Mail, Globe, Facebook, Twitter, Instagram, Youtube, CheckCircle, Zap, Target, Eye } from 'lucide-react';
+import Image from "next/image";
+import Image1 from "@/images/HIW1.png";
+import Image2 from "@/images/HIW2.png";
 
 export default function PageAbout() {
-  const [activeTab, setActiveTab] = useState('mission');
-
-  const stats = [
-    { number: '500K+', label: 'Người dùng hài lòng', icon: <Users className="w-6 h-6" /> },
-    { number: '10K+', label: 'Nhà hàng đối tác', icon: <Utensils className="w-6 h-6" /> },
-    { number: '2M+', label: 'Đơn hàng giao thành công', icon: <CheckCircle className="w-6 h-6" /> },
-    { number: '50+', label: 'Thành phố phục vụ', icon: <MapPin className="w-6 h-6" /> }
-  ];
-
-  const values = [
+  const sections = [
     {
-      icon: <Heart className="w-8 h-8" />,
-      title: 'Đam mê ẩm thực',
-      description: 'Chúng tôi yêu thích việc kết nối người dùng với những món ăn ngon nhất từ khắp mọi nơi'
+      title: "Về cà phê",
+      image: Image1,
+      name: "Anh Long",
+      content: `Hành trình của chúng tôi bắt đầu từ hạt cà phê nhỏ bé, 
+      được chọn lọc cẩn thận từ những vùng đất cao nguyên Việt Nam. 
+      Mỗi tách cà phê không chỉ là hương vị – đó là câu chuyện của người trồng, 
+      của bàn tay rang xay, và của khoảnh khắc bạn thưởng thức trong tĩnh lặng. 
+      Chúng tôi tin rằng cà phê không chỉ để tỉnh táo, mà còn để kết nối những tâm hồn.`,
     },
     {
-      icon: <Users className="w-8 h-8" />,
-      title: 'Khách hàng là trung tâm',
-      description: 'Sự hài lòng của bạn là ưu tiên hàng đầu trong mọi quyết định của chúng tôi'
+      title: "Về chúng ta",
+      image: Image2,
+      name: "Chị Huyền",
+      content: `Chúng tôi là những người yêu cà phê, yêu hương vị chân thật và những cuộc trò chuyện thật lòng. 
+      Mỗi ngày, đội ngũ không ngừng học hỏi để mang lại trải nghiệm tốt hơn – từ khâu chọn nguyên liệu, 
+      cách phục vụ, đến từng không gian nhỏ mà bạn ngồi lại. 
+      Với chúng tôi, cà phê là chiếc cầu nối giữa con người và cảm xúc, giữa hôm qua và ngày mai.`,
     },
-    {
-      icon: <Award className="w-8 h-8" />,
-      title: 'Chất lượng đảm bảo',
-      description: 'Cam kết mang đến trải nghiệm tốt nhất từ đặt hàng đến giao hàng'
-    },
-    {
-      icon: <Clock className="w-8 h-8" />,
-      title: 'Nhanh chóng & Đúng giờ',
-      description: 'Giao hàng nhanh chóng, đúng hẹn để món ăn luôn nóng hổi'
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: 'An toàn thực phẩm',
-      description: 'Kiểm soát chặt chẽ chất lượng và vệ sinh an toàn thực phẩm'
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: 'Đổi mới sáng tạo',
-      description: 'Không ngừng cải tiến công nghệ để mang đến trải nghiệm tốt nhất'
-    }
-  ];
-
-  const team = [
-    { 
-      name: 'Nguyễn Minh Tuấn', 
-      role: 'CEO & Founder', 
-      image: '👨‍💼',
-      description: '15+ năm kinh nghiệm trong lĩnh vực công nghệ và F&B'
-    },
-    { 
-      name: 'Trần Thị Hương', 
-      role: 'CTO', 
-      image: '👩‍💻',
-      description: 'Chuyên gia phát triển ứng dụng và AI'
-    },
-    { 
-      name: 'Lê Văn Hùng', 
-      role: 'Head of Operations', 
-      image: '👨‍🍳',
-      description: 'Quản lý vận hành và logistics chuyên nghiệp'
-    },
-    { 
-      name: 'Phạm Thị Mai', 
-      role: 'Marketing Director', 
-      image: '👩‍💼',
-      description: 'Chuyên gia marketing và phát triển thương hiệu'
-    }
-  ];
-
-  const milestones = [
-    { year: '2020', title: 'Ra mắt Foody', description: 'Khởi đầu với 100 nhà hàng tại Hà Nội và TP.HCM' },
-    { year: '2021', title: 'Mở rộng toàn quốc', description: 'Phủ sóng 15 tỉnh thành với 2,000+ nhà hàng' },
-    { year: '2022', title: 'Cột mốc 1 triệu đơn', description: 'Đạt 1 triệu đơn hàng và 5,000+ đối tác' },
-    { year: '2023', title: 'Tích hợp AI', description: 'Ứng dụng AI để gợi ý món ăn thông minh' },
-    { year: '2024', title: 'Mở rộng dịch vụ', description: 'Thêm dịch vụ đặt bàn và đánh giá nhà hàng' },
-    { year: '2025', title: 'Dẫn đầu thị trường', description: 'Top 1 nền tảng đặt đồ ăn tại Việt Nam' }
-  ];
-
-  const features = [
-    {
-      icon: <Smartphone className="w-10 h-10" />,
-      title: 'Ứng dụng dễ sử dụng',
-      description: 'Giao diện thân thiện, đặt hàng nhanh chóng chỉ với vài thao tác đơn giản'
-    },
-    {
-      icon: <Star className="w-10 h-10" />,
-      title: 'Đánh giá chân thực',
-      description: 'Hệ thống đánh giá minh bạch giúp bạn chọn được món ăn ngon nhất'
-    },
-    {
-      icon: <Gift className="w-10 h-10" />,
-      title: 'Ưu đãi hấp dẫn',
-      description: 'Voucher, giảm giá và chương trình khuyến mãi liên tục cập nhật'
-    },
-    {
-      icon: <MapPin className="w-10 h-10" />,
-      title: 'Theo dõi đơn hàng',
-      description: 'Cập nhật vị trí shipper real-time, biết chính xác món ăn đến khi nào'
-    },
-    {
-      icon: <Shield className="w-10 h-10" />,
-      title: 'Thanh toán an toàn',
-      description: 'Đa dạng phương thức thanh toán với bảo mật tối đa'
-    },
-    {
-      icon: <Phone className="w-10 h-10" />,
-      title: 'Hỗ trợ 24/7',
-      description: 'Đội ngũ chăm sóc khách hàng luôn sẵn sàng hỗ trợ mọi lúc mọi nơi'
-    }
-  ];
-
-  const partners = [
-    { name: 'Highlands Coffee', category: 'Cà phê' },
-    { name: 'KFC', category: 'Thức ăn nhanh' },
-    { name: 'The Pizza Company', category: 'Pizza' },
-    { name: 'Phở 24', category: 'Món Việt' },
-    { name: 'Gong Cha', category: 'Trà sữa' },
-    { name: 'Lotteria', category: 'Burger' },
-    { name: 'Jollibee', category: 'Thức ăn nhanh' },
-    { name: 'Domino\'s Pizza', category: 'Pizza' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 py-12 px-4 sm:px-6 lg:px-12">
+      <div className="max-w-6xl mx-auto">
+        {/* ====== PAGE HEADER ====== */}
+        <div className="text-center mb-12">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#b9915f] mb-3 tracking-wide">
+            Nhìn lại hành trình đã qua
+          </h1>
+          <div className="w-24 h-1 bg-gradient-to-r from-[#b9915f] to-[#d4a574] mx-auto rounded-full"></div>
+        </div>
+
+        {/* ====== SECTIONS ====== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {sections.map((s, index) => (
+            <div
+              key={s.title}
+              className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8 border border-orange-100 hover:shadow-2xl hover:border-[#b9915f]/30 transition-all duration-300 hover:-translate-y-1"
+              style={{
+                animationDelay: `${index * 150}ms`,
+              }}
+            >
+              {/* --- TITLE --- */}
+              <div className="mb-6">
+                <h2 className="text-xl md:text-2xl font-bold text-[#3b2f26] inline-block relative pb-2">
+                  {s.title}
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#3b2f26] to-[#b9915f] transform origin-left transition-transform duration-300 group-hover:scale-x-110"></span>
+                </h2>
+              </div>
+
+              {/* --- CONTENT --- */}
+              <div className="flex flex-col sm:flex-row items-start gap-6">
+                {/* IMAGE */}
+                <div className="relative w-32 h-32 md:w-36 md:h-36 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-orange-200 group-hover:border-[#b9915f] transition-colors duration-300 shadow-md">
+                  <Image
+                    src={s.image}
+                    alt={s.name}
+                    fill
+                    sizes="(max-width: 768px) 128px, 144px"
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                </div>
+
+                {/* TEXT */}
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-[#b9915f] rounded-full"></div>
+                    <h3 className="text-lg md:text-xl font-semibold text-[#3b2f26]">
+                      {s.name}
+                    </h3>
+                  </div>
+                  <p className="text-sm md:text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                    {s.content}
+                  </p>
+                </div>
+              </div>
+
+              {/* --- DECORATIVE ELEMENT --- */}
+              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-[#b9915f]/5 to-orange-100/30 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* ====== BOTTOM DECORATION ====== */}
+        <div className="mt-16 text-center">
+          <div className="inline-flex items-center gap-2 text-[#b9915f]/60">
+            <div className="w-8 h-px bg-gradient-to-r from-transparent to-[#b9915f]"></div>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
+            </svg>
+            <div className="w-8 h-px bg-gradient-to-l from-transparent to-[#b9915f]"></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

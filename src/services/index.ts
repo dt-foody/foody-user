@@ -8,3 +8,4 @@ export * from './combo.service';
 export * from './customer.service';
 export * from './coupon.service';
 export * from './pricePromotion.service';
+export * from './order.service';

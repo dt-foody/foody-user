@@ -9,3 +9,4 @@ export * from "./blogCategory";
 export * from "./blogTag";
 export * from "./blogPost";
 export * from "./coupon";
+export * from "./order";

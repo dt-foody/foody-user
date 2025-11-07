@@ -44,3 +44,10 @@ export interface BlogPost {
 
 // Paginated response cho list
 export type BlogPostPaginate = Paginated<BlogPost>;
+
+export interface GroupedBlog {
+  category: string | null;
+  categoryId: string | null;
+  slug: string;
+  posts: BlogPost[];
+}
