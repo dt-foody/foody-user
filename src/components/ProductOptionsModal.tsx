@@ -204,7 +204,7 @@ export default function ProductOptionsModal() {
                             onClick={(e) =>
                               handleOptionChange(group, option, e)
                             }
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all bg-white hover:border-orange-400 has-[:checked]:bg-orange-50 has-[:checked]:border-orange-500 has-[:checked]:ring-1 has-[:checked]:ring-orange-300"
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all bg-white hover:border-primary-400 has-[:checked]:bg-primary-50 has-[:checked]:border-primary-500 has-[:checked]:ring-1 has-[:checked]:ring-primary-300"
                           >
                             <span className="font-medium text-gray-800">
                               {option.name}
@@ -216,7 +216,7 @@ export default function ProductOptionsModal() {
                                 name={group.name}
                                 checked={isChecked}
                                 onChange={() => {}}
-                                className={`pointer-events-none form-${inputType} h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300`}
+                                className={`pointer-events-none form-${inputType} h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300`}
                               />
                             </div>
                           </label>
@@ -240,7 +240,7 @@ export default function ProductOptionsModal() {
               onChange={(e) => setNote(e.target.value)}
               rows={3}
               placeholder="Ghi chú cho quán (ví dụ: ít đường, không cay...)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition"
             />
           </div>
         </main>
@@ -250,7 +250,7 @@ export default function ProductOptionsModal() {
           <button
             onClick={handleSubmit}
             disabled={!isFormValid}
-            className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-orange-300 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full bg-primary-500 text-white py-4 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-primary-300 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {isFormValid
               ? `Thêm vào giỏ - ${totalPrice.toLocaleString("vi-VN")}đ`

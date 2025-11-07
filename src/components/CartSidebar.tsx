@@ -193,9 +193,7 @@ export default function CartSidebar() {
     for (const key in groups) {
       groups[key].sort((a, b) => {
         const getValue = (coupon: Coupon) =>
-          coupon.valueType === "percentage"
-            ? coupon.value
-            : coupon.value ?? 0;
+          coupon.valueType === "percentage" ? coupon.value : coupon.value ?? 0;
         return getValue(b.coupon) - getValue(a.coupon);
       });
     }
@@ -267,9 +265,7 @@ export default function CartSidebar() {
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
               <ShoppingCart className="w-10 h-10 text-gray-300" />
             </div>
-            <p className="text-lg text-gray-500 font-medium">
-              Giỏ hàng trống
-            </p>
+            <p className="text-lg text-gray-500 font-medium">Giỏ hàng trống</p>
             <p className="text-sm text-gray-400 mt-1">
               Thêm sản phẩm để bắt đầu mua sắm
             </p>
@@ -279,7 +275,8 @@ export default function CartSidebar() {
             <div className="p-3 space-y-2.5">
               {cartItems.map((item) => {
                 const options =
-                  item.selectedOptions?.map((o) => o.name).filter(Boolean) ?? [];
+                  item.selectedOptions?.map((o) => o.name).filter(Boolean) ??
+                  [];
                 const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
 
@@ -344,7 +341,7 @@ export default function CartSidebar() {
                             <Plus size={14} />
                           </button>
                         </div>
-                        <div className="text-sm font-bold text-gray-900">
+                        <div className="text-sm font-bold text-[#b9915f] text-gray-900">
                           {lineTotal.toLocaleString("vi-VN")}đ
                         </div>
                       </div>
@@ -358,10 +355,20 @@ export default function CartSidebar() {
             <div className="px-3 pb-3 space-y-2.5">
               {/* Private Input */}
               <div className="bg-gray-50 rounded-lg p-3 border">
-                <label className="font-semibold text-xs text-gray-700 mb-2 block flex items-center gap-1.5">
-                  <Tag size={13} className="text-primary-500" />
-                  Mã khuyến mãi
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-semibold text-sm flex items-center gap-1.5">
+                    <Tag size={13} className="text-primary-500" />
+                    Mã khuyến mãi
+                  </label>
+                  <button
+                    onClick={() => setIsCouponPanelOpen(true)}
+                    className="text-sm font-medium hover:text-primary-700 flex items-center gap-1"
+                  >
+                    Xem thêm 
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     value={manualCouponCode}
@@ -369,12 +376,12 @@ export default function CartSidebar() {
                       setManualCouponCode(e.target.value.toUpperCase())
                     }
                     placeholder="Nhập mã của bạn"
-                    className="flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-primary-500"
                   />
                   <button
                     onClick={handleApplyPrivateCoupon}
                     disabled={couponStatus.isLoading || !manualCouponCode}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-primary-500 hover:bg-gray-900 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {couponStatus.isLoading ? (
                       <Loader className="animate-spin mx-auto" size={16} />
@@ -422,22 +429,6 @@ export default function CartSidebar() {
                 </div>
               )}
 
-              {/* Public Coupon List */}
-              <button
-                onClick={() => setIsCouponPanelOpen(true)}
-                className="flex justify-between items-center w-full p-2.5 bg-white hover:bg-primary-50 border border-gray-200 hover:border-primary-300 rounded-lg transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
-                    <Tag className="w-4 h-4 text-primary-600" />
-                  </div>
-                  <span className="font-semibold text-sm text-gray-800">
-                    Khuyến mãi khác
-                  </span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-              </button>
-
               {/* Order Summary */}
               <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-3 border space-y-1.5">
                 <h3 className="font-semibold text-sm text-gray-800 mb-2 pb-2 border-b">
@@ -476,7 +467,7 @@ export default function CartSidebar() {
                   <span className="text-sm font-semibold text-gray-900">
                     Tổng cộng
                   </span>
-                  <span className="text-lg font-bold text-primary-600">
+                  <span className="text-lg font-bold text-[#b9915f]">
                     {finalTotal.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
@@ -558,8 +549,6 @@ export default function CartSidebar() {
                   {coupons.map((s) => {
                     const { coupon, isEligible } = s;
 
-                    console.log("appliedCoupons", appliedCoupons);
-                    console.log("coupon", coupon);
                     const isApplied = appliedCoupons.some(
                       (c) => c.id === coupon.id
                     );
@@ -575,9 +564,7 @@ export default function CartSidebar() {
                           isApplied
                             ? "ring-2 ring-primary-500 shadow-md"
                             : "hover:shadow-md"
-                        } ${
-                          isDisabled ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
                         <div className="bg-white p-3 flex gap-3">
                           <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex flex-col items-center justify-center text-white shadow-sm">

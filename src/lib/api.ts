@@ -44,7 +44,7 @@ export const apiFetch = async <T>(
     return (await response.json()) as T;
   } catch (error) {
     throw {
-      message: "A network error occurred. Please check your connection.",
+      message: "Có sự cố xảy ra, vui lòng liên hệ admin để được hỗ trợ.",
     };
   }
 };

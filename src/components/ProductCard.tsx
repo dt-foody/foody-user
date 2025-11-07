@@ -18,8 +18,6 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   /** 🔹 Nếu giỏ hàng đã có sản phẩm này → fill sẵn quantity */
   useEffect(() => {
-    console.log("cartItems", cartItems);
-    console.log("product", product);
     const existing = cartItems.find((i) => i.productId === product.id);
     if (existing) setQuantity(existing.quantity);
     else setQuantity(0);
@@ -63,11 +61,11 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[1.1rem] font-bold text-[rgb(98,54,40)]">
+            <span className="text-[1rem] font-bold text-[#b9915f]">
               {Math.round(product.price).toLocaleString("vi-VN")}₫
             </span>
             {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-sm text-gray-400 line-through">
+              <span className="text-[0.8rem] text-gray-400 line-through">
                 {Math.round(product.originalPrice).toLocaleString("vi-VN")}₫
               </span>
             )}
