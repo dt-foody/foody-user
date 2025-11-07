@@ -10,7 +10,7 @@ export default async function BlogPage() {
   try {
     data = await blogPostService.groupByCategory({ limit: 2 });
   } catch (err) {
-    console.error("❌ Failed to fetch blogs:", err);
+    console.error("❌ Failed to fetch blogs 1:", err);
   }
 
   return (
