@@ -155,9 +155,8 @@ export default function CheckoutRetro() {
       } else {
         toast.success("Đơn hàng của bạn đã được tạo thành công!");
         clearCart(); // ✅ chỉ clear khi COD hoặc đã xác nhận thanh toán
-        router.push("/account-orders")
+        router.push("/account-orders");
       }
-
     } catch (err: any) {
       console.error(err);
       toast.error("Đặt hàng thất bại. Vui lòng thử lại sau!");
@@ -189,7 +188,7 @@ export default function CheckoutRetro() {
               <tr className="border-b border-black/50">
                 <th className="text-left py-2">Tên món</th>
                 <th className="text-right py-2">Đơn giá</th>
-                <th className="text-center py-2">SL</th>
+                <th className="text-center py-2">Số lượng</th>
                 <th className="text-right py-2">Thành tiền</th>
               </tr>
             </thead>
@@ -294,7 +293,7 @@ export default function CheckoutRetro() {
         </div>
 
         {/* ===== RIGHT: Recipient + Payment ===== */}
-        <div className="lg:col-span-2 bg-white border border-black/20 rounded-xl shadow-sm p-6 space-y-4">
+        <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4">
           {/* Recipient */}
           <div>
             <label className="block text-sm font-semibold mb-1">
@@ -305,7 +304,7 @@ export default function CheckoutRetro() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nguyễn Văn A"
-              className="w-full border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
+              className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
           <div>
@@ -317,7 +316,7 @@ export default function CheckoutRetro() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="09xxxxxxxx"
-              className="w-full border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
+              className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
           {/* Delivery Options */}
@@ -424,7 +423,7 @@ export default function CheckoutRetro() {
                 value={voucherInput}
                 onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
                 placeholder="Nhập mã của bạn"
-                className="flex-1 border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f]"
+                className="flex-1 text-sm border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f]"
               />
               <button className="px-4 py-2 bg-[#b9915f] text-white rounded-lg font-medium hover:bg-[#9a7e4e]">
                 Áp dụng

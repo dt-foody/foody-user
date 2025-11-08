@@ -22,7 +22,6 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string>("");
 
-  // MỚI: Khởi tạo các hook
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -31,7 +30,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
     return emailRegex.test(email);
   };
 
-  // Validate form
+  // Kiểm tra form
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     const email = emailRef.current?.value || "";
@@ -83,7 +82,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
         password: passwordRef.current?.value || "",
       };
 
-      // Call login API
+      // Gọi API đăng nhập
       const data = await authService.login(formData);
 
       // (Tùy chọn: Lưu data.user, data.permissions vào global state/context)
@@ -105,7 +104,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
       // 4. Thực hiện điều hướng
       router.push(destination);
 
-      // ----- KẾT THÚC PHẦN MỚI -----
+      // ----- HẾT PHẦN ĐIỀU HƯỚNG -----
     } catch (error) {
       setApiError(error instanceof Error ? error.message : "Đã có lỗi xảy ra");
     } finally {
@@ -116,8 +115,9 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
   return (
     <div className={`nc-PageLogin`}>
       <div className="container mb-24 lg:mb-32">
-        <h2 className="my-8 flex items-center text-3xl leading-[115%] md:text-4xl md:leading-[115%] font-semibold text-neutral-900 dark:text-neutral-100 justify-center">
-          Login
+        {/* === THAY ĐỔI TIÊU ĐỀ === */}
+        <h2 className="my-6 flex items-center text-xl leading-[115%] md:leading-[115%] text-neutral-900 dark:text-neutral-100 justify-center font-bold">
+          Chào mừng bạn trở lại với Lưu Chi
         </h2>
         <div className="max-w-md mx-auto space-y-6">
           {apiError && (
@@ -126,11 +126,11 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
             </div>
           )}
 
-          {/* FORM */}
+          {/* FORM ĐĂNG NHẬP */}
           <form className="grid grid-cols-1 gap-6" onSubmit={handleSubmit}>
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Email address
+                Tài khoản
               </span>
               <Input
                 ref={emailRef}
@@ -149,13 +149,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
             </label>
             <label className="block">
               <span className="flex justify-between items-center text-neutral-800 dark:text-neutral-200">
-                Password
-                <Link
-                  href="/forgot-password"
-                  className="text-sm underline font-medium"
-                >
-                  Forgot password?
-                </Link>
+                Mật khẩu
               </span>
               <Input
                 ref={passwordRef}
@@ -172,16 +166,26 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
                 </span>
               )}
             </label>
+
+            <div className="text-right -mt-4">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium"
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
+
             <ButtonPrimary type="submit" disabled={isLoading}>
-              {isLoading ? "Đang xử lý..." : "Continue"}
+              {isLoading ? "Đang xử lý..." : "Tiếp tục"}
             </ButtonPrimary>
           </form>
 
           {/* ==== */}
           <span className="block text-center text-neutral-700 dark:text-neutral-300">
-            New user? {` `}
+            Bạn là người dùng mới? {` `}
             <Link href="/signup" className="font-semibold underline">
-              Create an account
+              Tạo tài khoản
             </Link>
           </span>
         </div>

@@ -14,7 +14,7 @@ export default async function BlogPage() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 min-h-screen py-8 px-4 sm:px-6 lg:px-12">
+    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 min-h-screen py-6 px-4 sm:px-6 lg:px-12">
       <div className="max-w-7xl mx-auto">
         {/* ====== HEADER ====== */}
         <div className="mb-10">

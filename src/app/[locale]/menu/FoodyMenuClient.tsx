@@ -165,8 +165,6 @@ export default function FoodyMenuClient({
       return items.map((item) => {
         const discount = getDiscount(item.id);
 
-        console.log("discount", discount);
-
         let finalPrice = item.basePrice;
         let originalPrice: number | undefined;
 

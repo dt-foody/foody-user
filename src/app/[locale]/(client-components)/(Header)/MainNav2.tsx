@@ -1,8 +1,8 @@
 "use client";
 
 import React, { FC, useState } from "react";
-import { useRouter } from "next/navigation"; // ✅ Thêm useRouter
-import Logo from "@/shared/Logo";
+import { Alex_Brush, Bahianita } from "next/font/google";
+import { useRouter } from "next/navigation";
 import NotifyDropdown from "./NotifyDropdown";
 import AvatarDropdown from "./AvatarDropdown";
 import LoginButton from "./LoginButton";
@@ -14,12 +14,19 @@ export interface MainNav2Props {
   className?: string;
 }
 
+const alexbrush = Alex_Brush({ subsets: ["latin"], weight: "400" });
+const bahianita = Bahianita({
+  weight: "400",
+  subsets: ["latin"],
+});
 const NAV_ITEMS = [
   {
     id: "homepage",
-    label: "Lưu chi",
-    sizeLabel: "1.5rem",
+    label: "Lưu Chi",
+    sizeLabel: "2.5rem",
+    classLabel: "font-bahianita",
     sublabel: "Cà phê chi rứa?",
+    classSublabel: "font-alexbrush",
     href: "/",
   },
   { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
@@ -34,11 +41,13 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
   const router = useRouter(); // ✅ Khởi tạo router
 
   return (
-    <header className={`MainNav2 relative z-20 w-full bg-white ${className}`}>
-      <div className="h-16 flex justify-between items-center">
+    <header
+      className={`MainNav2 relative z-20 w-full bg-white`}
+    >
+      <div className="h-16 flex justify-between items-center text-[1.7rem]">
         {/* LEFT ACTIONS: Logo + Curved Tabs */}
         <div className="flex items-center gap-6 h-full">
-          <nav className="hidden lg:block h-full flex items-center">
+          <nav className={`hidden lg:block h-full flex items-center ${bahianita.className}`}>
             <ul className="flex items-stretch gap-0 list-none p-0 m-0 h-full">
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.id;
@@ -83,13 +92,13 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                     <div
                       className={`
                         flex items-center gap-2 no-underline transition-colors duration-300 text-black
-                        ${isActive ? "font-semibold" : "font-medium"}
                       `}
-                      style={{ fontSize: item.sizeLabel || "1rem" }}
                     >
-                      {item.label}
+                      <span> {item.label} </span>
                       {item.sublabel && (
-                        <span className="text-sm font-normal italic text-neutral-600 font-[var(--font-logo)]">
+                        <span
+                          className={`text-[1.3rem] ml-2 font-normal text-neutral-600 ${alexbrush.className} mt-[4px]`}
+                        >
                           {item.sublabel}
                         </span>
                       )}

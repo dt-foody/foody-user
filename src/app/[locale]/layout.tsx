@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Nunito } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import SiteHeader from "./(client-components)/(Header)/SiteHeader";
 import ClientCommons from "./ClientCommons";
@@ -14,7 +14,7 @@ import { Toaster } from "sonner";
 import { serverApiFetch } from "@/lib/serverApi";
 import { GetMeResponse } from "@/types";
 
-const poppins = Inter({
+const poppins = Nunito({
   subsets: ["latin"],
   display: "swap",
   weight: ["300", "400", "500", "600", "700"],
@@ -33,7 +33,7 @@ export async function generateMetadata({
     description: messages.metadata.siteDescription,
     keywords: messages.metadata.keywords,
     icons: {
-      icon: '/favicon.ico', // Hoặc .png, .svg...
+      icon: "/favicon.ico", // Hoặc .png, .svg...
     },
     openGraph: {
       title: messages.metadata.siteTitle,
@@ -73,8 +73,6 @@ export default async function RootLayout({
   const messages = (await import(`../../../messages/${params.locale}.json`))
     .default;
   const dir = params.locale === "ar" ? "rtl" : "ltr";
-
-  // const data = await authService.getMe(); // 🧠 Lấy user từ cookie SSR
 
   let data;
   try {

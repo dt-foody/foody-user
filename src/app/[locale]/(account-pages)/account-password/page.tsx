@@ -103,10 +103,6 @@ const AccountPass = () => {
 
     // Mô phỏng API call
     setTimeout(() => {
-      console.log("Updating password:", {
-        current: passwords.current,
-        new: passwords.new,
-      });
       setIsSaving(false);
       // Đã dịch thông báo
       alert("Cập nhật mật khẩu thành công!");

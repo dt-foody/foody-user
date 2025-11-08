@@ -124,7 +124,6 @@ const MembershipPage = () => {
       alert("Vui lòng chọn gói thành viên");
       return;
     }
-    console.log("Form submitted:", { ...formData, plan: selectedPlan });
     alert("Đăng ký thành công! Chúng tôi sẽ liên hệ với bạn sớm.");
   };
 

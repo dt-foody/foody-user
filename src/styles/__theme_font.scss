@@ -134,6 +134,20 @@
   src: url("../fonts/Be_Vietnam/BeVietnam-Bold.ttf");
 }
 
+// @font-face {
+//   font-family: Bahianita;
+//   font-weight: normal;
+//   font-style: normal;
+//   src: url("../fonts/Bahianita/Bahianita-Regular.ttf"); // Đảm bảo đường dẫn chính xác
+// }
+
+// @font-face {
+//   font-family: AlexBrush;
+//   font-weight: normal;
+//   font-style: normal;
+//   src: url("../fonts/AlexBrush/AlexBrush-Regular.ttf"); // Đảm bảo đường dẫn chính xác
+// }
+
 //
 html body {
   @apply font-body antialiased;
