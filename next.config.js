@@ -48,6 +48,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'backend-1-fljj.onrender.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
