@@ -18,11 +18,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-// NÂNG CẤP: Import cả 2
-import { useCartStore, useCart, SHIPPING_FEE } from "@/stores/useCartStore";
+import { useCart, SHIPPING_FEE } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { CartLine, EligibilityStatus } from "@/stores/useCartStore";
-import type { Coupon } from "@/types";
+import type { EligibilityStatus } from "@/stores/useCartStore";
+// Import đúng type từ file order.ts
+import type { Coupon, CreateOrderItem_Option } from "@/types";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
@@ -31,36 +31,36 @@ const PLACEHOLDER_IMAGE =
    Local memo components
 ----------------------------- */
 
+// Helper để format price
+const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
+
 /**
- * NÂNG CẤP: OptionChips giờ phải đọc từ CartLine mới
+ * Component render Options (cho cả Product và Combo)
  */
-const OptionChips = React.memo(function OptionChips({
-  item,
+const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
+  options,
 }: {
-  item: CartLine;
+  options: Record<string, CreateOrderItem_Option[]>;
 }) {
-  let names: string[] = [];
+  // Gộp tất cả các options đã chọn từ các nhóm lại thành 1 mảng
+  const allOptions = React.useMemo(() => {
+    return Object.values(options || {}).flat();
+  }, [options]);
 
-  if (item.itemType === "Product") {
-    // Lấy từ Product options
-    names = Object.values(item.options || {})
-      .flat()
-      .map((opt) => opt.name);
-  } else if (item.itemType === "Combo") {
-    // Lấy từ Combo selections (tên các món con)
-    names = (item.comboSelections || []).map((sel) => sel.product.name);
-  }
+  if (allOptions.length === 0) return null;
 
-  if (!names?.length) return null;
   return (
-    <div className="mt-1.5 flex flex-wrap gap-1.5">
-      {names.map((n, i) => (
-        <span
-          key={i}
-          className="px-2 py-0.5 text-[11px] font-medium rounded-full border border-primary-200 bg-primary-50 text-primary-700"
-        >
-          {n}
-        </span>
+    <div className="pl-3 mt-1 space-y-0.5">
+      {allOptions.map((opt, index) => (
+        <p key={index} className="text-xs text-gray-500">
+          + {opt.name}
+          {/* SỬA LỖI: Dùng opt.priceModifier */}
+          {opt.priceModifier > 0 && (
+            <span className="font-medium ml-1 text-gray-600">
+              (+{formatPrice(opt.priceModifier)})
+            </span>
+          )}
+        </p>
       ))}
     </div>
   );
@@ -88,7 +88,7 @@ const ItemNoteView = React.memo(function ItemNoteView({
 }) {
   if (!isEditing) {
     return (
-      <div className="mt-1.5">
+      <div className="mt-2">
         {note ? (
           <div className="flex items-start gap-1.5 text-xs">
             <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5" />
@@ -114,7 +114,7 @@ const ItemNoteView = React.memo(function ItemNoteView({
   }
 
   return (
-    <div className="mt-1.5">
+    <div className="mt-2">
       <textarea
         value={noteDraft}
         onChange={(e) => setNoteDraft(e.target.value)}
@@ -147,13 +147,6 @@ const ItemNoteView = React.memo(function ItemNoteView({
 ----------------------------- */
 
 export default function CartSidebar() {
-  /**
-   * ======================================================================
-   * SỬA LỖI TẠI ĐÂY
-   * ======================================================================
-   * Phải gọi `useCart()` để lấy các giá trị đã tính toán
-   * (cartCount, publicCouponStatuses, subtotal, finalTotal, v.v.)
-   */
   const {
     cartItems,
     cartCount,
@@ -174,7 +167,7 @@ export default function CartSidebar() {
     applyPublicCoupon,
     applyPrivateCoupon,
     removeCoupon,
-  } = useCart(); // <-- SỬA TỪ `useCartStore()` THÀNH `useCart()`
+  } = useCart(); // <-- Đã sửa, dùng useCart()
 
   const router = useRouter();
   const { user } = useAuthStore();
@@ -294,12 +287,19 @@ export default function CartSidebar() {
                 const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
 
+                // Lấy giá base (gốc)
+                const baseOrComboPrice =
+                  (item.itemType === "Product"
+                    ? item.item.basePrice
+                    : item.item.comboPrice) ?? 0;
+
                 return (
                   <div
                     key={item.cartId}
                     className="p-2.5 bg-white rounded-lg border hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
+                      {/* --- Image --- */}
                       <Image
                         src={item._image || PLACEHOLDER_IMAGE} // Dùng metadata
                         alt={item.item.name}
@@ -308,26 +308,56 @@ export default function CartSidebar() {
                         height={56}
                         className="object-cover rounded-md flex-shrink-0"
                       />
+
+                      {/* --- Item Info --- */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-sm font-semibold text-gray-800 truncate">
+                        {/* Tên item */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
                             {item.item.name}
                           </h4>
-                          <button
-                            onClick={() => removeItem(item.cartId)}
-                            className="p-1 rounded-full hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
+
+                          {/* ================================================
+                            CẢI TIẾN 4: Chỉ hiện giá base nếu > 0
+                            ================================================
+                          */}
+                          {baseOrComboPrice > 0 && (
+                            <p className="text-sm text-gray-500">
+                              {formatPrice(baseOrComboPrice)}
+                            </p>
+                          )}
+                          {/* ================================================
+                            KẾT THÚC CẢI TIẾN 4
+                            ================================================
+                          */}
                         </div>
 
-                        <p className="text-[12px] text-gray-500">
-                          {item.totalPrice.toLocaleString("vi-VN")}đ / món
-                        </p>
+                        {/* Render Options / Combo Selections */}
+                        <div className="mt-1.5">
+                          {/* 1. Nếu là SẢN PHẨM ĐƠN */}
+                          {item.itemType === "Product" && (
+                            <RenderSelectedOptions options={item.options} />
+                          )}
 
-                        {/* NÂNG CẤP: Truyền cả `item` vào */}
-                        <OptionChips item={item} />
+                          {/* 2. Nếu là COMBO */}
+                          {item.itemType === "Combo" && (
+                            <div className="pl-2 mt-1 space-y-1">
+                              {(item.comboSelections || []).map((sel, idx) => (
+                                <div key={idx}>
+                                  <p className="text-sm font-medium text-gray-700">
+                                    - {sel.product.name}
+                                  </p>
+                                  {/* Tái sử dụng component render options */}
+                                  <RenderSelectedOptions
+                                    options={sel.options}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
+                        {/* --- Note --- */}
                         <ItemNoteView
                           cartId={item.cartId}
                           note={item.note}
@@ -340,7 +370,8 @@ export default function CartSidebar() {
                         />
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
+                      {/* --- Actions (Quantity & Remove) --- */}
+                      <div className="flex flex-col items-end gap-3.5">
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => updateQuantity(item.cartId, -1)}
@@ -358,8 +389,16 @@ export default function CartSidebar() {
                             <Plus size={14} />
                           </button>
                         </div>
-                        <div className="text-sm font-bold text-gray-900">
-                          {lineTotal.toLocaleString("vi-VN")}đ
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-bold text-gray-900">
+                            {lineTotal.toLocaleString("vi-VN")}đ
+                          </div>
+                          <button
+                            onClick={() => removeItem(item.cartId)}
+                            className="p-1 rounded-full hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
                         </div>
                       </div>
                     </div>
