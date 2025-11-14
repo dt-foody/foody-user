@@ -53,9 +53,9 @@ export interface OrderItemOption {
  */
 export interface OrderItemComboSelection {
   slotName: string;
-  productId: string; // <-- SỬA: Đổi `product` thành `productId` (ID)
+  product: string; // <-- Sửa lại: Đây là ID (string)
   productName: string; // Tên snapshot
-  product?: Product; // <-- THÊM: Dành cho dữ liệu populate (tùy chọn)
+  productPopulated?: Product; // <-- Đổi tên: Dành cho dữ liệu populate
   options: OrderItemOption[];
 }
 
@@ -63,6 +63,7 @@ export interface OrderItemComboSelection {
  * Một MỤC HÀNG trong đơn hàng (đã lưu trong DB)
  */
 export interface OrderItem {
+  id: string; // _id của OrderItem
   item: string; // ObjectId của Product hoặc Combo
   itemType: "Product" | "Combo";
   name: string; // Tên snapshot
@@ -80,6 +81,7 @@ export interface PaymentInfo {
   status: PaymentStatus;
   transactionId?: string;
   checkoutUrl?: string;
+  qrCode?: string; // <-- THÊM: Đồng bộ với model
 }
 
 /** Địa chỉ giao hàng */
@@ -99,12 +101,25 @@ export interface ShippingInfo {
   status: ShippingStatus;
 }
 
+// <-- THÊM MỚI 1: Type cho coupon đã lưu trong DB
+/**
+ * Snapshot coupon đã áp dụng (lưu trong DB)
+ * Khớp với backend model
+ */
+export interface AppliedCouponInfo {
+  id: string; // ObjectId của Coupon
+  code: string;
+  type: string;
+  value: number;
+}
+
 /**
  * Đối tượng ORDER đầy đủ (đã lưu trong DB)
  */
 export interface Order {
   id: string; // Map từ _id
   orderId: number; // ID tăng tự động
+  orderCode?: number; // <-- THÊM: Mã dùng cho PayOS
   profile?: string | Customer; // ObjectId hoặc đã populate
   profileType?: "Customer" | "Employee";
   items: OrderItem[];
@@ -116,6 +131,7 @@ export interface Order {
   shipping?: ShippingInfo | null;
   status: OrderStatus;
   note?: string;
+  appliedCoupons?: AppliedCouponInfo[]; // <-- THÊM MỚI 2: Thêm trường coupon
   createdBy?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -171,18 +187,31 @@ export interface CreateOrderItem {
   note?: string;
   options?: Record<string, CreateOrderItem_Option[]>; // Dùng cho Product
   comboSelections?: CreateOrderItem_ComboSelection[]; // Dùng cho Combo
+  cartId?: string; // <-- THÊM: Gửi lên cho tiện, dù BE không dùng
+}
+
+// <-- THÊM MỚI 3: Type cho coupon gửi đi
+/**
+ * Payload cho coupon khi tạo đơn
+ * (Khớp với appliedCouponSchema của Joi)
+ */
+export interface CreateOrder_AppliedCoupon {
+  id: string;
+  code: string;
 }
 
 /**
  * Payload TỔNG khi khách hàng tạo đơn
+ * (Khớp với customerOrder validation)
  */
 export interface CreateOrderInput {
   items: CreateOrderItem[];
+  appliedCoupons?: CreateOrder_AppliedCoupon[]; // <-- THÊM MỚI 4
   totalAmount: number;
   discountAmount?: number;
   shippingFee?: number;
   grandTotal: number;
-  payment: Pick<PaymentInfo, "method">;
-  shipping?: ShippingInfo | null;
+  payment: Pick<PaymentInfo, "method">; // Chỉ gửi method
+  shipping?: ShippingInfo | null; // Gửi cả address và status (hoặc null)
   note?: string;
 }
