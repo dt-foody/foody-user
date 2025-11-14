@@ -85,7 +85,7 @@ const AccountOrders = () => {
             <div className="flex flex-col sm:flex-row justify-between gap-2 border-b pb-2">
               <div>
                 <h3 className="font-semibold text-lg text-[#3b2f26] flex items-center gap-2">
-                  <Package size={18} /> Mã đơn #{order.orderCode}
+                  <Package size={18} /> Mã đơn #{order.orderId}
                 </h3>
                 <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                   <CalendarDays size={14} />

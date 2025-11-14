@@ -1,23 +1,42 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react"; // Thêm useMemo
 import {
   Clock,
   Zap,
   Calendar,
   MessageSquare,
-  Edit2, // THÊM ICON SỬA
+  Edit2,
   Check,
   Tag,
 } from "lucide-react";
-import { useCart, DeliveryOption } from "@/stores/useCartStore";
+// SỬA LỖI: Import useCart và CartLine
+import { useCart, DeliveryOption, CartLine } from "@/stores/useCartStore";
 import Image from "next/image";
 
 /* ===========================
    Hoisted sub-components (memo)
    =========================== */
 
-const OptionChips = memo(function OptionChips({ names }: { names: string[] }) {
+/**
+ * SỬA LỖI: Component này cần logic mới để đọc options
+ */
+const OptionChips = memo(function OptionChips({ item }: { item: CartLine }) {
+  // Logic được đưa vào useMemo để tối ưu
+  const names = useMemo(() => {
+    if (item.itemType === "Product") {
+      // 1. Lấy từ Product options
+      return Object.values(item.options || {})
+        .flat()
+        .map((opt) => opt.name);
+    }
+    if (item.itemType === "Combo") {
+      // 2. Lấy từ Combo selections (tên các món con)
+      return (item.comboSelections || []).map((sel) => sel.product.name);
+    }
+    return [];
+  }, [item]);
+
   if (!names?.length) return null;
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -50,11 +69,7 @@ export default function CheckoutOrderSummary({
   scheduledDate,
   setScheduledDate,
 }: CheckoutOrderSummaryProps) {
-  const {
-    cartItems,
-    appliedCoupons,
-    setShowCart, // Lấy hàm mở lại sidebar
-  } = useCart();
+  const { cartItems, appliedCoupons, setShowCart } = useCart();
 
   const handleImageError = (
     e: React.SyntheticEvent<HTMLImageElement, Event>
@@ -89,16 +104,16 @@ export default function CheckoutOrderSummary({
       {/* Items (Read-only) */}
       <div className="overflow-y-auto max-h-72 pr-2 mb-5 space-y-2.5">
         {cartItems.map((item) => {
-          const options =
-            item.selectedOptions?.map((o) => o.name).filter(Boolean) ?? [];
+          // SỬA LỖI: Bỏ logic 'options' cũ
           const lineTotal = item.totalPrice * item.quantity;
 
           return (
             <div key={item.cartId} className="p-2.5 bg-white rounded-lg border">
               <div className="flex items-start gap-3">
                 <Image
-                  src={item.image || ""}
-                  alt={item.name}
+                  // SỬA LỖI: Dùng _image và item.item.name
+                  src={item._image || ""}
+                  alt={item.item.name}
                   onError={handleImageError}
                   width={48}
                   height={48}
@@ -106,14 +121,16 @@ export default function CheckoutOrderSummary({
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
-                    {item.name}
+                    {/* SỬA LỖI: Dùng item.item.name */}
+                    {item.item.name}
                   </h4>
 
                   <p className="text-xs text-gray-500">
                     {item.totalPrice.toLocaleString("vi-VN")}đ
                   </p>
 
-                  <OptionChips names={options} />
+                  {/* SỬA LỖI: Truyền toàn bộ 'item' vào OptionChips */}
+                  <OptionChips item={item} />
 
                   {/* === CHỈ HIỂN THỊ GHI CHÚ (READ-ONLY) === */}
                   {item.note && (

@@ -2,18 +2,20 @@
 
 import Image from "next/image";
 import { Plus, Package } from "lucide-react";
+// REFACTORED: Import type mới và Enum
 import type { Combo, PricePromotion, Product } from "@/types";
+import { ComboPricingMode } from "@/types"; // NEW
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
-// Cập nhật interface: Nhận trực tiếp Combo từ service (có thể có sale)
 interface ComboCardProps {
+  // REFACTORED: Type Combo ở đây đã được cập nhật
   combo: Combo & {
     promotion?: PricePromotion;
     salePrice?: number;
   };
-  onClick: () => void; // onClick này là để gọi startComboConfiguration
+  onClick: () => void;
 }
 
 export default function ComboCard({ combo, onClick }: ComboCardProps) {
@@ -21,25 +23,44 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
     e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
-  // --- LOGIC GIÁ (từ code mới) ---
+  // --- REFACTORED: LOGIC GIÁ MỚI ---
   const hasSale = combo.salePrice != null && combo.promotion != null;
-  const finalPrice = (hasSale ? combo.salePrice : combo.comboPrice) ?? 0;
-  const originalPrice = hasSale ? combo.comboPrice : undefined;
+  const isDynamicPrice =
+    combo.pricingMode === ComboPricingMode.SLOT_PRICE ||
+    combo.pricingMode === ComboPricingMode.DISCOUNT;
+
+  // 1. Ưu tiên giá sale (promotion) bên ngoài
+  const finalPrice = hasSale ? combo.salePrice : combo.comboPrice;
+
+  // 2. Giá gốc (line-through)
+  // Nếu có sale, giá gốc là comboPrice (chỉ khi mode FIXED)
+  // Nếu không sale, không có giá gốc
+  const originalPrice =
+    hasSale && combo.pricingMode === ComboPricingMode.FIXED
+      ? combo.comboPrice
+      : undefined;
+
+  // 3. Text hiển thị
+  const priceText = hasSale
+    ? finalPrice?.toLocaleString("vi-VN") + "đ" // Luôn hiển thị salePrice nếu có
+    : isDynamicPrice
+    ? "Tùy chọn" // Giá động
+    : combo.comboPrice.toLocaleString("vi-VN") + "đ"; // Giá FIXED
+
   // --- KẾT THÚC LOGIC GIÁ ---
 
-  // Hiển thị các món trong combo (Giữ nguyên)
+  // Hiển thị các món trong combo (Logic này vẫn đúng)
   const itemNames = combo.items
     .flatMap((slot) =>
       slot.selectableProducts.map((p) => (p.product as Product)?.name)
     )
     .filter(Boolean)
-    .slice(0, 3) // Giới hạn 3 món
+    .slice(0, 3)
     .join(", ");
 
   return (
-    // Áp dụng style ngang (layout của code "cũ")
     <div
-      onClick={onClick} // Combo luôn luôn onClick để cấu hình
+      onClick={onClick}
       className="flex items-start gap-4 bg-white p-3 rounded-xl border-2 border-primary-500 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer relative"
     >
       {/* Tag Combo */}
@@ -72,8 +93,9 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
             {combo.name}
           </h3>
           <div className="flex items-center gap-2 mb-2">
+            {/* REFACTORED: Hiển thị text giá mới */}
             <span className="text-[1rem] font-bold text-primary-600">
-              {finalPrice.toLocaleString("vi-VN")}đ
+              {priceText}
             </span>
             {originalPrice && (
               <span className="text-sm text-gray-400 line-through">

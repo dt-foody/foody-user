@@ -1,43 +1,72 @@
 // src/types/combo.ts
 import type { Paginated } from "@/lib";
-import { Product } from "./product";
+// Giả định import từ file 'product' (dựa trên file gốc)
+import type { Product } from "./product";
 
-/** Phần tử có thể chọn trong 1 slot của combo (đã ép về id) */
+/**
+ * MỚI: Enum định nghĩa 3 chế độ tính giá
+ */
+export enum ComboPricingMode {
+  FIXED = "FIXED",
+  SLOT_PRICE = "SLOT_PRICE",
+  DISCOUNT = "DISCOUNT",
+}
+
+/**
+ * MỚI: Enum định nghĩa loại giảm giá
+ */
+export enum DiscountType {
+  PERCENT = "PERCENT",
+  AMOUNT = "AMOUNT",
+  NONE = "NONE", // Mặc định khi không phải MODE_DISCOUNT
+}
+
+/**
+ * REFACTORED: Cập nhật theo model mới
+ * Product nên là type 'Product' thay vì 'any'
+ */
 export interface ComboSelectableProduct {
   product: Product;
-  fixedPrice: number; // giá cố định khi nằm trong combo
-  additionalPrice: number; // giá phụ thu khi nằm trong combo
-  maxQuantity: number; // mặc định 1
+  snapshotPrice: number; // Giá gốc của product (dùng cho mode DISCOUNT)
+  additionalPrice: number; // Giá phụ thu (luôn cộng thêm)
+  slotPrice: number; // Giá khi chọn (dùng cho mode SLOT_PRICE)
 }
 
-/** Slot trong combo (VD: Đồ uống, Món phụ, ... ) */
+/**
+ * REFACTORED: Cập nhật theo model mới
+ */
 export interface ComboItem {
   slotName: string;
-  isRequired: boolean; // bắt buộc chọn ít nhất 1?
   selectableProducts: ComboSelectableProduct[];
+  minSelection: number; // Thay cho isRequired
+  maxSelection: number; // Mới: hỗ trợ multi-select
 }
 
-/** Combo đọc-chỉ cho phía user */
+/**
+ * REFACTORED: Cập nhật Combo interface
+ */
 export interface Combo {
   id: string;
   name: string;
   description?: string;
   image?: string;
-
-  comboPrice: number;
-
-  startDate: string; // ISO
-  endDate: string; // ISO
-
+  startDate: Date | string; // Đơn giản hoá
+  endDate: Date | string; // Đơn giản hoá
   items: ComboItem[];
-
   isActive: boolean;
   priority: number;
-
-  // optional cho hiển thị/log
   createdAt?: string;
   updatedAt?: string;
+
+  // --- CÁC TRƯỜNG MỚI ĐÃ REFACTOR ---
+  pricingMode: ComboPricingMode;
+  comboPrice: number; // Vẫn dùng cho MODE_FIXED
+
+  /** MỚI: Loại giảm giá (PERCENT | AMOUNT | NONE) */
+  discountType: DiscountType;
+  /** MỚI: Giá trị giảm (VD: 30 (cho 30%) hoặc 20000 (cho 20k VND)) */
+  discountValue: number;
 }
 
-/** Response phân trang dùng chung */
+/** Response phân trang dùng chung (Giữ nguyên từ file cũ) */
 export type ComboPaginate = Paginated<Combo>;

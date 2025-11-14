@@ -8,108 +8,175 @@ import type {
   ComboItem,
   ComboSelectableProduct,
   CreateOrderItem_ComboSelection,
+  Combo, // NEW
 } from "@/types";
+// REFACTORED: Import Enums
+import { ComboPricingMode, DiscountType } from "@/types";
 
-// Local type
-type ComboSelections = Record<string, ComboSelectableProduct | null>;
+// REFACTORED: State hỗ trợ multi-select
+// Map slotName -> mảng các sản phẩm đã chọn
+type ComboSelections = Record<string, ComboSelectableProduct[]>;
 
 export default function ComboSelectionModal() {
   const { comboForSelection, setComboForSelection, addItemToCart } =
     useCartStore();
 
+  // REFACTORED: State là mảng
   const [selections, setSelections] = useState<ComboSelections>({});
   const [note, setNote] = useState("");
 
-  /** ---------------------------------------------
+  /**
    * INIT STATE KHI MỞ MODAL
-   * --------------------------------------------- */
+   */
   useEffect(() => {
-    console.log("comboForSelection", comboForSelection);
     if (!comboForSelection) return;
 
     const initial: ComboSelections = {};
-
+    // REFACTORED: Khởi tạo mảng rỗng cho mỗi slot
     comboForSelection.items.forEach((slot) => {
-      if (slot.isRequired && slot.selectableProducts?.length > 0) {
-        initial[slot.slotName] = slot.selectableProducts[0];
-      } else {
-        initial[slot.slotName] = null;
-      }
+      initial[slot.slotName] = [];
     });
 
     setSelections(initial);
     setNote("");
   }, [comboForSelection]);
 
-  /** ---------------------------------------------
-   * HANDLE SELECT
-   * --------------------------------------------- */
-  const handleSelect = (slot: ComboItem, product: ComboSelectableProduct) => {
-    setSelections((prev) => ({
-      ...prev,
-      [slot.slotName]: product,
-    }));
+  /**
+   * REFACTORED: HANDLE SELECT (Hỗ trợ multi-select)
+   */
+  const handleSelect = (
+    slot: ComboItem,
+    productInfo: ComboSelectableProduct
+  ) => {
+    setSelections((prev) => {
+      const current = prev[slot.slotName] || [];
+      const isSelected = current.some(
+        (p) => p.product.id === productInfo.product.id
+      );
+      const max = slot.maxSelection;
+      let newSlotSelections: ComboSelectableProduct[];
+
+      if (isSelected) {
+        // 1. Deselect
+        newSlotSelections = current.filter(
+          (p) => p.product.id !== productInfo.product.id
+        );
+      } else {
+        // 2. Select
+        if (max === 1) {
+          // 2a. Nếu max=1, thay thế
+          newSlotSelections = [productInfo];
+        } else if (current.length < max) {
+          // 2b. Nếu max > 1 và chưa đủ, thêm vào
+          newSlotSelections = [...current, productInfo];
+        } else {
+          // 2c. Đã đạt max, không làm gì
+          newSlotSelections = current;
+        }
+      }
+      return { ...prev, [slot.slotName]: newSlotSelections };
+    });
   };
 
-  /** ---------------------------------------------
-   * VALIDATION
-   * --------------------------------------------- */
-  const { isFormValid, validationErrors } = useMemo(() => {
-    if (!comboForSelection) return { isFormValid: false, validationErrors: {} };
-
+  /**
+   * REFACTORED: VALIDATION VÀ TÍNH GIÁ (Gộp vào 1 useMemo)
+   */
+  const { finalPrice, validationErrors, isFormValid } = useMemo(() => {
     const errors: Record<string, string> = {};
+    if (!comboForSelection) {
+      return { finalPrice: 0, validationErrors: {}, isFormValid: false };
+    }
 
-    comboForSelection.items.forEach((slot) => {
-      if (slot.isRequired && !selections[slot.slotName]) {
-        errors[slot.slotName] = `Vui lòng chọn 1 mục cho "${slot.slotName}"`;
+    const combo = comboForSelection as Combo; // Đảm bảo type mới
+    let price = 0;
+
+    // 1. Validation (dựa trên min/max)
+    combo.items.forEach((slot) => {
+      const count = (selections[slot.slotName] || []).length;
+      if (count < slot.minSelection) {
+        errors[
+          slot.slotName
+        ] = `Vui lòng chọn ít nhất ${slot.minSelection} món.`;
       }
+      // maxSelection đã được xử lý trong handleSelect
     });
+    const isValid = Object.keys(errors).length === 0;
+
+    // 2. Tính giá
+    const allSelections = Object.values(selections).flat();
+
+    if (combo.pricingMode === ComboPricingMode.FIXED) {
+      price = combo.comboPrice;
+    } else if (combo.pricingMode === ComboPricingMode.SLOT_PRICE) {
+      price = allSelections.reduce((sum, sel) => sum + sel.slotPrice, 0);
+    } else if (combo.pricingMode === ComboPricingMode.DISCOUNT) {
+      const baseTotal = allSelections.reduce(
+        (sum, sel) => sum + sel.snapshotPrice,
+        0
+      );
+      if (combo.discountType === DiscountType.PERCENT) {
+        price = baseTotal * (1 - combo.discountValue / 100);
+      } else if (combo.discountType === DiscountType.AMOUNT) {
+        price = Math.max(0, baseTotal - combo.discountValue);
+      } else {
+        price = baseTotal; // Fallback nếu là NONE
+      }
+    }
+
+    // 3. Cộng gộp phụ thu (cho mọi mode)
+    const totalAdditional = allSelections.reduce(
+      (sum, sel) => sum + sel.additionalPrice,
+      0
+    );
+    price += totalAdditional;
 
     return {
-      isFormValid: Object.keys(errors).length === 0,
+      finalPrice: price,
       validationErrors: errors,
+      isFormValid: isValid,
     };
   }, [selections, comboForSelection]);
 
-  /** ---------------------------------------------
+  /**
    * SUBMIT → ADD TO CART
-   * --------------------------------------------- */
+   */
   const handleSubmit = () => {
     if (!isFormValid || !comboForSelection) return;
 
+    // REFACTORED: flatMap mảng selections
     const payloadSelections: CreateOrderItem_ComboSelection[] = Object.keys(
       selections
     )
-      .map((slotName) => {
-        const selected = selections[slotName];
-        if (!selected) return null;
+      .flatMap((slotName) => {
+        const selectedProducts = selections[slotName] || [];
+        if (selectedProducts.length === 0) return [];
 
-        const product = selected.product as Product;
-        if (!product) return null;
+        return selectedProducts.map((sel) => {
+          const product = sel.product as Product;
+          if (!product) return null;
 
-        return {
-          slotName,
-          product: {
-            id: product.id,
-            name: product.name,
-            basePrice: product.basePrice,
-          },
-          options: {}, // combo không có option riêng
-        };
+          return {
+            slotName,
+            product: {
+              id: product.id,
+              name: product.name,
+              basePrice: product.basePrice, // Gửi giá gốc của sp
+            },
+            options: {}, // Giả định combo item không có sub-options
+          };
+        });
       })
       .filter((s): s is CreateOrderItem_ComboSelection => s !== null);
-
-    const finalPrice =
-      (comboForSelection as any).price ?? comboForSelection.comboPrice;
 
     const itemData = {
       itemType: "Combo" as const,
       item: {
         id: comboForSelection.id,
         name: comboForSelection.name,
+        // Snapshot giá gốc (chỉ dùng giá fixed nếu có)
         comboPrice: comboForSelection.comboPrice,
       },
-      totalPrice: finalPrice,
+      totalPrice: finalPrice, // REFACTORED: Dùng giá đã tính toán
       note: note.trim(),
       options: null,
       comboSelections: payloadSelections,
@@ -117,21 +184,33 @@ export default function ComboSelectionModal() {
       _categoryIds: [],
     };
 
-    // @ts-ignore: đã đúng format cho addItemToCart
+    // @ts-ignore: Đã đúng format cho addItemToCart
     addItemToCart(itemData);
+    handleClose(); // NEW: Đóng modal sau khi thêm
   };
 
-  /** ---------------------------------------------
-   * HANDLE CLOSE
-   * --------------------------------------------- */
   const handleClose = () => {
     setComboForSelection(null);
   };
 
+  // Helper hiển thị text yêu cầu của slot
+  const getSlotRequirementText = (slot: ComboItem) => {
+    const { minSelection, maxSelection } = slot;
+    if (minSelection === 1 && maxSelection === 1) return "Bắt buộc (Chọn 1)";
+    if (minSelection === 0 && maxSelection === 1) return "Tùy chọn (Chọn 1)";
+    if (minSelection > 0 && maxSelection > minSelection)
+      return `Bắt buộc (Chọn ${minSelection} - ${maxSelection})`;
+    if (minSelection === 0 && maxSelection > 1)
+      return `Tùy chọn (Chọn tối đa ${maxSelection})`;
+    if (minSelection > 0 && maxSelection === minSelection)
+      return `Bắt buộc (Chọn ${minSelection})`;
+    return `Chọn ${minSelection} - ${maxSelection}`;
+  };
+
   if (!comboForSelection) return null;
 
-  const displayPrice =
-    (comboForSelection as any).price ?? comboForSelection.comboPrice;
+  // REFACTORED: Giá hiển thị ở footer là giá đã tính
+  const displayPrice = finalPrice;
 
   return (
     <div
@@ -171,7 +250,7 @@ export default function ComboSelectionModal() {
 
             return (
               <div
-                key={slot.slotName} // FIX #1
+                key={slot.slotName}
                 className={`p-4 border rounded-lg ${
                   error ? "border-red-300 bg-red-50" : "border-gray-200"
                 }`}
@@ -180,7 +259,8 @@ export default function ComboSelectionModal() {
                   {slot.slotName}
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {slot.isRequired ? "Bắt buộc (Chọn 1)" : "Tùy chọn (Chọn 1)"}
+                  {/* REFACTORED: Hiển thị text yêu cầu động */}
+                  {getSlotRequirementText(slot)}
                 </p>
 
                 {error && (
@@ -194,12 +274,31 @@ export default function ComboSelectionModal() {
                     const product = prodInfo.product as Product;
                     if (!product) return null;
 
+                    // REFACTORED: Check trong mảng
                     const isChecked =
-                      selections[slot.slotName]?.product.id === product.id;
+                      selections[slot.slotName]?.some(
+                        (p) => p.product.id === product.id
+                      ) || false;
+
+                    // REFACTORED: Logic hiển thị giá của item
+                    let priceDisplay = null;
+                    const comboMode = (comboForSelection as Combo).pricingMode;
+
+                    if (comboMode === ComboPricingMode.SLOT_PRICE) {
+                      // Mode SLOT: Hiển thị giá slot + phụ thu
+                      priceDisplay = (
+                        prodInfo.slotPrice + prodInfo.additionalPrice
+                      ).toLocaleString("vi-VN");
+                    } else if (prodInfo.additionalPrice > 0) {
+                      // Mode FIXED/DISCOUNT: Chỉ hiển thị phụ thu
+                      priceDisplay = `+${prodInfo.additionalPrice.toLocaleString(
+                        "vi-VN"
+                      )}`;
+                    }
 
                     return (
                       <label
-                        key={`${slot.slotName}__${product.id}`} // FIX #2
+                        key={`${slot.slotName}__${product.id}`}
                         onClick={() => handleSelect(slot, prodInfo)}
                         className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all bg-white hover:border-primary-400 ${
                           isChecked
@@ -212,9 +311,10 @@ export default function ComboSelectionModal() {
                         </span>
 
                         <div className="flex items-center space-x-4">
-                          {prodInfo.fixedPrice > 0 && (
+                          {/* REFACTORED: Hiển thị giá item */}
+                          {priceDisplay && (
                             <span className="text-gray-700">
-                              +{prodInfo.fixedPrice.toLocaleString("vi-VN")}đ
+                              {priceDisplay}đ
                             </span>
                           )}
                           {isChecked ? (
