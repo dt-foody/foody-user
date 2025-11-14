@@ -68,14 +68,14 @@ export default function HotDealsPage() {
           const product = promo.product as Product;
           productsList.push({
             ...product,
-            thumbnailUrl: `${IMAGE_BASE}${product.thumbnailUrl}`,
+            image: `${IMAGE_BASE}${product.image}`,
           });
         }
         if (promo.combo && typeof promo.combo === "object") {
           const combo = promo.combo as Combo;
           combosList.push({
             ...combo,
-            thumbnailUrl: `${IMAGE_BASE}${combo.thumbnailUrl}`,
+            image: `${IMAGE_BASE}${combo.image}`,
           });
         }
       });
@@ -250,7 +250,7 @@ export default function HotDealsPage() {
         price: finalPrice,
         originalPrice,
         discount: promotion || null,
-        image: item.thumbnailUrl,
+        image: item.image,
         reviews: Math.floor(Math.random() * 500) + 100,
         rating: (4.0 + Math.random() * 0.9).toFixed(1),
         sold: Math.floor(Math.random() * 1000) + 50,

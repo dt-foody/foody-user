@@ -18,20 +18,39 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCart, SHIPPING_FEE } from "@/stores/useCartStore";
+// NÂNG CẤP: Import cả 2
+import { useCartStore, useCart, SHIPPING_FEE } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { EligibilityStatus } from "@/stores/useCartStore";
+import type { CartLine, EligibilityStatus } from "@/stores/useCartStore";
 import type { Coupon } from "@/types";
+
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 /* -----------------------------
    Local memo components
 ----------------------------- */
 
+/**
+ * NÂNG CẤP: OptionChips giờ phải đọc từ CartLine mới
+ */
 const OptionChips = React.memo(function OptionChips({
-  names,
+  item,
 }: {
-  names: string[];
+  item: CartLine;
 }) {
+  let names: string[] = [];
+
+  if (item.itemType === "Product") {
+    // Lấy từ Product options
+    names = Object.values(item.options || {})
+      .flat()
+      .map((opt) => opt.name);
+  } else if (item.itemType === "Combo") {
+    // Lấy từ Combo selections (tên các món con)
+    names = (item.comboSelections || []).map((sel) => sel.product.name);
+  }
+
   if (!names?.length) return null;
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -47,6 +66,7 @@ const OptionChips = React.memo(function OptionChips({
   );
 });
 
+// Component này đã tốt (dùng cartId), giữ nguyên
 const ItemNoteView = React.memo(function ItemNoteView({
   cartId,
   note,
@@ -127,6 +147,13 @@ const ItemNoteView = React.memo(function ItemNoteView({
 ----------------------------- */
 
 export default function CartSidebar() {
+  /**
+   * ======================================================================
+   * SỬA LỖI TẠI ĐÂY
+   * ======================================================================
+   * Phải gọi `useCart()` để lấy các giá trị đã tính toán
+   * (cartCount, publicCouponStatuses, subtotal, finalTotal, v.v.)
+   */
   const {
     cartItems,
     cartCount,
@@ -147,7 +174,7 @@ export default function CartSidebar() {
     applyPublicCoupon,
     applyPrivateCoupon,
     removeCoupon,
-  } = useCart();
+  } = useCart(); // <-- SỬA TỪ `useCartStore()` THÀNH `useCart()`
 
   const router = useRouter();
   const { user } = useAuthStore();
@@ -157,31 +184,38 @@ export default function CartSidebar() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
 
+  // ... (Tất cả logic (handlers) giữ nguyên) ...
   const handleApplyPrivateCoupon = async () => {
     if (!manualCouponCode) return;
     const { success } = await applyPrivateCoupon(manualCouponCode);
     if (success) setManualCouponCode("");
   };
-
   const handleTogglePublicCoupon = (coupon: Coupon) => {
     if (appliedCoupons.some((c) => c.id === coupon.id)) removeCoupon(coupon.id);
     else applyPublicCoupon(coupon);
   };
-
   const handlePlaceOrder = () => {
     setShowCart(false);
     if (!user) router.push("/login?redirect_uri=/checkout");
     else router.push("/checkout");
   };
-
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src =
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+    e.currentTarget.src = PLACEHOLDER_IMAGE;
+  };
+  const beginEditNote = (id: string, cur?: string) => {
+    setEditingNoteId(id);
+    setNoteDraft(cur ?? "");
+  };
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setNoteDraft("");
+  };
+  const saveNote = (id: string) => {
+    updateItemNote(id, noteDraft.trim());
+    cancelEditNote();
   };
 
-  /* -----------------------------
-     Group Coupons
-  ----------------------------- */
+  // ... (useMemo groupedCoupons giữ nguyên) ...
   const groupedCoupons = useMemo(() => {
     const groups = publicCouponStatuses.reduce((acc, status) => {
       const key = status.coupon.type || "other";
@@ -204,7 +238,6 @@ export default function CartSidebar() {
     discount_code: "Mã Giảm Giá",
     freeship: "Miễn Phí Vận Chuyển",
   };
-
   const formatDiscountValue = (coupon: Coupon) => {
     if (coupon.type === "freeship") return "Free Ship";
     if (coupon.valueType === "percentage") return `${coupon.value}%`;
@@ -212,27 +245,11 @@ export default function CartSidebar() {
   };
 
   /* -----------------------------
-     Note Handlers
-  ----------------------------- */
-  const beginEditNote = (id: string, cur?: string) => {
-    setEditingNoteId(id);
-    setNoteDraft(cur ?? "");
-  };
-  const cancelEditNote = () => {
-    setEditingNoteId(null);
-    setNoteDraft("");
-  };
-  const saveNote = (id: string) => {
-    updateItemNote(id, noteDraft.trim());
-    cancelEditNote();
-  };
-
-  /* -----------------------------
      Cart Content
   ----------------------------- */
   const renderCartContent = () => (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
+      {/* Header (giữ nguyên) */}
       <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-primary-50 to-white">
         <div className="flex items-center gap-2">
           <ShoppingCart size={20} className="text-primary-600" />
@@ -258,7 +275,7 @@ export default function CartSidebar() {
         </div>
       </div>
 
-      {/* Items */}
+      {/* Items (NÂNG CẤP) */}
       <div className="flex-1 overflow-y-auto">
         {cartItems.length === 0 ? (
           <div className="text-center h-full flex flex-col justify-center items-center p-4">
@@ -274,9 +291,6 @@ export default function CartSidebar() {
           <>
             <div className="p-3 space-y-2.5">
               {cartItems.map((item) => {
-                const options =
-                  item.selectedOptions?.map((o) => o.name).filter(Boolean) ??
-                  [];
                 const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
 
@@ -287,8 +301,8 @@ export default function CartSidebar() {
                   >
                     <div className="flex items-center gap-3">
                       <Image
-                        src={item.image || ""}
-                        alt={item.name}
+                        src={item._image || PLACEHOLDER_IMAGE} // Dùng metadata
+                        alt={item.item.name}
                         onError={handleImageError}
                         width={56}
                         height={56}
@@ -297,7 +311,7 @@ export default function CartSidebar() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="text-sm font-semibold text-gray-800 truncate">
-                            {item.name}
+                            {item.item.name}
                           </h4>
                           <button
                             onClick={() => removeItem(item.cartId)}
@@ -310,7 +324,10 @@ export default function CartSidebar() {
                         <p className="text-[12px] text-gray-500">
                           {item.totalPrice.toLocaleString("vi-VN")}đ / món
                         </p>
-                        <OptionChips names={options} />
+
+                        {/* NÂNG CẤP: Truyền cả `item` vào */}
+                        <OptionChips item={item} />
+
                         <ItemNoteView
                           cartId={item.cartId}
                           note={item.note}
@@ -341,7 +358,7 @@ export default function CartSidebar() {
                             <Plus size={14} />
                           </button>
                         </div>
-                        <div className="text-sm font-bold text-[#b9915f] text-gray-900">
+                        <div className="text-sm font-bold text-gray-900">
                           {lineTotal.toLocaleString("vi-VN")}đ
                         </div>
                       </div>
@@ -351,7 +368,7 @@ export default function CartSidebar() {
               })}
             </div>
 
-            {/* Coupon & Summary */}
+            {/* Coupon & Summary (giữ nguyên) */}
             <div className="px-3 pb-3 space-y-2.5">
               {/* Private Input */}
               <div className="bg-gray-50 rounded-lg p-3 border">
@@ -364,7 +381,7 @@ export default function CartSidebar() {
                     onClick={() => setIsCouponPanelOpen(true)}
                     className="text-sm font-medium hover:text-primary-700 flex items-center gap-1"
                   >
-                    Xem thêm 
+                    Xem thêm
                     <ChevronRight size={12} />
                   </button>
                 </div>
@@ -477,7 +494,7 @@ export default function CartSidebar() {
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer (giữ nguyên) */}
       {cartItems.length > 0 && (
         <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
           <button
@@ -496,7 +513,7 @@ export default function CartSidebar() {
   );
 
   /* -----------------------------
-     Coupon Panel
+     Coupon Panel (giữ nguyên)
   ----------------------------- */
   const renderCouponPanel = () => {
     const hasCoupons = Object.keys(groupedCoupons).length > 0;
@@ -630,9 +647,12 @@ export default function CartSidebar() {
     );
   };
 
+  /* -----------------------------
+     Main Return (giữ nguyên)
+  ----------------------------- */
   return (
     <div
-      className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${
+      className={`z-[100] fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${
         showCart ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
       onClick={() => setShowCart(false)}

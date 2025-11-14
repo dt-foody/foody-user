@@ -5,13 +5,13 @@ import React from "react";
 interface Category {
   id: string;
   name: string;
-  type: "category" | "combo";
+  type: "category" | "combo" | "flashsale";
 }
 
 interface MenuCategoryProps {
   categories: { id: string; name: string }[];
-  activeTab: { id: string; type: "category" | "combo" };
-  onTabClick: (type: "category" | "combo", id: string) => void;
+  activeTab: { id: string; type: "category" | "combo" | "flashsale" };
+  onTabClick: (type: "category" | "combo" | "flashsale", id: string) => void;
 }
 
 export default function MenuCategory({
@@ -20,7 +20,8 @@ export default function MenuCategory({
   onTabClick,
 }: MenuCategoryProps) {
   const tabs: Category[] = [
-    { id: "all", name: "Thực đơn", type: "category" },
+    { id: "flash_sale_category", name: "Flash Sale", type: "flashsale" },
+    // { id: "all", name: "Thực đơn", type: "category" },
     { id: "combo", name: "Combo", type: "combo" },
     ...categories.map((c) => ({
       id: c.id,
@@ -30,7 +31,11 @@ export default function MenuCategory({
   ];
 
   return (
-    <div className="flex space-x-3 pb-2 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+    <div
+      className="flex space-x-3 py-6 -mx-4 px-4 overflow-x-auto scrollbar-hide 
+             sticky top-[64px] z-[80] bg-white
+             rounded-b-xl border-b shadow-md"
+    >
       {tabs.map((tab) => (
         <button
           key={tab.id}

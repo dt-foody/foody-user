@@ -1,314 +1,253 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Plus, Gift, Loader, X } from "lucide-react";
-import {
-  Category,
-  Product,
-  Combo,
-  PricePromotion,
-  MenuItem,
-  GroupedCategory,
-} from "@/types";
+// --- THÊM MỚI --- (Import useEffect và useRef)
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Search, Gift, X } from "lucide-react";
+import { Product, Combo, PricePromotion } from "@/types";
 
-import SkeletonCard from "@/components/SkeletonCard";
+// Components
 import ProductCard from "@/components/ProductCard";
+import ComboCard from "@/components/ComboCard";
 import ProductNotFound from "@/components/ProductNotFound";
 import MenuCategory from "@/components/MenuCategory";
-import ErrorDisplay from "@/components/ErrorDisplay";
-import { comboService, productService } from "@/services";
-import { PREFIX_IMAGE } from "@/constants";
-
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
-const ITEMS_PER_PAGE = 1000;
+import { useCartStore } from "@/stores/useCartStore";
 
 interface FoodyMenuClientProps {
-  initialCategories: Category[];
-  initialPromotions: PricePromotion[];
-  initialGroupedProducts: GroupedCategory[];
+  initialFlashSaleCategory: any;
+  initialFlashSales: any[];
+  initialThucDon: any[];
+  initialCombos: any[];
 }
 
 export default function FoodyMenuClient({
-  initialCategories,
-  initialPromotions,
-  initialGroupedProducts,
+  initialFlashSaleCategory,
+  initialFlashSales,
+  initialThucDon,
+  initialCombos,
 }: FoodyMenuClientProps) {
   // --- STATE ---
-  const [categories, setCategories] = useState(initialCategories);
-  const [groupedProducts, setGroupedProducts] = useState<GroupedCategory[]>(
-    initialGroupedProducts
-  );
-  const [combos, setCombos] = useState<Combo[]>([]);
-  const [promotions, setPromotions] =
-    useState<PricePromotion[]>(initialPromotions);
   const [activeTab, setActiveTab] = useState<{
-    type: "category" | "combo";
+    type: "category" | "combo" | "flashsale";
     id: string;
   }>({
     type: "category",
     id: "all",
   });
-
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [error, setError] = useState<string | null>(null);
+  const { startProductConfiguration, startComboConfiguration } = useCartStore();
 
-  const initedRef = useRef(true); // true vì đã prefetch từ server
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reqIdRef = useRef(0);
+  // --- THÊM MỚI --- (Ref để quản lý trạng thái cuộn)
+  const isProgrammaticScroll = useRef(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // --- LOAD ITEMS ---
-  const loadItems = useCallback(
-    async ({
-      isInitial = false,
-      page = currentPage,
-      tab = activeTab,
-      search = searchQuery,
-    }: {
-      isInitial?: boolean;
-      page?: number;
-      tab?: { type: "category" | "combo"; id: string };
-      search?: string;
-    } = {}) => {
-      const myReqId = ++reqIdRef.current;
-      if (!isInitial) {
-        if (page === 1) setLoading(true);
-        else setLoadingMore(true);
-        setError(null);
-      }
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
-      try {
-        const params: any = {
-          ...(tab.type === "category" &&
-            tab.id !== "all" && { category: tab.id }),
-          ...(search && { search }),
-          page,
-          limit: ITEMS_PER_PAGE,
-        };
+  // --- (Các hàm useMemo giữ nguyên) ---
+  const categoriesToDisplay = useMemo(() => {
+    return initialThucDon
+      .map((category) => ({
+        ...category,
+        products: category.products.filter((product: any) =>
+          product.name.toLowerCase().includes(normalizedQuery)
+        ),
+      }))
+      .filter((category) => category.products.length > 0);
+  }, [initialThucDon, normalizedQuery]);
 
-        const data: any =
-          tab.type === "combo"
-            ? await comboService.getAll(params)
-            : await productService.groupByCategory(params);
+  const combosToDisplay = useMemo(() => {
+    return initialCombos.filter((combo) =>
+      combo.name.toLowerCase().includes(normalizedQuery)
+    );
+  }, [initialCombos, normalizedQuery]);
 
-        if (reqIdRef.current !== myReqId) return;
+  const categoryTabs = useMemo(() => {
+    return initialThucDon
+      .filter((c) => c.id !== "flash_sale_category")
+      .map((c) => ({ id: c.id, name: c.name, priority: c.priority }));
+  }, [initialThucDon]);
 
-        if (tab.type === "combo") {
-          const formatted = (data.results || []).map((item: any) => ({
-            ...item,
-            thumbnailUrl: item.thumbnailUrl
-              ? `${PREFIX_IMAGE}${item.thumbnailUrl}`
-              : "",
-          }));
-          setCombos((prev) =>
-            page === 1 ? formatted : [...prev, ...formatted]
-          );
-        } else {
-          const formattedGroups: GroupedCategory[] = (data || []).map(
-            (group: any) => ({
-              category: group.category,
-              totalProducts: group.totalProducts,
-              products: group.products.map((p: any) => ({
-                ...p,
-                thumbnailUrl: p.thumbnailUrl
-                  ? `${PREFIX_IMAGE}${p.thumbnailUrl}`
-                  : "",
-              })),
-            })
-          );
+  const handleTabClick = (
+    type: "category" | "combo" | "flashsale",
+    id: string
+  ) => {
+    // 1. Đặt cờ để tạm dừng observer
+    isProgrammaticScroll.current = true;
 
-          setGroupedProducts((prev) =>
-            page === 1 ? formattedGroups : [...prev, ...formattedGroups]
-          );
-        }
-
-        setTotalPages(data.totalPages || 1);
-      } catch (err: any) {
-        if (reqIdRef.current === myReqId)
-          setError(err?.message || "Lỗi không xác định khi tải dữ liệu.");
-      } finally {
-        if (reqIdRef.current === myReqId) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
-      }
-    },
-    [activeTab, currentPage, searchQuery]
-  );
-
-  // --- SEARCH debounce ---
-  useEffect(() => {
-    if (!initedRef.current) return;
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      setCurrentPage(1);
-      loadItems({ page: 1, tab: activeTab, search: searchQuery });
-    }, 500);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, [searchQuery]);
-
-  // --- APPLY PROMOTION ---
-  const applyPromotions = useCallback(
-    (items: Product[]): MenuItem[] => {
-      const getDiscount = (id: string) =>
-        promotions.find(
-          (p) =>
-            (p.product as Product)?.id === id || (p.combo as Combo)?.id === id
-        );
-
-      return items.map((item) => {
-        const discount = getDiscount(item.id);
-
-        let finalPrice = item.basePrice;
-        let originalPrice: number | undefined;
-
-        if (discount) {
-          originalPrice = finalPrice;
-          finalPrice =
-            discount.discountType === "percentage"
-              ? finalPrice * (1 - discount.discountValue / 100)
-              : finalPrice - discount.discountValue;
-          if (finalPrice < 0) finalPrice = 0;
-        }
-
-        return {
-          ...item,
-          type: "product" as const,
-          price: Number(finalPrice),
-          originalPrice,
-          discount: discount || null,
-          image: item.thumbnailUrl,
-          reviews: 1000,
-          rating: 5.0,
-        };
-      });
-    },
-    [promotions]
-  );
-
-  const handleTabClick = (type: "category" | "combo", id: string) => {
-    if (activeTab.type === type && activeTab.id === id) return;
-    setCurrentPage(1);
-    setGroupedProducts([]);
-    setCombos([]);
+    // 2. Cập nhật tab active ngay lập tức
     setActiveTab({ type, id });
-    loadItems({ page: 1, tab: { type, id } });
+
+    let elementId = "";
+    if (type === "flashsale") {
+      elementId = `category-${id}`; // id là 'flash_sale_category'
+    } else if (type === "combo") {
+      elementId = "section-combo";
+    } else if (id === "all") {
+      elementId = "main-content";
+    } else {
+      elementId = `category-${id}`;
+    }
+
+    const element = document.getElementById(elementId);
+
+    if (element) {
+      const yOffset = -170; // header + MenuCategory cao 150px
+      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+
+      window.scrollTo({
+        top: y,
+        behavior: "smooth",
+      });
+    }
+
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 1000);
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
+  useEffect(() => {
+    const observerCallback: IntersectionObserverCallback = (entries) => {
+      // Không làm gì nếu người dùng đang chủ động click cuộn
+      if (isProgrammaticScroll.current) return;
+
+      // Tìm entry đang ở trên cùng của "vùng nóng"
+      const topEntry = entries.find((e) => e.isIntersecting);
+
+      console.log("topEntry", topEntry);
+
+      if (topEntry) {
+        const type = topEntry.target.getAttribute("data-scroll-spy-type") as
+          | "category"
+          | "combo"
+          | "flashsale";
+        const id = topEntry.target.getAttribute("data-scroll-spy-id")!;
+        setActiveTab({ type, id });
+      }
+    };
+
+    const options = {
+      rootMargin: "-150px 0px -55% 0px",
+      threshold: 0,
+    };
+
+    observerRef.current = new IntersectionObserver(observerCallback, options);
+    const currentObserver = observerRef.current;
+
+    // Lấy tất cả các section và bắt đầu theo dõi
+    const sections = document.querySelectorAll("[data-scroll-spy-id]");
+    sections.forEach((section) => currentObserver.observe(section));
+
+    // Dọn dẹp khi component unmount
+    return () => {
+      sections.forEach((section) => currentObserver.unobserve(section));
+    };
+    // Chạy lại khi danh sách section thay đổi (do tìm kiếm)
+  }, [categoriesToDisplay, combosToDisplay]);
+
+  const hasCombos = combosToDisplay.length > 0;
+  const hasProducts = categoriesToDisplay.length > 0;
+  const isNotFound = !hasCombos && !hasProducts;
 
   // --- RENDER ---
   return (
     <div className="min-h-screen">
-      {/* Header search */}
-      <header className="backdrop-blur-lg border-b z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Tìm món ăn, combo, đồ uống..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[500px] pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main
+        id="main-content"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-0 scroll-mt-20"
+        data-scroll-spy-type="category"
+        data-scroll-spy-id="all"
+      >
         <MenuCategory
-          categories={categories}
+          categories={categoryTabs}
           activeTab={activeTab}
           onTabClick={handleTabClick}
         />
 
-        {/* Flash Sale */}
-        {promotions.length > 0 && (
-          <section className="my-8">
-            <div className="flex items-center space-x-3 mb-4">
-              <Gift className="w-7 h-7 text-primary-500" />
-              <h2 className="font-bold text-xl text-gray-800">Flash Sale 🔥</h2>
-            </div>
+        {initialFlashSaleCategory && (
+          <section
+            id={`category-${initialFlashSaleCategory.id}`}
+            className="my-6"
+            data-scroll-spy-type="flashsale"
+            data-scroll-spy-id={initialFlashSaleCategory.id}
+          >
+            <h2 className="text-xl font-bold mb-4 text-red-600 flex items-center">
+              <Gift className="w-6 h-6 mr-2" />
+              {initialFlashSaleCategory.name} 🔥
+            </h2>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {promotions.map((promo) => (
-                <ProductCard key={promo.id} product={promo as any} />
+              {initialFlashSaleCategory.products.map((product: any) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onClick={() => startProductConfiguration(product)}
+                />
               ))}
             </div>
           </section>
         )}
 
-        {/* Product list */}
-        {error ? (
-          <ErrorDisplay
-            message={error}
-            onRetry={() => loadItems({ isInitial: true })}
-          />
-        ) : loading && currentPage === 1 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : groupedProducts.length === 0 ? (
-          <ProductNotFound />
-        ) : (
-          groupedProducts.map((group) => (
-            <section key={group.category?.id || "no-cat"} className="mb-8">
-              <h2 className="text-xl font-bold mb-4 text-gray-800">
-                {group.category?.name || "Không có danh mục"}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {applyPromotions(group.products).map((item) => (
-                  <ProductCard key={item.id} product={item} />
-                ))}
-              </div>
-            </section>
-          ))
+        {/* 1. Render Combos (nếu có) */}
+        {hasCombos && (
+          <section
+            id="section-combo"
+            className="my-6"
+            // --- CẬP NHẬT --- Thêm data-scroll-spy-*
+            data-scroll-spy-type="combo"
+            data-scroll-spy-id="combo"
+          >
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Combo Đặc Biệt
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {combosToDisplay.map((combo) => (
+                <ComboCard
+                  key={combo.id}
+                  combo={combo}
+                  onClick={() => startComboConfiguration(combo as Combo)}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
-        {/* Load more */}
-        {!loading &&
-          !error &&
-          groupedProducts.length > 0 &&
-          currentPage < totalPages && (
-            <div className="mt-12 text-center">
-              <button
-                onClick={() => setCurrentPage((p) => p + 1)}
-                disabled={loadingMore}
-                className="px-8 py-3 bg-white border-2 border-primary-500 text-primary-500 rounded-xl font-semibold hover:bg-primary-500 hover:text-white transition-all disabled:opacity-50 inline-flex items-center space-x-2 shadow-sm"
+        <>
+          {/* 2. Render Products (đã nhóm theo category) */}
+          {hasProducts &&
+            categoriesToDisplay.map((group) => (
+              <section
+                key={group.id}
+                id={`category-${group.id}`}
+                className="my-6"
+                // --- CẬP NHẬT --- Thêm data-scroll-spy-*
+                data-scroll-spy-type={
+                  group.id === "flash_sale_category" ? "flashsale" : "category"
+                }
+                data-scroll-spy-id={group.id}
               >
-                {loadingMore ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    <span>Đang tải...</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    <span>Xem thêm món</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+                <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                  {group.id === "flash_sale_category" && (
+                    <Gift className="w-6 h-6 text-primary-500 mr-2" />
+                  )}
+                  {group.name}
+                  {group.id === "flash_sale_category" && " 🔥"}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {group.products.map((product: any) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onClick={() =>
+                        startProductConfiguration(product as Product)
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+
+          {/* 3. Hiển thị "Không tìm thấy" */}
+          {isNotFound && <ProductNotFound />}
+        </>
       </main>
     </div>
   );

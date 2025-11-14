@@ -1,10 +1,12 @@
 // src/types/combo.ts
 import type { Paginated } from "@/lib";
+import { Product } from "./product";
 
 /** Phần tử có thể chọn trong 1 slot của combo (đã ép về id) */
 export interface ComboSelectableProduct {
-  productId: string; 
+  product: Product;
   fixedPrice: number; // giá cố định khi nằm trong combo
+  additionalPrice: number; // giá phụ thu khi nằm trong combo
   maxQuantity: number; // mặc định 1
 }
 
@@ -20,7 +22,7 @@ export interface Combo {
   id: string;
   name: string;
   description?: string;
-  thumbnailUrl?: string;
+  image?: string;
 
   comboPrice: number;
 

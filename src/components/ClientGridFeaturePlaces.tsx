@@ -44,7 +44,7 @@ export default function ClientGridFeaturePlaces({
     (product: Product): MenuItem => ({
       ...product,
       price: product.basePrice,
-      image: getImageUrl(product.thumbnailUrl),
+      image: getImageUrl(product.image),
       type: "product",
       reviews: Math.floor(Math.random() * 400) + 100, // Generated once
       rating: (3.8 + Math.random() * 1.2).toFixed(1), // Generated once
@@ -57,7 +57,7 @@ export default function ClientGridFeaturePlaces({
   const convertToMenuItem_SSR = (product: Product): MenuItem => ({
     ...product,
     price: product.basePrice,
-    image: getImageUrl(product.thumbnailUrl),
+    image: getImageUrl(product.image),
     type: "product",
     reviews: 0,
     rating: "...",
@@ -182,7 +182,7 @@ export default function ClientGridFeaturePlaces({
                     <div className="relative w-full h-48">
                       <Image
                         fill
-                        src={`${PREFIX_IMAGE}${food.thumbnailUrl}`}
+                        src={`${PREFIX_IMAGE}${food.image}`}
                         alt={food.name}
                         onError={handleImageError}
                         className="object-cover group-hover:scale-105 transition-transform duration-300"

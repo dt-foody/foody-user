@@ -2,102 +2,163 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useCart } from "@/stores/useCartStore";
-import type { MenuItem } from "@/types/product";
+import { Plus } from "lucide-react";
+import { useCartStore } from "@/stores/useCartStore";
+import type {
+  Product,
+  PricePromotion,
+  CreateOrderItem_ItemSnapshot,
+} from "@/types";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 interface ProductCardProps {
-  product: MenuItem;
+  product: Product & {
+    promotion?: PricePromotion;
+    salePrice?: number;
+  };
+  onClick: () => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const { cartItems, startAddToCart, updateQuantity } = useCart();
+export default function ProductCard({ product, onClick }: ProductCardProps) {
+  const { cartItems, addItemToCart, updateQuantity } = useCartStore();
   const [quantity, setQuantity] = useState(0);
 
-  /** 🔹 Nếu giỏ hàng đã có sản phẩm này → fill sẵn quantity */
+  // --- LOGIC GIÁ ---
+  const hasSale = product.salePrice != null && product.promotion != null;
+  const finalPrice = (hasSale ? product.salePrice : product.basePrice) ?? 0;
+  const originalPrice = hasSale ? product.basePrice : undefined;
+
+  // --- LOGIC PHÂN BIỆT SẢN PHẨM ---
+  const isSimpleProduct =
+    !product.optionGroups || product.optionGroups.length === 0;
+
+  /** 🔹 Cập nhật quantity dựa trên giỏ hàng */
+  // SỬA: Logic này giờ sẽ chạy cho CẢ hai loại sản phẩm
   useEffect(() => {
-    const existing = cartItems.find((i) => i.productId === product.id);
-    if (existing) setQuantity(existing.quantity);
-    else setQuantity(0);
-  }, [cartItems, product.id]);
+    // ID tiền tố để tìm kiếm
+    const productIdPrefix = `${product.id}::`;
+
+    // Lọc tất cả các line item trong giỏ hàng có cùng ID sản phẩm
+    // và cộng gộp số lượng của chúng
+    const totalQuantity = cartItems
+      .filter((item) => item.cartId.startsWith(productIdPrefix))
+      .reduce((sum, currentItem) => sum + currentItem.quantity, 0);
+
+    setQuantity(totalQuantity);
+  }, [cartItems, product.id]); // Bỏ isSimpleProduct khỏi dependency array
+
+  // --- HANDLERS ---
+  const increase = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Logic này CHỈ DÀNH CHO SẢN PHẨM ĐƠN GIẢN
+    const itemSnapshot: CreateOrderItem_ItemSnapshot = {
+      id: product.id,
+      name: product.name,
+      basePrice: product.basePrice,
+    };
+
+    const newItemPayload: any = {
+      itemType: "Product",
+      item: itemSnapshot,
+      options: {},
+      comboSelections: null,
+      totalPrice: finalPrice,
+      note: "",
+      _image: product.image,
+      _categoryIds: product.category ? [product.category.toString()] : [],
+    };
+
+    addItemToCart(newItemPayload);
+  };
+
+  const decrease = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Logic này CHỈ hoạt động cho SP đơn giản
+    const simpleCartId = `${product.id}::`;
+    const cartLine = cartItems.find((i) => i.cartId === simpleCartId);
+    if (cartLine) updateQuantity(cartLine.cartId, -1);
+  };
+  // ---------------------------------------------------
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
-  const increase = () => {
-    if (quantity === 0) {
-      startAddToCart(product);
-    } else {
-      const cartLine = cartItems.find((i) => i.productId === product.id);
-      if (cartLine) updateQuantity(cartLine.cartId, +1);
-    }
-  };
-
-  const decrease = () => {
-    const cartLine = cartItems.find((i) => i.productId === product.id);
-    if (cartLine) updateQuantity(cartLine.cartId, -1);
-  };
+  // SỬA: Tạo một biến điều kiện cho nút decrease
+  // Nút decrease chỉ được kích hoạt khi:
+  // 1. Số lượng > 0
+  // 2. VÀ đó LÀ sản phẩm đơn giản
+  const canDecrease = quantity > 0 && isSimpleProduct;
 
   return (
-    <div className="flex items-start gap-4 bg-[#fffaf5] p-3 rounded-xl border border-[rgba(0,0,0,0.1)] shadow-sm hover:shadow-md transition-all duration-200">
+    <div
+      className={`flex items-start gap-4 bg-white p-3 rounded-xl border border-[rgba(0,0,0,0.08)] shadow-sm hover:shadow-md transition-all duration-200 cursor-default`}
+    >
       {/* Hình sản phẩm */}
       <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-md">
         <Image
           src={product.image || PLACEHOLDER_IMAGE}
           alt={product.name}
           fill
+          sizes="100px"
           onError={handleImageError}
           className="object-cover rounded-md"
+          unoptimized
         />
+        {hasSale && (
+          <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
+            SALE
+          </span>
+        )}
       </div>
 
       {/* Thông tin */}
-      <div className="flex flex-col justify-between flex-grow">
+      <div className="flex flex-col justify-between flex-grow h-28">
+        {/* Tên và giá */}
         <div>
-          <h3 className="text-base font-bold text-neutral-900 mb-1 leading-tight">
+          <h3 className="text-base font-bold text-neutral-900 mb-1 leading-tight line-clamp-2">
             {product.name}
           </h3>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[1rem] font-bold text-[#b9915f]">
-              {Math.round(product.price).toLocaleString("vi-VN")}₫
+            <span className="text-[1rem] font-bold text-primary-600">
+              {Math.round(finalPrice).toLocaleString("vi-VN")}₫
             </span>
-            {product.originalPrice && product.originalPrice > product.price && (
+            {originalPrice && (
               <span className="text-[0.8rem] text-gray-400 line-through">
-                {Math.round(product.originalPrice).toLocaleString("vi-VN")}₫
+                {Math.round(originalPrice).toLocaleString("vi-VN")}₫
               </span>
             )}
           </div>
         </div>
 
-        {/* Nút tăng giảm */}
-        <div className="flex items-center gap-2 mt-2">
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => {
-              const val = Math.max(0, Number(e.target.value) || 0);
-              setQuantity(val);
-            }}
-            className="w-20 h-10 text-center border border-gray-400 rounded-md focus:outline-none focus:ring-1 focus:ring-[rgb(198,181,163)]"
-          />
-          <div className="flex border border-gray-400 rounded-md overflow-hidden">
+        {/* --- NÚT BẤM --- */}
+        <div className="flex items-center justify-end mt-2">
+          <div className="flex border border-gray-300 rounded-md overflow-hidden">
             <button
               onClick={decrease}
-              disabled={quantity <= 0}
-              className={`w-10 h-10 flex items-center justify-center text-lg font-bold transition-colors ${
-                quantity > 0 ? "" : "opacity-40 cursor-not-allowed"
+              // SỬA: Dùng biến `canDecrease`
+              disabled={!canDecrease}
+              className={`w-9 h-9 flex items-center justify-center text-lg font-bold transition-colors ${
+                canDecrease
+                  ? "text-gray-700 hover:bg-gray-100"
+                  : "text-gray-300 cursor-not-allowed"
               }`}
             >
               -
             </button>
+            <input
+              type="number"
+              value={quantity}
+              readOnly
+              className="w-16 h-9 text-center border-x border-gray-300 focus:outline-none"
+            />
             <button
-              onClick={increase}
-              className="w-10 h-10 flex items-center justify-center text-lg font-bold bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+              onClick={isSimpleProduct ? increase : onClick}
+              className="w-9 h-9 flex items-center justify-center text-lg font-bold bg-primary-500 text-white hover:bg-primary-600 transition-colors"
             >
-              +
+              <Plus className="w-5 h-5" />
             </button>
           </div>
         </div>

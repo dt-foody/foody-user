@@ -11,6 +11,7 @@ import {
   Zap,
   Calendar,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,20 +30,26 @@ export default function CheckoutRetro() {
     appliedCoupons,
     removeCoupon,
     clearCart,
+    // SỬA: Lấy state giao hàng từ store
+    deliveryOption,
+    setDeliveryOption,
+    scheduledDate,
+    setScheduledDate,
+    // SỬA: Lấy hàm áp dụng coupon từ store
+    applyPrivateCoupon,
+    couponStatus,
   } = useCart();
 
   const router = useRouter();
 
-  // ===== State =====
+  // ===== State (Chỉ giữ state của form) =====
   const [voucherInput, setVoucherInput] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryOption, setDeliveryOption] = useState<
-    "immediate" | "scheduled"
-  >("immediate");
-  const [scheduledDate, setScheduledDate] = useState<string>("");
+  // SỬA: Bỏ useState cho deliveryOption và scheduledDate
   const [scheduledTime, setScheduledTime] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
+  const [note, setNote] = useState(""); // THÊM: State cho Ghi chú
   const [loading, setLoading] = useState(false);
 
   const { me } = useAuthStore();
@@ -53,7 +60,6 @@ export default function CheckoutRetro() {
       const addr =
         me.addresses.find((a: any) => a.isDefault) || me.addresses[0];
       setDefaultAddress(addr);
-      // Gợi ý: có thể tự động điền tên/sdt luôn
       if (addr) {
         setName(addr.recipientName || "");
         setPhone(addr.recipientPhone || "");
@@ -76,6 +82,21 @@ export default function CheckoutRetro() {
     return "Chưa chọn ngày giao";
   };
 
+  // ===== SỬA: Hàm áp dụng Voucher =====
+  const handleApplyCoupon = async () => {
+    if (!voucherInput.trim()) {
+      toast.error("Vui lòng nhập mã voucher.");
+      return;
+    }
+    const result = await applyPrivateCoupon(voucherInput);
+    if (result.success) {
+      toast.success(result.message);
+      setVoucherInput(""); // Xóa input khi thành công
+    } else {
+      toast.error(result.message);
+    }
+  };
+
   // ===== Submit Handler =====
   const handleSubmit = async () => {
     if (loading) return;
@@ -91,6 +112,7 @@ export default function CheckoutRetro() {
       return;
     }
 
+    // SỬA: Đọc state từ store
     if (deliveryOption === "scheduled") {
       if (!scheduledDate) {
         toast.error("Vui lòng chọn ngày giao hàng!");
@@ -119,18 +141,17 @@ export default function CheckoutRetro() {
       label: "Địa chỉ giao hàng",
       recipientName: name,
       recipientPhone: phone,
-      street: defaultAddress.street, // nếu có form địa chỉ chi tiết thì thay vào đây
+      street: defaultAddress.street,
+      district: defaultAddress.district,
       ward: defaultAddress.ward,
       city: defaultAddress.city,
     };
 
+    // SỬA: Cập nhật payload.items để khớp với CartLine mới
+    // Gửi toàn bộ CartLine (đã loại bỏ các trường UI)
     const payload = {
-      items: cartItems.map((i) => ({
-        product: i.productId,
-        name: i.name,
-        quantity: i.quantity,
-        price: i.totalPrice,
-      })),
+      items: cartItems.map(({ _image, _categoryIds, ...rest }) => rest),
+      appliedCoupons: appliedCoupons.map(el => { return { id: el.id, code: el.code }}),
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
       shippingFee: SHIPPING_FEE,
@@ -141,20 +162,20 @@ export default function CheckoutRetro() {
       shipping: {
         address: shippingAddress,
       },
-      note: voucherInput || "",
+      note: note.trim(), // SỬA: Dùng state 'note'
     };
 
     // --- Gọi API ---
     try {
       setLoading(true);
-      const result = await orderService.customerOrder(payload);
+      const result = await orderService.customerOrder(payload as any);
 
       if (paymentMethod === "bank" && result.qrInfo?.checkoutUrl) {
         toast.success("Vui lòng quét mã QR để hoàn tất thanh toán!");
         window.open(result.qrInfo.checkoutUrl, "_blank");
       } else {
         toast.success("Đơn hàng của bạn đã được tạo thành công!");
-        clearCart(); // ✅ chỉ clear khi COD hoặc đã xác nhận thanh toán
+        clearCart(); // ✅ chỉ clear khi COD
         router.push("/account-orders");
       }
     } catch (err: any) {
@@ -182,7 +203,7 @@ export default function CheckoutRetro() {
             </button>
           </div>
 
-          {/* Table */}
+          {/* Table (SỬA: Cập nhật trường hiển thị) */}
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-black/50">
@@ -192,26 +213,76 @@ export default function CheckoutRetro() {
                 <th className="text-right py-2">Thành tiền</th>
               </tr>
             </thead>
+            {/* ======================================= */}
+            {/* === NÂNG CẤP HIỂN THỊ CHI TIẾT MÓN === */}
+            {/* ======================================= */}
             <tbody>
-              {cartItems.map((it) => (
-                <tr
-                  key={it.cartId}
-                  className="border-b border-black/20 hover:bg-[#f8f3ef]"
-                >
-                  <td className="py-2">{it.name}</td>
-                  <td className="text-right">
-                    {it.basePrice.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="text-center">{it.quantity}</td>
-                  <td className="text-right font-medium">
-                    {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}
-                  </td>
-                </tr>
-              ))}
+              {cartItems.map((it) => {
+                // Tái sử dụng logic từ OptionChips để lấy tên
+                let optionNames: string[] = [];
+                if (it.itemType === "Product") {
+                  optionNames = Object.values(it.options || {})
+                    .flat()
+                    .map((opt) => opt.name);
+                } else if (it.itemType === "Combo") {
+                  optionNames = (it.comboSelections || []).map(
+                    (sel) => sel.product.name
+                  );
+                }
+
+                return (
+                  <tr
+                    key={it.cartId}
+                    className="border-b border-black/20 hover:bg-[#f8f3ef]"
+                  >
+                    {/* SỬA: Hiển thị đầy đủ thông tin */}
+                    <td className="p-2 align-top">
+                      <span className="font-semibold text-gray-800">
+                        {it.item.name}
+                      </span>
+
+                      {/* === THAY ĐỔI TẠI ĐÂY === */}
+                      {/* Hiển thị Options (Dạng chip) */}
+                      {optionNames.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {optionNames.map((name, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 text-[11px] font-medium rounded-full border border-primary-200 bg-primary-50 text-primary-700"
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {/* === KẾT THÚC THAY ĐỔI === */}
+
+                      {/* Hiển thị Ghi chú của món */}
+                      {it.note && (
+                        <div className="mt-1.5 flex items-start gap-1 text-xs text-blue-700 bg-blue-50 p-1.5 rounded border border-blue-200">
+                          <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                          <span className="italic">{it.note}</span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Các ô khác giữ nguyên */}
+                    <td className="p-2 text-right align-top">
+                      {it.totalPrice.toLocaleString("vi-VN")}
+                    </td>
+                    <td className="p-2 text-center align-top">{it.quantity}</td>
+                    <td className="p-2 text-right font-medium align-top">
+                      {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
+            {/* ======================================= */}
+            {/* ======================================= */}
           </table>
 
-          {/* Coupons */}
+          {/* Coupons (Giữ nguyên) */}
           {appliedCoupons.length > 0 && (
             <div className="mt-5 border-t border-black/40 pt-3">
               <h3 className="font-bold text-sm mb-2 flex items-center gap-1">
@@ -252,7 +323,7 @@ export default function CheckoutRetro() {
             </div>
           )}
 
-          {/* Totals */}
+          {/* Totals (Giữ nguyên, tự động cập nhật từ store) */}
           <div className="mt-6 border-t border-black/40 pt-3 text-sm space-y-1.5">
             <div className="flex justify-between">
               <span>Tạm tính</span>
@@ -286,15 +357,13 @@ export default function CheckoutRetro() {
 
           <div className="mt-4 text-xs text-gray-600 text-center">
             <Truck className="inline w-4 h-4 mr-1 text-gray-500" />
-            {deliveryOption === "immediate"
-              ? "Giao hàng nhanh chóng"
-              : formatDeliveryText()}
+            {formatDeliveryText()}
           </div>
         </div>
 
         {/* ===== RIGHT: Recipient + Payment ===== */}
         <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4">
-          {/* Recipient */}
+          {/* Recipient (Giữ nguyên) */}
           <div>
             <label className="block text-sm font-semibold mb-1">
               Tên người nhận: <span className="text-red-600"> *</span>
@@ -319,7 +388,7 @@ export default function CheckoutRetro() {
               className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
-          {/* Delivery Options */}
+          {/* Delivery Options (SỬA: Đọc/ghi state từ store) */}
           <div className="px-1 pb-1">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
               <div className="flex items-center gap-2 mb-2.5">
@@ -380,7 +449,7 @@ export default function CheckoutRetro() {
                     </p>
                     {deliveryOption === "scheduled" && (
                       <div className="flex flex-col sm:flex-row gap-2">
-                        {/* Ngày giao - rộng gấp đôi */}
+                        {/* Ngày giao */}
                         <div className="sm:flex-[2]">
                           <label className="block text-xs text-gray-600 mb-1">
                             Ngày giao
@@ -393,7 +462,7 @@ export default function CheckoutRetro() {
                             className="w-full px-2.5 py-1.5 text-sm border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>
-                        {/* Giờ giao - nhỏ hơn */}
+                        {/* Giờ giao */}
                         <div className="sm:flex-[1]">
                           <label className="block text-xs text-gray-600 mb-1">
                             Giờ giao
@@ -412,7 +481,8 @@ export default function CheckoutRetro() {
               </div>
             </div>
           </div>
-          {/* Voucher input */}
+
+          {/* SỬA: Voucher input */}
           <div>
             <label className="block text-sm font-semibold mb-1">
               Nhập thêm mã giảm giá:
@@ -424,13 +494,41 @@ export default function CheckoutRetro() {
                 onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
                 placeholder="Nhập mã của bạn"
                 className="flex-1 text-sm border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f]"
+                disabled={couponStatus.isLoading}
               />
-              <button className="px-4 py-2 bg-[#b9915f] text-white rounded-lg font-medium hover:bg-[#9a7e4e]">
-                Áp dụng
+              <button
+                onClick={handleApplyCoupon}
+                disabled={couponStatus.isLoading || loading}
+                className="px-4 py-2 bg-[#b9915f] text-white rounded-lg font-medium hover:bg-[#9a7e4e] w-28 text-center"
+              >
+                {couponStatus.isLoading ? (
+                  <Loader2 className="inline h-4 w-4 animate-spin" />
+                ) : (
+                  "Áp dụng"
+                )}
               </button>
             </div>
+            {couponStatus.error && (
+              <p className="text-xs text-red-600 mt-1">{couponStatus.error}</p>
+            )}
           </div>
-          {/* 🔹 Payment method section */}
+
+          {/* THÊM: Ô Ghi chú */}
+          <div>
+            <label htmlFor="note" className="block text-sm font-semibold mb-1">
+              Ghi chú cho đơn hàng:
+            </label>
+            <textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              placeholder="Ghi chú thêm cho tài xế (ví dụ: ít đường, nhiều đá...)"
+              className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
+            />
+          </div>
+
+          {/* 🔹 Payment method section (Giữ nguyên) */}
           <div className="pt-3 border-t border-black/30">
             <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <CheckCircle size={15} className="text-[#b9915f]" /> Phương thức
@@ -471,14 +569,13 @@ export default function CheckoutRetro() {
                     Chuyển khoản qua ngân hàng / Mã QR
                   </span>
                   <span className="text-xs text-gray-600">
-                    Thanh toán nhanh qua Internet Banking hoặc quét mã QR bên
-                    dưới.
+                    Thanh toán nhanh qua Internet Banking hoặc quét mã QR.
                   </span>
                 </div>
               </label>
             </div>
           </div>
-          {/* Confirm button */}
+          {/* Confirm button (Giữ nguyên) */}
           <div className="pt-4 border-t border-black/30">
             <button
               onClick={handleSubmit}

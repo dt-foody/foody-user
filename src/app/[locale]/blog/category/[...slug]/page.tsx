@@ -54,7 +54,7 @@ export default async function BlogCategoryPage({
             Hiện chưa có bài viết nào.
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {posts.map((post) => (
               <Link
                 key={post.id}

@@ -32,13 +32,14 @@ const NAV_ITEMS = [
   { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
   { id: "blog", label: "1001 đêm", sizeLabel: "1rem", href: "/blog" },
   { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
+  { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
 ];
 
 const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
   const { cartCount, setShowCart } = useCart();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("menu");
-  const router = useRouter(); // ✅ Khởi tạo router
+  const router = useRouter();
 
   return (
     <header
@@ -47,7 +48,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
       <div className="h-16 flex justify-between items-center text-[1.7rem]">
         {/* LEFT ACTIONS: Logo + Curved Tabs */}
         <div className="flex items-center gap-6 h-full">
-          <nav className={`hidden lg:block h-full flex items-center ${bahianita.className}`}>
+          <nav className={`hidden md:block h-full flex items-center ${bahianita.className}`}>
             <ul className="flex items-stretch gap-0 list-none p-0 m-0 h-full">
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.id;
@@ -57,7 +58,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                     key={item.id}
                     onClick={() => {
                       setActiveTab(item.id);
-                      router.push(item.href); // ✅ Chuyển trang khi click
+                      router.push(item.href);
                     }}
                     className={`
                       relative px-8 flex items-center h-full cursor-pointer select-none

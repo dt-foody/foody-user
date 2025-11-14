@@ -9,6 +9,7 @@ import "rc-slider/assets/index.css";
 import FooterNav from "@/components/FooterNav";
 import CartSidebar from "@/components/CartSidebar";
 import ProductOptionsModal from "@/components/ProductOptionsModal";
+import ComboSelectionModal from "@/components/ComboSelectionModal";
 import { CartStoreInitializer } from "@/stores/useCartStore";
 import { Toaster } from "sonner";
 import { serverApiFetch } from "@/lib/serverApi";
@@ -93,6 +94,7 @@ export default async function RootLayout({
           <FooterNav />
           <CartSidebar />
           <ProductOptionsModal />
+          <ComboSelectionModal />
         </NextIntlClientProvider>
       </body>
     </html>

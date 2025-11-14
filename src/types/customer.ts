@@ -1,8 +1,24 @@
 // src/types/customer.ts
+// ======================
+// Full Customer TypeScript Definitions (Next.js) – 100% synced with Backend Schema
+// ======================
+
 import type { Paginated } from "@/lib";
 import type { User } from "./user";
 
+//
+// ────────────────────────────────────────────
+//  GENDER
+// ────────────────────────────────────────────
+//
+
 export type Gender = "male" | "female" | "other";
+
+//
+// ────────────────────────────────────────────
+//  GEO POINT
+// ────────────────────────────────────────────
+//
 
 export interface GeoPoint {
   type: "Point";
@@ -10,17 +26,62 @@ export interface GeoPoint {
   coordinates: [number, number];
 }
 
+//
+// ────────────────────────────────────────────
+//  EMAIL ITEM (mảng emails)
+// ─────────────────────────────────────────────
+//
+
+export type EmailType = "Home" | "Company" | "Other";
+
+export interface CustomerEmail {
+  type: EmailType;
+  value: string;
+  isPrimary: boolean;
+}
+
+//
+// ────────────────────────────────────────────
+//  PHONE ITEM (mảng phones)
+// ─────────────────────────────────────────────
+//
+
+export type PhoneType = "Home" | "Company" | "Other";
+
+export interface CustomerPhone {
+  type: PhoneType;
+  value: string;
+  isPrimary: boolean;
+}
+
+//
+// ────────────────────────────────────────────
+//  CUSTOMER ADDRESS
+// ─────────────────────────────────────────────
+//
+
 export interface CustomerAddress {
   label?: string;
+
   recipientName: string;
   recipientPhone: string;
+
   street: string;
   ward: string;
+  district: string;
   city: string;
+
   fullAddress?: string;
   location?: GeoPoint;
+
   isDefault: boolean;
 }
+
+//
+// ────────────────────────────────────────────
+//  MAIN CUSTOMER MODEL (đúng 100% backend)
+// ─────────────────────────────────────────────
+//
 
 export interface Customer {
   /** mapped from _id */
@@ -29,48 +90,69 @@ export interface Customer {
   /** auto-increment from BE */
   customerId: number;
 
-  /** reference to User (ObjectId string or populated) */
+  /** reference to User (ObjectId string hoặc populated User) */
   user?: string | User;
 
-  // Basic profile
+  // --- Basic profile ---
   name: string;
-  phone: string;
   gender: Gender;
-  /** ISO date string (YYYY-MM-DD or full ISO) */
+  /** ISO string */
   birthDate?: string;
 
-  // Addresses
+  // --- Contact ---
+  emails: CustomerEmail[];
+  phones: CustomerPhone[];
+
+  // --- Addresses ---
   addresses: CustomerAddress[];
 
-  // Meta
+  // --- Meta ---
   isActive: boolean;
-  /** ISO date string */
   lastOrderDate?: string;
 
-  // Audit / soft delete
+  // --- Audit / Soft Delete ---
   createdBy?: string | User;
   isDeleted: boolean;
   deletedAt?: string;
   deletedBy?: string | User;
 
-  // Timestamps (ISO)
+  // --- Timestamps ---
   createdAt?: string;
   updatedAt?: string;
 }
 
-/** Standard paginated response shape */
+//
+// ────────────────────────────────────────────
+//  PAGINATION RESPONSE
+// ─────────────────────────────────────────────
+//
+
 export type CustomerPaginate = Paginated<Customer>;
 
-/** Form hiển thị/sửa cho trang Account */
+//
+// ────────────────────────────────────────────
+//  CUSTOMER FORM (FE sử dụng để hiển thị/sửa)
+// ─────────────────────────────────────────────
+//
+
 export type CustomerForm = Pick<
   Customer,
-  "name" | "phone" | "gender" | "birthDate" | "addresses"
+  "name" | "gender" | "birthDate" | "addresses" | "emails" | "phones"
 > & {
-  /** Chỉ để hiển thị, lấy từ User */
-  email: string;
+  /** Email & phone chính – FE tự chọn từ mảng emails/phones */
+  primaryEmail: string;
+  primaryPhone: string;
 };
 
-/** Payload update gửi lên BE (không có email) */
+//
+// ────────────────────────────────────────────
+//  UPDATE PAYLOAD (gửi lên BE)
+// ─────────────────────────────────────────────
+//
+
 export type UpdateCustomerInput = Partial<
-  Pick<Customer, "name" | "phone" | "gender" | "birthDate" | "addresses">
+  Pick<
+    Customer,
+    "name" | "gender" | "birthDate" | "addresses" | "emails" | "phones"
+  >
 >;

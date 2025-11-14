@@ -28,7 +28,7 @@ export interface Product {
   name: string;
   description: string;
   basePrice: number;
-  thumbnailUrl: string;
+  image: string;
   category: string | Category | null;
   isActive: boolean;
   priority: number;
@@ -50,7 +50,6 @@ export interface MenuItem extends Product {
   // UI-specific (được map từ Product + promotion)
   price: number; // giá hiện tại để hiển thị (basePrice hoặc đã apply khuyến mãi)
   originalPrice?: number; // giá gốc (để gạch ngang)
-  image?: string; // alias của thumbnailUrl cho UI
   type: MenuItemType;
   discount?: PricePromotion | null;
 

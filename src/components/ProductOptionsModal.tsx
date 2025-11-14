@@ -1,20 +1,26 @@
-// /components/ProductOptionsModal.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
-import { useCart } from "@/stores/useCartStore";
-import type { OptionItem, OptionGroup } from "@/types/product";
+import { useCartStore } from "@/stores/useCartStore";
+import type {
+  Product,
+  OptionItem, // Kiểu UI
+  OptionGroup, // Kiểu UI
+  CreateOrderItem_Option, // Kiểu Payload
+} from "@/types";
 
 export default function ProductOptionsModal() {
-  const { productForOptions, setProductForOptions, addToCartWithOptions } =
-    useCart();
+  // NÂNG CẤP: Lấy đúng hàm từ store
+  const { productForOptions, setProductForOptions, addItemToCart } =
+    useCartStore();
+
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, OptionItem[]>
   >({});
   const [note, setNote] = useState("");
 
-  // Preselect theo minOptions (ưu tiên theo priority)
+  // Preselect (logic cũ, đã tốt)
   useEffect(() => {
     if (!productForOptions) return;
     const initial: Record<string, OptionItem[]> = {};
@@ -37,6 +43,7 @@ export default function ProductOptionsModal() {
     setNote("");
   }, [productForOptions]);
 
+  // Logic change (logic cũ, đã tốt)
   const handleOptionChange = (
     group: OptionGroup,
     option: OptionItem,
@@ -66,7 +73,7 @@ export default function ProductOptionsModal() {
     });
   };
 
-  // Tính totalPrice: hỗ trợ percentage (tính trên base price)
+  // Tính totalPrice (SỬA LỖI TÍNH % TRÊN GIÁ GỐC)
   const { totalPrice, isFormValid, validationErrors } = useMemo(() => {
     if (!productForOptions)
       return {
@@ -75,15 +82,20 @@ export default function ProductOptionsModal() {
         validationErrors: {} as Record<string, string>,
       };
 
-    const base = productForOptions.price;
-    let price = base;
+    // `price` là giá đã áp dụng khuyến mãi (nếu có)
+    const displayPrice =
+      (productForOptions as any).price ?? productForOptions.basePrice;
+    let price = displayPrice;
     const errors: Record<string, string> = {};
 
     Object.values(selectedOptions)
       .flat()
       .forEach((opt) => {
         if (opt.type === "percentage") {
-          price += Math.round(base * (opt.priceModifier / 100));
+          // LUÔN TÍNH % TRÊN GIÁ GỐC (basePrice)
+          price += Math.round(
+            productForOptions.basePrice * (opt.priceModifier / 100)
+          );
         } else {
           price += opt.priceModifier;
         }
@@ -103,30 +115,60 @@ export default function ProductOptionsModal() {
     };
   }, [selectedOptions, productForOptions]);
 
+  /**
+   * ======================================================================
+   * NÂNG CẤP QUAN TRỌNG: handleSubmit
+   * ======================================================================
+   */
   const handleSubmit = () => {
-    if (isFormValid && productForOptions) {
-      addToCartWithOptions(
-        productForOptions,
-        selectedOptions,
-        totalPrice,
-        note
-      );
-    }
+    if (!isFormValid || !productForOptions) return;
+
+    // 1. Chuyển đổi OptionItem[] thành CreateOrderItem_Option[]
+    const payloadOptions: Record<string, CreateOrderItem_Option[]> = {};
+    Object.keys(selectedOptions).forEach((key) => {
+      payloadOptions[key] = selectedOptions[key].map((opt) => ({
+        name: opt.name,
+        priceModifier: opt.priceModifier,
+      }));
+    });
+
+    // 2. Xây dựng payload
+    const itemData = {
+      itemType: "Product" as const,
+      item: {
+        id: productForOptions.id,
+        name: productForOptions.name,
+        basePrice: productForOptions.basePrice,
+      },
+      totalPrice: totalPrice,
+      note: note.trim(),
+      options: payloadOptions, // <-- Cấu trúc Record lồng nhau
+      comboSelections: null,
+      // Metadata
+      _image: productForOptions.image,
+      _categoryIds: (productForOptions as any).categoryIds || [],
+    };
+
+    // 3. Gọi action mới của store
+    // @ts-ignore (Vì itemData đang Omit 2 trường cartId, quantity)
+    addItemToCart(itemData);
   };
 
   const handleClose = () => setProductForOptions(null);
   if (!productForOptions) return null;
 
+  // ... (Toàn bộ JSX của bạn giữ nguyên từ file cũ) ...
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+      className="z-[100] fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
       onClick={handleClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden transition-transform transform scale-95"
+        className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden transition-transform transform"
         onClick={(e) => e.stopPropagation()}
+        style={{ transform: "scale(1)", opacity: 1 }}
       >
         {/* Header */}
         <header className="p-4 border-b relative flex-shrink-0">
@@ -215,7 +257,7 @@ export default function ProductOptionsModal() {
                                 type={inputType}
                                 name={group.name}
                                 checked={isChecked}
-                                onChange={() => {}}
+                                readOnly
                                 className={`pointer-events-none form-${inputType} h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300`}
                               />
                             </div>
@@ -250,7 +292,7 @@ export default function ProductOptionsModal() {
           <button
             onClick={handleSubmit}
             disabled={!isFormValid}
-            className="w-full bg-primary-500 text-white py-4 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-primary-300 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full bg-primary-500 text-white py-2 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-primary-300 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {isFormValid
               ? `Thêm vào giỏ - ${totalPrice.toLocaleString("vi-VN")}đ`

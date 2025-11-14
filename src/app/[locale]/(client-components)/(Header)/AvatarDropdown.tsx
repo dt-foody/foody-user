@@ -58,7 +58,7 @@ export default function AvatarDropdown({ user = null, className = "" }: Props) {
                   <div className="overflow-hidden rounded-3xl shadow-lg ring-1 ring-black ring-opacity-5">
                     <div className="relative grid grid-cols-1 gap-6 bg-white dark:bg-neutral-800 py-7 px-6">
                       {/* LƯU Ý: Đây là dữ liệu cứng (hardcoded), bạn sẽ cần thay thế bằng dữ liệu người dùng thật */}
-                      <div className="flex items-center space-x-3">
+                      <div className="text-sm flex items-center space-x-3">
                         <Avatar sizeClass="w-12 h-12" />
                         <div className="flex-grow">
                           <h4 className="font-semibold">{me?.name}</h4>
