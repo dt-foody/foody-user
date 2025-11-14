@@ -14,11 +14,63 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod, ShippingStatus } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
+import type { CreateOrderItem_Option } from "@/types";
+import Image from "next/image"; // <-- THÊM IMPORT
+
+// =======================================
+// === THÊM HELPER TỪ CART SIDEBAR ===
+// =======================================
+
+// THÊM: Placeholder và hàm xử lý lỗi ảnh
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
+};
+
+// Helper để format price
+const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
+
+/**
+ * Component render Options (cho cả Product và Combo)
+ * (Sao chép từ CartSidebar)
+ */
+const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
+  options,
+}: {
+  options: Record<string, CreateOrderItem_Option[]>;
+}) {
+  const allOptions = React.useMemo(() => {
+    return Object.values(options || {}).flat();
+  }, [options]);
+
+  if (allOptions.length === 0) return null;
+
+  return (
+    <div className="ml-3 mt-1 space-y-0.5">
+      {allOptions.map((opt, index) => (
+        <p key={index} className="text-xs text-gray-500">
+          + {opt.name}
+          {opt.priceModifier > 0 && (
+            <span className="font-medium ml-1 text-gray-600">
+              (+{formatPrice(opt.priceModifier)})
+            </span>
+          )}
+        </p>
+      ))}
+    </div>
+  );
+});
+
+// =======================================
+// === KẾT THÚC HELPER ===
+// =======================================
 
 export default function CheckoutRetro() {
   const {
@@ -30,26 +82,23 @@ export default function CheckoutRetro() {
     appliedCoupons,
     removeCoupon,
     clearCart,
-    // SỬA: Lấy state giao hàng từ store
     deliveryOption,
     setDeliveryOption,
     scheduledDate,
     setScheduledDate,
-    // SỬA: Lấy hàm áp dụng coupon từ store
     applyPrivateCoupon,
     couponStatus,
   } = useCart();
 
   const router = useRouter();
 
-  // ===== State (Chỉ giữ state của form) =====
+  // ... (Tất cả state và logic khác giữ nguyên) ...
   const [voucherInput, setVoucherInput] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  // SỬA: Bỏ useState cho deliveryOption và scheduledDate
   const [scheduledTime, setScheduledTime] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
-  const [note, setNote] = useState(""); // THÊM: State cho Ghi chú
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { me } = useAuthStore();
@@ -67,7 +116,6 @@ export default function CheckoutRetro() {
     }
   }, [me]);
 
-  // ===== Helpers =====
   const formatDiscount = (val: number) =>
     val > 0 ? `-${val.toLocaleString("vi-VN")}đ` : "0đ";
 
@@ -82,7 +130,6 @@ export default function CheckoutRetro() {
     return "Chưa chọn ngày giao";
   };
 
-  // ===== SỬA: Hàm áp dụng Voucher =====
   const handleApplyCoupon = async () => {
     if (!voucherInput.trim()) {
       toast.error("Vui lòng nhập mã voucher.");
@@ -91,17 +138,16 @@ export default function CheckoutRetro() {
     const result = await applyPrivateCoupon(voucherInput);
     if (result.success) {
       toast.success(result.message);
-      setVoucherInput(""); // Xóa input khi thành công
+      setVoucherInput("");
     } else {
       toast.error(result.message);
     }
   };
 
-  // ===== Submit Handler =====
   const handleSubmit = async () => {
+    // ... (logic handleSubmit giữ nguyên) ...
     if (loading) return;
 
-    // --- Validate ---
     if (!name.trim() || !phone.trim()) {
       toast.error("Vui lòng nhập đủ tên và số điện thoại!");
       return;
@@ -112,7 +158,6 @@ export default function CheckoutRetro() {
       return;
     }
 
-    // SỬA: Đọc state từ store
     if (deliveryOption === "scheduled") {
       if (!scheduledDate) {
         toast.error("Vui lòng chọn ngày giao hàng!");
@@ -136,7 +181,6 @@ export default function CheckoutRetro() {
       return;
     }
 
-    // --- Chuẩn bị payload gửi BE ---
     const shippingAddress = {
       label: "Địa chỉ giao hàng",
       recipientName: name,
@@ -147,11 +191,11 @@ export default function CheckoutRetro() {
       city: defaultAddress.city,
     };
 
-    // SỬA: Cập nhật payload.items để khớp với CartLine mới
-    // Gửi toàn bộ CartLine (đã loại bỏ các trường UI)
     const payload = {
       items: cartItems.map(({ _image, _categoryIds, ...rest }) => rest),
-      appliedCoupons: appliedCoupons.map(el => { return { id: el.id, code: el.code }}),
+      appliedCoupons: appliedCoupons.map((el) => {
+        return { id: el.id, code: el.code };
+      }),
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
       shippingFee: SHIPPING_FEE,
@@ -162,10 +206,9 @@ export default function CheckoutRetro() {
       shipping: {
         address: shippingAddress,
       },
-      note: note.trim(), // SỬA: Dùng state 'note'
+      note: note.trim(),
     };
 
-    // --- Gọi API ---
     try {
       setLoading(true);
       const result = await orderService.customerOrder(payload as any);
@@ -175,7 +218,7 @@ export default function CheckoutRetro() {
         window.open(result.qrInfo.checkoutUrl, "_blank");
       } else {
         toast.success("Đơn hàng của bạn đã được tạo thành công!");
-        clearCart(); // ✅ chỉ clear khi COD
+        clearCart();
         router.push("/account-orders");
       }
     } catch (err: any) {
@@ -203,7 +246,6 @@ export default function CheckoutRetro() {
             </button>
           </div>
 
-          {/* Table (SỬA: Cập nhật trường hiển thị) */}
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-black/50">
@@ -214,75 +256,99 @@ export default function CheckoutRetro() {
               </tr>
             </thead>
             {/* ======================================= */}
-            {/* === NÂNG CẤP HIỂN THỊ CHI TIẾT MÓN === */}
+            {/* === SỬA ĐỔI TẠI ĐÂY (THÊM ẢNH) === */}
             {/* ======================================= */}
             <tbody>
               {cartItems.map((it) => {
-                // Tái sử dụng logic từ OptionChips để lấy tên
-                let optionNames: string[] = [];
-                if (it.itemType === "Product") {
-                  optionNames = Object.values(it.options || {})
-                    .flat()
-                    .map((opt) => opt.name);
-                } else if (it.itemType === "Combo") {
-                  optionNames = (it.comboSelections || []).map(
-                    (sel) => sel.product.name
-                  );
-                }
+                const baseOrComboPrice =
+                  (it.itemType === "Product"
+                    ? it.item.basePrice
+                    : it.item.comboPrice) ?? 0;
 
                 return (
                   <tr
                     key={it.cartId}
                     className="border-b border-black/20 hover:bg-[#f8f3ef]"
                   >
-                    {/* SỬA: Hiển thị đầy đủ thông tin */}
+                    {/* SỬA: Thêm Image và sắp xếp lại */}
                     <td className="p-2 align-top">
-                      <span className="font-semibold text-gray-800">
-                        {it.item.name}
-                      </span>
+                      <div className="flex items-start gap-2.5">
+                        {/* --- Image --- */}
+                        <Image
+                          src={it._image || PLACEHOLDER_IMAGE}
+                          alt={it.item.name}
+                          onError={handleImageError}
+                          width={48} // Kích thước nhỏ hơn 1 chút cho table
+                          height={48}
+                          className="object-cover rounded-md flex-shrink-0"
+                        />
 
-                      {/* === THAY ĐỔI TẠI ĐÂY === */}
-                      {/* Hiển thị Options (Dạng chip) */}
-                      {optionNames.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {optionNames.map((name, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 text-[11px] font-medium rounded-full border border-primary-200 bg-primary-50 text-primary-700"
-                            >
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {/* === KẾT THÚC THAY ĐỔI === */}
+                        {/* --- Info --- */}
+                        <div className="flex-1 min-w-0">
+                          <span className="font-semibold text-gray-800">
+                            {it.item.name}
+                          </span>
 
-                      {/* Hiển thị Ghi chú của món */}
-                      {it.note && (
-                        <div className="mt-1.5 flex items-start gap-1 text-xs text-blue-700 bg-blue-50 p-1.5 rounded border border-blue-200">
-                          <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                          <span className="italic">{it.note}</span>
+                          {/* Hiển thị giá base (nếu có) */}
+                          {baseOrComboPrice > 0 && (
+                            <p className="text-sm text-gray-500">
+                              {formatPrice(baseOrComboPrice)}
+                            </p>
+                          )}
+
+                          {/* Hiển thị options chi tiết */}
+                          <div className="mt-1.5">
+                            {/* 1. Nếu là SẢN PHẨM ĐƠN */}
+                            {it.itemType === "Product" && (
+                              <RenderSelectedOptions options={it.options} />
+                            )}
+
+                            {/* 2. Nếu là COMBO */}
+                            {it.itemType === "Combo" && (
+                              <div className="mt-1 space-y-1">
+                                {(it.comboSelections || []).map((sel, idx) => (
+                                  <div key={idx} className="ml-2">
+                                    <p className="text-sm font-medium text-gray-700">
+                                      - {sel.product.name}
+                                    </p>
+                                    <RenderSelectedOptions
+                                      options={sel.options}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Hiển thị Ghi chú của món */}
+                          {it.note && (
+                            <div className="mt-1.5 flex items-start gap-1 text-xs text-blue-700 bg-blue-50 p-1.5 rounded border border-blue-200">
+                              <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                              <span className="italic">{it.note}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
-                    {/* Các ô khác giữ nguyên */}
+                    {/* Đơn giá (là giá cuối cùng của 1 sản phẩm) */}
                     <td className="p-2 text-right align-top">
-                      {it.totalPrice.toLocaleString("vi-VN")}
+                      {it.totalPrice.toLocaleString("vi-VN")}đ
                     </td>
                     <td className="p-2 text-center align-top">{it.quantity}</td>
                     <td className="p-2 text-right font-medium align-top">
-                      {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}
+                      {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}đ
                     </td>
                   </tr>
                 );
               })}
             </tbody>
             {/* ======================================= */}
+            {/* === KẾT THÚC SỬA ĐỔI === */}
             {/* ======================================= */}
           </table>
 
-          {/* Coupons (Giữ nguyên) */}
+          {/* ... (Phần còn lại của component giữ nguyên) ... */}
           {appliedCoupons.length > 0 && (
             <div className="mt-5 border-t border-black/40 pt-3">
               <h3 className="font-bold text-sm mb-2 flex items-center gap-1">
@@ -323,7 +389,6 @@ export default function CheckoutRetro() {
             </div>
           )}
 
-          {/* Totals (Giữ nguyên, tự động cập nhật từ store) */}
           <div className="mt-6 border-t border-black/40 pt-3 text-sm space-y-1.5">
             <div className="flex justify-between">
               <span>Tạm tính</span>
