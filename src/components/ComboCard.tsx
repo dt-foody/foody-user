@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Plus, Package } from "lucide-react";
 // REFACTORED: Import type mới và Enum
 import type { Combo, PricePromotion, Product } from "@/types";
-import { ComboPricingMode } from "@/types"; // NEW
+// NEW: Import thêm Enum
+import { ComboPricingMode, DiscountType } from "@/types";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
@@ -23,29 +24,26 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
     e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
-  // --- REFACTORED: LOGIC GIÁ MỚI ---
+  // --- REFACTORED: LOGIC GIÁ MỚI (ĐÃ CẬP NHẬT THEO YÊU CẦU) ---
   const hasSale = combo.salePrice != null && combo.promotion != null;
-  const isDynamicPrice =
-    combo.pricingMode === ComboPricingMode.SLOT_PRICE ||
-    combo.pricingMode === ComboPricingMode.DISCOUNT;
 
   // 1. Ưu tiên giá sale (promotion) bên ngoài
   const finalPrice = hasSale ? combo.salePrice : combo.comboPrice;
 
   // 2. Giá gốc (line-through)
-  // Nếu có sale, giá gốc là comboPrice (chỉ khi mode FIXED)
-  // Nếu không sale, không có giá gốc
   const originalPrice =
     hasSale && combo.pricingMode === ComboPricingMode.FIXED
       ? combo.comboPrice
       : undefined;
 
-  // 3. Text hiển thị
+  // 3. Text hiển thị (ĐÃ CẬP NHẬT THEO YÊU CẦU CỦA BẠN)
   const priceText = hasSale
     ? finalPrice?.toLocaleString("vi-VN") + "đ" // Luôn hiển thị salePrice nếu có
-    : isDynamicPrice
-    ? "Tùy chọn" // Giá động
-    : combo.comboPrice.toLocaleString("vi-VN") + "đ"; // Giá FIXED
+    : combo.pricingMode === ComboPricingMode.FIXED
+    ? combo.comboPrice.toLocaleString("vi-VN") + "đ" // YC: Giá FIXED
+    : combo.minPrice // YC: Giá SLOT/DISCOUNT = "tổng min slot" (từ backend)
+    ? `Từ ${combo.minPrice.toLocaleString("vi-VN")}đ`
+    : "Tùy chọn"; // Fallback nếu backend không trả về minPrice
 
   // --- KẾT THÚC LOGIC GIÁ ---
 
@@ -69,6 +67,16 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
         COMBO
       </div>
 
+      {/* MỚI: Tag Giảm giá cho mode DISCOUNT */}
+      {combo.pricingMode === ComboPricingMode.DISCOUNT &&
+        combo.discountValue > 0 && (
+          <div className="absolute -top-3 right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">
+            {combo.discountType === DiscountType.PERCENT
+              ? `-${combo.discountValue}%`
+              : `-${combo.discountValue.toLocaleString("vi-VN")}đ`}
+          </div>
+        )}
+
       {/* Hình ảnh */}
       <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-md">
         <Image
@@ -79,7 +87,9 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
           className="object-cover rounded-md"
           onError={handleImageError}
         />
-        {hasSale && (
+
+        {/* CẬP NHẬT: Chỉ hiển thị SALE khi có promotion VÀ không phải mode DISCOUNT */}
+        {hasSale && combo.pricingMode !== ComboPricingMode.DISCOUNT && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
             SALE
           </span>
@@ -93,7 +103,7 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
             {combo.name}
           </h3>
           <div className="flex items-center gap-2 mb-2">
-            {/* REFACTORED: Hiển thị text giá mới */}
+            {/* REFACTORED: Hiển thị text giá mới (Đã sửa) */}
             <span className="text-[1rem] font-bold text-primary-600">
               {priceText}
             </span>

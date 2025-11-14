@@ -66,6 +66,14 @@ export interface Combo {
   discountType: DiscountType;
   /** MỚI: Giá trị giảm (VD: 30 (cho 30%) hoặc 20000 (cho 20k VND)) */
   discountValue: number;
+
+  /**
+   * CẬP NHẬT (THEO YÊU CẦU CỦA BẠN):
+   * Backend phải tính giá này dựa trên:
+   * - (SLOT_PRICE): Tổng min(slotPrice) của các slot.
+   * - (DISCOUNT): Tổng min(snapshotPrice) của các slot, sau đó áp dụng discount.
+   */
+  minPrice?: number;
 }
 
 /** Response phân trang dùng chung (Giữ nguyên từ file cũ) */
