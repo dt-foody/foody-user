@@ -270,8 +270,8 @@ const AccountPage = () => {
     )
       return toast.error("Vui lòng nhập đầy đủ thông tin địa chỉ");
 
-    const fullAddress = `${newAddress.street}, ${newAddress.ward}, ${newAddress.district}, ${newAddress.city}`;
-
+      const fullAddress = [newAddress.street, newAddress.ward, newAddress.district, newAddress.city].filter(Boolean).join(', ');
+      
     const newObj: CustomerAddress = {
       ...newAddress,
       fullAddress,
@@ -509,9 +509,9 @@ const AccountPage = () => {
                     onChange={(e) => setNewEmailType(e.target.value as any)}
                     className="px-2 border rounded-lg"
                   >
-                    <option value="Home">Home</option>
-                    <option value="Company">Company</option>
-                    <option value="Other">Other</option>
+                    <option value="Home">Nhà riêng</option>
+                    <option value="Company">Văn phòng</option>
+                    <option value="Other">Khác</option>
                   </select>
                   <button
                     onClick={handleAddEmail}
@@ -577,9 +577,9 @@ const AccountPage = () => {
                     onChange={(e) => setNewPhoneType(e.target.value as any)}
                     className="px-2 border rounded-lg"
                   >
-                    <option value="Home">Home</option>
-                    <option value="Company">Company</option>
-                    <option value="Other">Other</option>
+                    <option value="Home">Nhà riêng</option>
+                    <option value="Company">Văn phòng</option>
+                    <option value="Other">Khác</option>
                   </select>
                   <button
                     onClick={handleAddPhone}
@@ -679,7 +679,7 @@ const AccountPage = () => {
                   <input
                     type="text"
                     name="label"
-                    placeholder="Label"
+                    placeholder="Tên địa chỉ (ví dụ: Nhà riêng, Văn phòng)"
                     value={newAddress.label}
                     onChange={handleAddressInput}
                     className="w-full px-3 py-2 border rounded-lg"
