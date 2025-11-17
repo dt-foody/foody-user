@@ -11,7 +11,6 @@ import type {
 } from "@/types";
 
 export default function ProductOptionsModal() {
-  // NÂNG CẤP: Lấy đúng hàm từ store
   const { productForOptions, setProductForOptions, addItemToCart } =
     useCartStore();
 
@@ -115,15 +114,9 @@ export default function ProductOptionsModal() {
     };
   }, [selectedOptions, productForOptions]);
 
-  /**
-   * ======================================================================
-   * NÂNG CẤP QUAN TRỌNG: handleSubmit
-   * ======================================================================
-   */
   const handleSubmit = () => {
     if (!isFormValid || !productForOptions) return;
 
-    // 1. Chuyển đổi OptionItem[] thành CreateOrderItem_Option[]
     const payloadOptions: Record<string, CreateOrderItem_Option[]> = {};
     Object.keys(selectedOptions).forEach((key) => {
       payloadOptions[key] = selectedOptions[key].map((opt) => ({

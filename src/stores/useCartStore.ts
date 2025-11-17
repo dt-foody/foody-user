@@ -3,17 +3,16 @@
 import { useMemo, useEffect, useRef } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { couponService } from "@/services"; // Giả định service này tồn tại
+import { couponService } from "@/services";
 import {
   Coupon,
   Product,
   Combo,
-  // Import các kiểu dữ liệu Payload (quan trọng)
   CreateOrderItem_Option,
   CreateOrderItem_ComboSelection,
   CreateOrderItem_ItemSnapshot,
-} from "@/types"; // Giả định các types này đã có trong @/types
-import { checkCouponEligibility } from "@/utils/checkCouponEligibility"; // Giả định util này tồn tại
+} from "@/types";
+import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 
 export const SHIPPING_FEE = 15000;
 const CART_STORAGE_KEY = "foody_cart_v8"; // Đổi key để reset cache cũ
@@ -29,8 +28,6 @@ export interface EligibilityStatus {
   isEligible: boolean;
   reason: string | null;
 }
-
-// === Định nghĩa CartLine mới (Đồng bộ với types/order.ts) ===
 
 // 1. Phần dữ liệu cho Product
 type ProductCartLine = {
@@ -48,13 +45,6 @@ type ComboCartLine = {
   comboSelections: CreateOrderItem_ComboSelection[]; // Mảng các lựa chọn
 };
 
-/**
- * ======================================================================
- * NÂNG CẤP QUAN TRỌNG NHẤT: CartLine
- * ======================================================================
- * - `CartLine` là một "Discriminated Union" dựa trên itemType.
- * - Nó LƯU TRỮ dữ liệu chính xác như cấu trúc `CreateOrderItem` (payload API).
- */
 export type CartLine = (ProductCartLine | ComboCartLine) & {
   cartId: string; // ID duy nhất cho biến thể (variant)
   quantity: number;
@@ -75,7 +65,6 @@ interface CartState {
   publicCouponsFetchedAt: number;
   couponStatus: { isLoading: boolean; error: string | null };
 
-  // NÂNG CẤP: Dùng 2 state riêng cho 2 modal
   productForOptions: Product | null;
   comboForSelection: Combo | null;
 
@@ -113,15 +102,6 @@ interface CartActions {
   setScheduledDate: (date: string) => void;
 }
 
-/**
- * ======================================================================
- * NÂNG CẤP QUAN TRỌNG: buildVariantKey
- * ======================================================================
- * - Xây dựng ID duy nhất cho một biến thể (variant).
- * - KHÔNG bao gồm "note".
- * - Tuần tự hóa (serialize) "options" cho Product.
- * - Tuần tự hóa (serialize) "comboSelections" cho Combo.
- */
 const buildVariantKey = (
   itemData: Omit<CartLine, "cartId" | "quantity">
 ): string => {
@@ -192,8 +172,6 @@ export const useCartStore = create<CartState & CartActions>()(
       // Dữ liệu User không nên persist cùng giỏ hàng
       currentUser: { isNew: true, age: 18 },
 
-      // --- Actions đã được thiết kế lại ---
-
       startProductConfiguration: (product) => {
         set({
           productForOptions: product,
@@ -210,11 +188,6 @@ export const useCartStore = create<CartState & CartActions>()(
         });
       },
 
-      /**
-       * ======================================================================
-       * NÂNG CẤP QUAN TRỌNG: addItemToCart (Hàm thêm hàng duy nhất)
-       * ======================================================================
-       */
       addItemToCart: (itemData) => {
         // 1. Tạo variant key (KHÔNG CÓ NOTE)
         const cartId = buildVariantKey(itemData);
@@ -476,7 +449,6 @@ export function useCart() {
   };
 }
 
-/** ===== Initializer (Không đổi) ===== */
 export function CartStoreInitializer() {
   const fetchPublicCoupons = useCartStore((s) => s.fetchPublicCoupons);
   const ranRef = useRef(false);

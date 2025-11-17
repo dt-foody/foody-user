@@ -16,13 +16,7 @@ import type {
 import { ComboPricingMode, DiscountType } from "@/types";
 import { nanoid } from "nanoid"; // Cần cài đặt: npm install nanoid
 
-// ======================================================================
-// KHU VỰC STATE VÀ TYPES (KHÔNG ĐỔI)
-// ======================================================================
 
-/**
- * [MỚI] Kiểu state cho 1 món đã được chọn và cấu hình
- */
 type ConfiguredComboItem = {
   instanceId: string; // ID duy nhất (vì khách có thể chọn 2 "Gà Rán" nếu max > 1)
   productInfo: ComboSelectableProduct; // Dữ liệu gốc của sản phẩm trong combo
@@ -30,9 +24,6 @@ type ConfiguredComboItem = {
   calculatedOptionsPrice: number; // Giá của riêng options
 };
 
-/**
- * [MỚI] Kiểu state chính: Map slotName -> mảng các món đã cấu hình
- */
 type ComboSelections = Record<string, ConfiguredComboItem[]>;
 
 // Helper tính giá options (copy từ ProductOptionsModal)
