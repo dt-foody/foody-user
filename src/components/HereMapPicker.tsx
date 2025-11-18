@@ -25,8 +25,8 @@ const HERE_API_KEY = process.env.NEXT_PUBLIC_HERE_MAP_API_KEY;
 
 const HereMapPicker: React.FC<HereMapPickerProps> = ({
   onLocationSelect,
-  initialLat = 10.762622, // Mặc định TP.HCM
-  initialLng = 106.660172,
+  initialLat = 16.073932414484002, // Mặc định TP.HCM
+  initialLng = 108.1352594423287,
   initialAddress = "",
   className = "",
 }) => {

@@ -61,7 +61,7 @@ const getPrimaryPhone = (phones: CustomerPhone[]) =>
 //
 
 // Backend: coordinates: [lng, lat]
-const DEFAULT_COORDINATES: [number, number] = [106.660172, 10.762622]; // [lng, lat] mặc định
+const DEFAULT_COORDINATES: [number, number] = [108.1352594423287, 16.073932414484002]; // [lng, lat] mặc định
 
 // Kiểu dữ liệu local cho form address (giống CustomerAddress nhưng đảm bảo location tồn tại)
 type NewAddressState = Omit<
