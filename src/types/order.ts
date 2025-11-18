@@ -1,8 +1,9 @@
 // /types/order.ts (Hoặc file .d.ts của bạn)
 
 import type { Paginated } from "@/lib";
-import type { Customer } from "./customer"; // Giả định bạn có type này
+import type { Customer } from "./customer";
 import { Product } from "./product";
+import { Employee } from "./employee";
 
 /** ========================================================================
  * 1. ENUMS (Đồng bộ với Model)
@@ -53,9 +54,9 @@ export interface OrderItemOption {
  */
 export interface OrderItemComboSelection {
   slotName: string;
-  product: string; // <-- Sửa lại: Đây là ID (string)
-  productName: string; // Tên snapshot
-  productPopulated?: Product; // <-- Đổi tên: Dành cho dữ liệu populate
+  product: string;
+  productName: string;
+  productPopulated?: Product;
   options: OrderItemOption[];
 }
 
@@ -63,10 +64,10 @@ export interface OrderItemComboSelection {
  * Một MỤC HÀNG trong đơn hàng (đã lưu trong DB)
  */
 export interface OrderItem {
-  id: string; // _id của OrderItem
-  item: string; // ObjectId của Product hoặc Combo
+  id: string;
+  item: string;
   itemType: "Product" | "Combo";
-  name: string; // Tên snapshot
+  name: string;
   quantity: number;
   basePrice: number; // Giá gốc
   price: number; // Giá bán cuối cùng của 1 item
@@ -101,11 +102,6 @@ export interface ShippingInfo {
   status: ShippingStatus;
 }
 
-// <-- THÊM MỚI 1: Type cho coupon đã lưu trong DB
-/**
- * Snapshot coupon đã áp dụng (lưu trong DB)
- * Khớp với backend model
- */
 export interface AppliedCouponInfo {
   id: string; // ObjectId của Coupon
   code: string;
@@ -117,10 +113,10 @@ export interface AppliedCouponInfo {
  * Đối tượng ORDER đầy đủ (đã lưu trong DB)
  */
 export interface Order {
-  id: string; // Map từ _id
-  orderId: number; // ID tăng tự động
+  id: string;
+  orderId: number;
   orderCode?: number; // <-- THÊM: Mã dùng cho PayOS
-  profile?: string | Customer; // ObjectId hoặc đã populate
+  profile?: string | Customer | Employee; // ObjectId hoặc đã populate
   profileType?: "Customer" | "Employee";
   items: OrderItem[];
   totalAmount: number;
@@ -131,10 +127,13 @@ export interface Order {
   shipping?: ShippingInfo | null;
   status: OrderStatus;
   note?: string;
-  appliedCoupons?: AppliedCouponInfo[]; // <-- THÊM MỚI 2: Thêm trường coupon
+  appliedCoupons?: AppliedCouponInfo[];
+  orderType?: "TakeAway" | "DineIn" | "Delivery";
+  channel?: "AdminPanel" | "POS" | "WebApp" | "MobileApp" | "Grab";
+
   createdBy?: string;
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type OrderPaginate = Paginated<Order>;
@@ -191,10 +190,6 @@ export interface CreateOrderItem {
 }
 
 // <-- THÊM MỚI 3: Type cho coupon gửi đi
-/**
- * Payload cho coupon khi tạo đơn
- * (Khớp với appliedCouponSchema của Joi)
- */
 export interface CreateOrder_AppliedCoupon {
   id: string;
   code: string;
