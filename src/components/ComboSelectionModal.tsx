@@ -16,7 +16,6 @@ import type {
 import { ComboPricingMode, DiscountType } from "@/types";
 import { nanoid } from "nanoid"; // Cần cài đặt: npm install nanoid
 
-
 type ConfiguredComboItem = {
   instanceId: string; // ID duy nhất (vì khách có thể chọn 2 "Gà Rán" nếu max > 1)
   productInfo: ComboSelectableProduct; // Dữ liệu gốc của sản phẩm trong combo

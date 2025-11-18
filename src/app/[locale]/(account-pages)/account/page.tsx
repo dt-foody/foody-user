@@ -27,6 +27,14 @@ import {
 } from "@/types";
 
 import { toast } from "sonner";
+import Input from "@/shared/Input";
+import Label from "@/components/Label";
+
+// DYNAMIC IMPORT CHO MAP COMPONENT (Bắt buộc để tránh lỗi SSR)
+import dynamic from "next/dynamic";
+const HereMapPicker = dynamic(() => import("@/components/HereMapPicker"), {
+  ssr: false,
+});
 
 //
 // ───────────────────────────────────────────────────────────
@@ -45,6 +53,40 @@ const getPrimaryEmail = (emails: CustomerEmail[]) =>
 // Pick primary phone
 const getPrimaryPhone = (phones: CustomerPhone[]) =>
   phones.find((e) => e.isPrimary)?.value || phones[0]?.value || "";
+
+//
+// ───────────────────────────────────────────────────────────
+//  ADDRESS TYPES & INITIAL STATE
+// ───────────────────────────────────────────────────────────
+//
+
+// Backend: coordinates: [lng, lat]
+const DEFAULT_COORDINATES: [number, number] = [106.660172, 10.762622]; // [lng, lat] mặc định
+
+// Kiểu dữ liệu local cho form address (giống CustomerAddress nhưng đảm bảo location tồn tại)
+type NewAddressState = Omit<
+  CustomerAddress,
+  "isDefault" | "fullAddress" | "location"
+> & {
+  location: { coordinates: [number, number]; type: "Point" }; // Chính xác: [lng, lat]
+  fullAddressFromMap: string;
+};
+
+// Hàm khởi tạo địa chỉ mới
+const initialNewAddressState: NewAddressState = {
+  label: "",
+  recipientName: "",
+  recipientPhone: "",
+  street: "", // Chi tiết (Số nhà, Tên tòa nhà)
+  ward: "",
+  district: "",
+  city: "",
+  location: {
+    type: "Point",
+    coordinates: DEFAULT_COORDINATES,
+  },
+  fullAddressFromMap: "",
+};
 
 //
 // ───────────────────────────────────────────────────────────
@@ -72,9 +114,7 @@ const AccountPage = () => {
     "profile"
   );
 
-  //
-  // NEW EMAIL / PHONE FORM STATE
-  //
+  // NEW EMAIL / PHONE FORM STATE (GIỮ NGUYÊN)
   const [newEmail, setNewEmail] = useState("");
   const [newEmailType, setNewEmailType] = useState<
     "Home" | "Company" | "Other"
@@ -85,28 +125,19 @@ const AccountPage = () => {
     "Home" | "Company" | "Other"
   >("Other");
 
-  //
   // ADDRESS FORM STATE
-  //
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(
     null
   );
-  const [newAddress, setNewAddress] = useState<
-    Omit<CustomerAddress, "isDefault" | "fullAddress">
-  >({
-    label: "",
-    recipientName: "",
-    recipientPhone: "",
-    street: "",
-    ward: "",
-    district: "",
-    city: "",
-  });
+
+  const [newAddress, setNewAddress] = useState<NewAddressState>(
+    initialNewAddressState
+  );
 
   //
   // ───────────────────────────────────────────
-  //  FETCH USER & PREFILL
+  //  FETCH USER & PREFILL (GIỮ NGUYÊN)
   // ───────────────────────────────────────────
   //
   useEffect(() => {
@@ -135,7 +166,7 @@ const AccountPage = () => {
 
   //
   // ───────────────────────────────────────────
-  //  HANDLE BASIC FORM INPUT
+  //  HANDLE BASIC FORM INPUT (GIỮ NGUYÊN)
   // ───────────────────────────────────────────
   //
   const handleFormChange = (
@@ -147,7 +178,7 @@ const AccountPage = () => {
 
   //
   // ───────────────────────────────────────────
-  //  EMAIL HANDLERS
+  //  EMAIL HANDLERS (GIỮ NGUYÊN)
   // ───────────────────────────────────────────
   //
   const handleAddEmail = () => {
@@ -175,7 +206,6 @@ const AccountPage = () => {
   const handleDeleteEmail = (value: string) => {
     const remaining = customerData.emails.filter((e) => e.value !== value);
 
-    // Reset primary nếu bị xoá
     if (!remaining.find((e) => e.isPrimary) && remaining.length > 0) {
       remaining[0].isPrimary = true;
     }
@@ -200,7 +230,7 @@ const AccountPage = () => {
 
   //
   // ───────────────────────────────────────────
-  //  PHONE HANDLERS
+  //  PHONE HANDLERS (GIỮ NGUYÊN)
   // ───────────────────────────────────────────
   //
   const handleAddPhone = () => {
@@ -252,31 +282,80 @@ const AccountPage = () => {
 
   //
   // ───────────────────────────────────────────
-  //  ADDRESS HANDLERS
+  //  MAP/ADDRESS HANDLERS
   // ───────────────────────────────────────────
   //
+
+  // Xử lý dữ liệu từ HereMapPicker: [lat, lng] -> [lng, lat]
+  const handleMapSelect = (data: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
+    const { lat, lng, address: fullAddress } = data;
+
+    // CHUYỂN ĐỔI: Map API (lat, lng) -> GeoJSON (lng, lat)
+    const coordinates: [number, number] = [lng, lat];
+
+    // Phân tách địa chỉ từ Reverse Geocoding
+    const parts = fullAddress
+      .split(",")
+      .map((p) => p.trim())
+      .reverse();
+
+    setNewAddress((prev) => ({
+      ...prev,
+      location: {
+        type: "Point",
+        coordinates, // [lng, lat]
+      },
+      fullAddressFromMap: fullAddress,
+      // Cố gắng phân tích các trường địa chỉ chi tiết
+      city: parts[0] || "",
+      district: parts[1] || "",
+      ward: parts[2] || "",
+      // Street/Detail sẽ giữ lại các phần còn lại
+      street: prev.street || parts.slice(3).reverse().join(", ") || "",
+    }));
+  };
+
   const handleAddressInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewAddress((prev) => ({ ...prev, [name]: value }));
+    setNewAddress((prev) => ({ ...prev, [name]: value as any }));
   };
 
   const handleAddAddress = () => {
-    if (
-      !newAddress.recipientName ||
-      !newAddress.recipientPhone ||
-      !newAddress.street ||
-      !newAddress.ward ||
-      !newAddress.city
-    )
-      return toast.error("Vui lòng nhập đầy đủ thông tin địa chỉ");
+    const [lng, lat] = newAddress.location.coordinates;
 
-      const fullAddress = [newAddress.street, newAddress.ward, newAddress.district, newAddress.city].filter(Boolean).join(', ');
-      
+    // VALIDATION: Kiểm tra Tên, SĐT và Tọa độ
+    if (!newAddress.recipientName || !newAddress.recipientPhone || !lat || !lng)
+      return toast.error(
+        "Vui lòng nhập Tên, SĐT người nhận và chọn vị trí trên bản đồ."
+      );
+
+    // Tạo fullAddress cho việc hiển thị (kết hợp chi tiết và địa chỉ từ map)
+    const fullAddress = [
+      newAddress.street,
+      newAddress.ward,
+      newAddress.district,
+      newAddress.city,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     const newObj: CustomerAddress = {
-      ...newAddress,
+      label: newAddress.label,
+      recipientName: newAddress.recipientName,
+      recipientPhone: newAddress.recipientPhone,
+      street: newAddress.street,
+      ward: newAddress.ward,
+      district: newAddress.district,
+      city: newAddress.city,
+      // Dữ liệu GeoJSON gửi lên backend
+      location: newAddress.location,
       fullAddress,
       isDefault: customerData.addresses.length === 0,
-    };
+    } as CustomerAddress;
 
     if (editingAddressIndex !== null) {
       setCustomerData((prev) => ({
@@ -294,28 +373,51 @@ const AccountPage = () => {
     }
 
     setShowAddressForm(false);
-    setNewAddress({
-      label: "",
-      recipientName: "",
-      recipientPhone: "",
-      street: "",
-      ward: "",
-      district: "",
-      city: "",
-    });
+    setNewAddress(initialNewAddressState);
+    toast.success(
+      editingAddressIndex !== null
+        ? "Cập nhật địa chỉ thành công"
+        : "Thêm địa chỉ mới thành công"
+    );
   };
 
   const handleEditAddress = (index: number) => {
     const addr = customerData.addresses[index];
-    setNewAddress(addr);
+
+    // Lấy [lng, lat] từ location.coordinates, dùng DEFAULT nếu không có
+    const [lng, lat] =
+      (addr.location?.coordinates as [number, number]) || DEFAULT_COORDINATES;
+
+    setNewAddress({
+      label: addr.label || "",
+      recipientName: addr.recipientName,
+      recipientPhone: addr.recipientPhone,
+      street: addr.street,
+      ward: addr.ward,
+      district: addr.district,
+      city: addr.city,
+      location: {
+        type: "Point",
+        coordinates: [lng, lat],
+      },
+      fullAddressFromMap: addr.fullAddress || "",
+    });
+
     setEditingAddressIndex(index);
     setShowAddressForm(true);
   };
 
   const handleDeleteAddress = (index: number) => {
+    const remaining = customerData.addresses.filter((_, i) => i !== index);
+
+    // Cập nhật lại mặc định nếu địa chỉ mặc định bị xóa
+    if (customerData.addresses[index].isDefault && remaining.length > 0) {
+      remaining[0].isDefault = true;
+    }
+
     setCustomerData((prev) => ({
       ...prev,
-      addresses: prev.addresses.filter((_, i) => i !== index),
+      addresses: remaining,
     }));
   };
 
@@ -331,7 +433,7 @@ const AccountPage = () => {
 
   //
   // ───────────────────────────────────────────
-  //  SUBMIT UPDATE PROFILE
+  //  SUBMIT UPDATE PROFILE (GIỮ NGUYÊN)
   // ───────────────────────────────────────────
   //
   const handleSubmit = async () => {
@@ -362,6 +464,12 @@ const AccountPage = () => {
   //  UI
   // ───────────────────────────────────────────
   //
+
+  // Lấy lat/lng cho Map Picker: GeoJSON [lng, lat] -> Map API (lat, lng)
+  const [lng, lat] = newAddress.location.coordinates;
+  const initialMapLat = lat;
+  const initialMapLng = lng;
+
   if (isLoading)
     return (
       <div className="flex justify-center items-center h-72">
@@ -412,7 +520,7 @@ const AccountPage = () => {
         </div>
 
         <div className="p-6">
-          {/* PROFILE TAB */}
+          {/* PROFILE TAB (GIỮ NGUYÊN) */}
           {activeTab === "profile" && (
             <div className="space-y-6">
               {/* Name */}
@@ -454,9 +562,7 @@ const AccountPage = () => {
                 </select>
               </div>
 
-              {/* ───────────────────────────────────────────── */}
               {/* EMAILS */}
-              {/* ───────────────────────────────────────────── */}
               <div className="space-y-3">
                 <label className="font-semibold">Emails</label>
 
@@ -522,9 +628,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              {/* ───────────────────────────────────────────── */}
               {/* PHONES */}
-              {/* ───────────────────────────────────────────── */}
               <div className="space-y-3">
                 <label className="font-semibold">Số điện thoại</label>
 
@@ -597,15 +701,17 @@ const AccountPage = () => {
                   disabled={isSaving}
                   className="px-5 py-2 bg-orange-600 text-white rounded-lg"
                 >
-                  {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                  {isSaving ? (
+                    <Loader className="w-5 h-5 animate-spin mx-auto" />
+                  ) : (
+                    "Lưu thay đổi"
+                  )}
                 </button>
               </div>
             </div>
           )}
 
-          {/* ───────────────────────────────────────────── */}
           {/* ADDRESS TAB */}
-          {/* ───────────────────────────────────────────── */}
           {activeTab === "addresses" && (
             <div className="space-y-5">
               {/* LIST */}
@@ -658,7 +764,11 @@ const AccountPage = () => {
               {/* BUTTON: ADD ADDRESS */}
               {!showAddressForm && (
                 <button
-                  onClick={() => setShowAddressForm(true)}
+                  onClick={() => {
+                    setNewAddress(initialNewAddressState);
+                    setEditingAddressIndex(null);
+                    setShowAddressForm(true);
+                  }}
                   className="w-full py-3 border-dashed border-2 rounded-lg border-gray-300
                              text-gray-600 flex items-center justify-center gap-2"
                 >
@@ -703,41 +813,62 @@ const AccountPage = () => {
                     className="w-full px-3 py-2 border rounded-lg"
                   />
 
+                  {/* TÍCH HỢP HERE MAP PICKER */}
+                  <HereMapPicker
+                    onLocationSelect={handleMapSelect}
+                    initialLat={initialMapLat} // Truyền lat
+                    initialLng={initialMapLng} // Truyền lng
+                    initialAddress={newAddress.fullAddressFromMap}
+                  />
+
+                  <h4 className="text-sm font-semibold pt-2 border-t mt-4">
+                    Chi tiết địa chỉ (Số nhà, Tên tòa nhà)
+                  </h4>
                   <input
                     type="text"
                     name="street"
-                    placeholder="Số nhà / Đường"
+                    placeholder="Số nhà, tên tòa nhà, tầng (ví dụ: Tầng 5, Landmark 81)"
                     value={newAddress.street}
                     onChange={handleAddressInput}
                     className="w-full px-3 py-2 border rounded-lg"
                   />
 
-                  <input
-                    type="text"
-                    name="ward"
-                    placeholder="Phường/Xã"
-                    value={newAddress.ward}
-                    onChange={handleAddressInput}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-
-                  <input
-                    type="text"
-                    name="district"
-                    placeholder="Quận/Huyện"
-                    value={newAddress.district}
-                    onChange={handleAddressInput}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="Thành phố"
-                    value={newAddress.city}
-                    onChange={handleAddressInput}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+                  {/* Hiển thị các trường Phường/Quận/Thành phố tự động từ Map (Readonly) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Phường/Xã (Tự động)</Label>
+                      <Input
+                        type="text"
+                        name="ward"
+                        placeholder="Phường/Xã"
+                        value={newAddress.ward}
+                        readOnly
+                        className="mt-1.5 !bg-gray-100 dark:!bg-gray-800 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Quận/Huyện (Tự động)</Label>
+                      <Input
+                        type="text"
+                        name="district"
+                        placeholder="Quận/Huyện"
+                        value={newAddress.district}
+                        readOnly
+                        className="mt-1.5 !bg-gray-100 dark:!bg-gray-800 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <Label>Thành phố (Tự động)</Label>
+                      <Input
+                        type="text"
+                        name="city"
+                        placeholder="Thành phố"
+                        value={newAddress.city}
+                        readOnly
+                        className="mt-1.5 !bg-gray-100 dark:!bg-gray-800 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
 
                   <div className="flex gap-2 pt-2">
                     <button
