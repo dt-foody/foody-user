@@ -51,21 +51,10 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
   const markerInstanceRef = useRef<any>(null);
   const platformRef = useRef<any>(null);
 
-  // 1. Cleanup map khi unmount
-  useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.dispose();
-        } catch (e) {
-          console.warn("Map dispose error", e);
-        }
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
+  // --- FIX: Thêm | null để TypeScript hiểu là MutableRefObject ---
+  const resizeHandlerRef = useRef<(() => void) | null>(null);
 
-  // 2. Khởi tạo Platform khi script loaded
+  // 1. Khởi tạo Platform khi script loaded
   useEffect(() => {
     if (
       isMapLoaded &&
@@ -94,6 +83,9 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     service.geocode(
       { q: searchQuery, limit: 5 },
       (result: any) => {
+        // Check nếu component đã unmount (map bị dispose) thì không làm gì cả
+        if (!mapInstanceRef.current) return;
+
         setIsSearching(false);
         if (result.items && result.items.length > 0) {
           setSuggestions(result.items);
@@ -102,6 +94,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
         }
       },
       (error: any) => {
+        if (!mapInstanceRef.current) return;
         setIsSearching(false);
         console.error("Geocode error:", error);
         toast.error("Lỗi khi tìm kiếm địa chỉ.");
@@ -109,10 +102,9 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     );
   };
 
-  // --- ĐÃ SỬA ĐỔI: Xử lý chọn địa điểm ---
+  // --- Xử lý chọn địa điểm ---
   const handleSelectSuggestion = (item: any) => {
     const { position, address: addrObj } = item;
-    // FIX: Ép kiểu Number để đảm bảo tọa độ chính xác
     const lat = Number(position.lat);
     const lng = Number(position.lng);
     const label = addrObj.label;
@@ -130,10 +122,8 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
       const map = mapInstanceRef.current;
       const marker = markerInstanceRef.current;
 
-      // Move Marker
       marker.setGeometry({ lat, lng });
 
-      // FIX: Dùng setLookAtData thay cho setCenter + setZoom để animation mượt hơn và chắc chắn map di chuyển
       map.getViewModel().setLookAtData(
         {
           position: { lat, lng },
@@ -148,11 +138,16 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
   const reverseGeocode = useCallback(
     (lat: number, lng: number) => {
       if (!platformRef.current) return;
+      // SAFETY CHECK: Không gọi API nếu map đã bị hủy
+      if (!mapInstanceRef.current) return;
 
       const service = platformRef.current.getSearchService();
       service.reverseGeocode(
         { at: `${lat},${lng}` },
         (result: any) => {
+          // SAFETY CHECK AGAIN
+          if (!mapInstanceRef.current) return;
+
           if (result.items.length > 0) {
             const addressLabel = result.items[0].address.label;
             setAddress(addressLabel);
@@ -174,10 +169,11 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
 
   const updateMapLocation = useCallback(
     (lat: number, lng: number, map: any, marker: any) => {
+      if (!mapInstanceRef.current) return; // Safety check
+
       setCoordinates({ lat, lng });
       marker.setGeometry({ lat, lng });
 
-      // Dùng setLookAtData ở đây luôn cho đồng bộ
       map.getViewModel().setLookAtData(
         {
           position: { lat, lng },
@@ -243,17 +239,26 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
         updateMapLocation(coord.lat, coord.lng, map, marker);
       });
 
-      window.addEventListener("resize", () => map.getViewPort().resize());
+      // --- QUẢN LÝ SỰ KIỆN RESIZE ĐÚNG CÁCH ---
+      const resizeHandler = () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.getViewPort().resize();
+        }
+      };
+      window.addEventListener("resize", resizeHandler);
+      // Lưu lại reference để remove sau này
+      resizeHandlerRef.current = resizeHandler;
 
       setTimeout(() => {
+        // Kiểm tra map instance trước khi thao tác trong timeout
+        if (!mapInstanceRef.current) return;
+
         if (!initialAddress) {
-          // Nếu chưa có address, reverse geocode vị trí ban đầu
           updateMapLocation(initialLat, initialLng, map, marker);
         } else {
-          // Nếu đã có, chỉ set view
           map.getViewModel().setLookAtData({
             position: { lat: initialLat, lng: initialLng },
-            zoom: 14, // Giữ zoom ban đầu thấp hơn chút để nhìn bao quát
+            zoom: 14,
           });
           marker.setGeometry({ lat: initialLat, lng: initialLng });
         }
@@ -274,6 +279,28 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
       initMap();
     }
   }, [isMapLoaded, initMap]);
+
+  // --- CLEANUP ĐÚNG CÁCH KHI UNMOUNT ---
+  useEffect(() => {
+    return () => {
+      // 1. Gỡ bỏ sự kiện resize TRƯỚC khi dispose map
+      if (resizeHandlerRef.current) {
+        window.removeEventListener("resize", resizeHandlerRef.current);
+        resizeHandlerRef.current = null;
+      }
+
+      // 2. Dispose Map instance
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.dispose();
+        } catch (e) {
+          console.warn("Map dispose error", e);
+        }
+        mapInstanceRef.current = null;
+        markerInstanceRef.current = null;
+      }
+    };
+  }, []); // Chỉ chạy 1 lần khi unmount
 
   // Đồng bộ props khi parent thay đổi
   useEffect(() => {

@@ -292,6 +292,7 @@ const AccountPage = () => {
     lng: number;
     address: string;
   }) => {
+    console.log("Data", data);
     const { lat, lng, address: fullAddress } = data;
 
     // CHUYỂN ĐỔI: Map API (lat, lng) -> GeoJSON (lng, lat)
@@ -311,11 +312,11 @@ const AccountPage = () => {
       },
       fullAddressFromMap: fullAddress,
       // Cố gắng phân tích các trường địa chỉ chi tiết
-      city: parts[0] || "",
-      district: parts[1] || "",
-      ward: parts[2] || "",
+      city: parts[1] || "",
+      district: parts[2] || "",
+      ward: parts[3] || "",
       // Street/Detail sẽ giữ lại các phần còn lại
-      street: prev.street || parts.slice(3).reverse().join(", ") || "",
+      street: parts.slice(4).reverse().join(", ") || "",
     }));
   };
 
