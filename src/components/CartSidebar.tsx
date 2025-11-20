@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCart, SHIPPING_FEE } from "@/stores/useCartStore";
+import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 // Import đúng type từ file order.ts
@@ -167,6 +167,7 @@ export default function CartSidebar() {
     applyPublicCoupon,
     applyPrivateCoupon,
     removeCoupon,
+    originalShippingFee,
   } = useCart(); // <-- Đã sửa, dùng useCart()
 
   const router = useRouter();
@@ -499,7 +500,7 @@ export default function CartSidebar() {
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className="font-medium">
-                    {SHIPPING_FEE.toLocaleString("vi-VN")}đ
+                    {originalShippingFee?.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
                 {itemDiscount > 0 && (

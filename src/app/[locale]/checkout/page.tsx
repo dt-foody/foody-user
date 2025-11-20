@@ -1,6 +1,6 @@
 "use client";
 
-import { useCart, SHIPPING_FEE } from "@/stores/useCartStore";
+import { useCart } from "@/stores/useCartStore";
 import {
   Truck,
   Gift,
@@ -17,16 +17,14 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
-import { PaymentMethod, ShippingStatus } from "@/types";
+import { PaymentMethod } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { CreateOrderItem_Option } from "@/types";
-import Image from "next/image"; // <-- THÊM IMPORT
+import Image from "next/image";
 
 // =======================================
-// === THÊM HELPER TỪ CART SIDEBAR ===
+// === HELPER UI & CONSTANTS ===
 // =======================================
-
-// THÊM: Placeholder và hàm xử lý lỗi ảnh
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
@@ -34,13 +32,9 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.src = PLACEHOLDER_IMAGE;
 };
 
-// Helper để format price
-const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
+const formatPrice = (price: number) =>
+  `${(price || 0).toLocaleString("vi-VN")}đ`;
 
-/**
- * Component render Options (cho cả Product và Combo)
- * (Sao chép từ CartSidebar)
- */
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
 }: {
@@ -69,7 +63,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
 });
 
 // =======================================
-// === KẾT THÚC HELPER ===
+// === MAIN COMPONENT ===
 // =======================================
 
 export default function CheckoutRetro() {
@@ -88,11 +82,14 @@ export default function CheckoutRetro() {
     setScheduledDate,
     applyPrivateCoupon,
     couponStatus,
+    originalShippingFee,
+    setShippingFee,
+    shippingDistance,
   } = useCart();
 
   const router = useRouter();
+  const { me } = useAuthStore();
 
-  // ... (Tất cả state và logic khác giữ nguyên) ...
   const [voucherInput, setVoucherInput] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -100,25 +97,56 @@ export default function CheckoutRetro() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCalculatingShip, setIsCalculatingShip] = useState(false);
 
-  const { me } = useAuthStore();
   const [defaultAddress, setDefaultAddress] = useState<any>(null);
 
+  // -------------------------------------------------------
+  // 1. EFFECT: LOAD ĐỊA CHỈ & TÍNH SHIP
+  // -------------------------------------------------------
   useEffect(() => {
     if (me?.addresses?.length) {
       const addr =
         me.addresses.find((a: any) => a.isDefault) || me.addresses[0];
       setDefaultAddress(addr);
+
       if (addr) {
         setName(addr.recipientName || "");
         setPhone(addr.recipientPhone || "");
+
+        let lat = null;
+        let lng = null;
+
+        if (addr.location && Array.isArray(addr.location.coordinates)) {
+          lng = addr.location.coordinates[0];
+          lat = addr.location.coordinates[1];
+        }
+
+        if (lat && lng) {
+          calculateShipping(lat, lng);
+        } else {
+          setShippingFee(15000, 0);
+        }
       }
     }
   }, [me]);
 
+  const calculateShipping = async (lat: number, lng: number) => {
+    try {
+      setIsCalculatingShip(true);
+      const res = await orderService.getShippingFee(lat, lng);
+      setShippingFee(res.shippingFee, res.distance);
+    } catch (error) {
+      console.error("Lỗi tính ship:", error);
+      toast.error("Không thể tính phí ship chính xác lúc này.");
+      setShippingFee(15000, 0);
+    } finally {
+      setIsCalculatingShip(false);
+    }
+  };
+
   const formatDiscount = (val: number) =>
     val > 0 ? `-${val.toLocaleString("vi-VN")}đ` : "0đ";
-
   const getMinDate = () => new Date().toISOString().split("T")[0];
 
   const formatDeliveryText = () => {
@@ -144,8 +172,10 @@ export default function CheckoutRetro() {
     }
   };
 
+  // -------------------------------------------------------
+  // 2. HANDLE SUBMIT ORDER
+  // -------------------------------------------------------
   const handleSubmit = async () => {
-    // ... (logic handleSubmit giữ nguyên) ...
     if (loading) return;
 
     if (!name.trim() || !phone.trim()) {
@@ -163,12 +193,10 @@ export default function CheckoutRetro() {
         toast.error("Vui lòng chọn ngày giao hàng!");
         return;
       }
-
       if (!scheduledTime) {
         toast.error("Vui lòng chọn giờ giao hàng!");
         return;
       }
-
       const selected = new Date(`${scheduledDate}T${scheduledTime}`);
       if (selected < new Date()) {
         toast.warning("Thời gian giao hàng phải nằm trong tương lai!");
@@ -189,22 +217,35 @@ export default function CheckoutRetro() {
       district: defaultAddress.district,
       ward: defaultAddress.ward,
       city: defaultAddress.city,
+      fullAddress: defaultAddress.fullAddress,
     };
+
+    let locationData = undefined;
+    if (defaultAddress?.location?.coordinates) {
+      locationData = {
+        lat: defaultAddress.location.coordinates[1],
+        lng: defaultAddress.location.coordinates[0],
+      };
+    }
 
     const payload = {
       items: cartItems.map(({ _image, _categoryIds, ...rest }) => rest),
-      appliedCoupons: appliedCoupons.map((el) => {
-        return { id: el.id, code: el.code };
-      }),
+      appliedCoupons: appliedCoupons.map((el) => ({
+        id: el.id,
+        code: el.code,
+      })),
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
-      shippingFee: SHIPPING_FEE,
+
+      shippingFee: originalShippingFee,
       grandTotal: finalTotal,
+
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
       shipping: {
         address: shippingAddress,
+        location: locationData,
       },
       note: note.trim(),
     };
@@ -223,13 +264,13 @@ export default function CheckoutRetro() {
       }
     } catch (err: any) {
       console.error(err);
-      toast.error("Đặt hàng thất bại. Vui lòng thử lại sau!");
+      toast.error(err?.message || "Đặt hàng thất bại. Vui lòng thử lại sau!");
     } finally {
       setLoading(false);
     }
   };
 
-  // ====== UI ======
+  // ====== UI RENDER ======
   return (
     <div className="min-h-screen bg-[#fffaf5] text-[#3b2f26] px-6 py-8 flex flex-col items-center font-sans">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -255,9 +296,6 @@ export default function CheckoutRetro() {
                 <th className="text-right py-2">Thành tiền</th>
               </tr>
             </thead>
-            {/* ======================================= */}
-            {/* === SỬA ĐỔI TẠI ĐÂY (THÊM ẢNH) === */}
-            {/* ======================================= */}
             <tbody>
               {cartItems.map((it) => {
                 const baseOrComboPrice =
@@ -270,40 +308,29 @@ export default function CheckoutRetro() {
                     key={it.cartId}
                     className="border-b border-black/20 hover:bg-[#f8f3ef]"
                   >
-                    {/* SỬA: Thêm Image và sắp xếp lại */}
                     <td className="p-2 align-top">
                       <div className="flex items-start gap-2.5">
-                        {/* --- Image --- */}
                         <Image
                           src={it._image || PLACEHOLDER_IMAGE}
                           alt={it.item.name}
                           onError={handleImageError}
-                          width={48} // Kích thước nhỏ hơn 1 chút cho table
+                          width={48}
                           height={48}
                           className="object-cover rounded-md flex-shrink-0"
                         />
-
-                        {/* --- Info --- */}
                         <div className="flex-1 min-w-0">
                           <span className="font-semibold text-gray-800">
                             {it.item.name}
                           </span>
-
-                          {/* Hiển thị giá base (nếu có) */}
                           {baseOrComboPrice > 0 && (
                             <p className="text-sm text-gray-500">
                               {formatPrice(baseOrComboPrice)}
                             </p>
                           )}
-
-                          {/* Hiển thị options chi tiết */}
                           <div className="mt-1.5">
-                            {/* 1. Nếu là SẢN PHẨM ĐƠN */}
                             {it.itemType === "Product" && (
                               <RenderSelectedOptions options={it.options} />
                             )}
-
-                            {/* 2. Nếu là COMBO */}
                             {it.itemType === "Combo" && (
                               <div className="mt-1 space-y-1">
                                 {(it.comboSelections || []).map((sel, idx) => (
@@ -319,8 +346,6 @@ export default function CheckoutRetro() {
                               </div>
                             )}
                           </div>
-
-                          {/* Hiển thị Ghi chú của món */}
                           {it.note && (
                             <div className="mt-1.5 flex items-start gap-1 text-xs text-blue-700 bg-blue-50 p-1.5 rounded border border-blue-200">
                               <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -330,8 +355,6 @@ export default function CheckoutRetro() {
                         </div>
                       </div>
                     </td>
-
-                    {/* Đơn giá (là giá cuối cùng của 1 sản phẩm) */}
                     <td className="p-2 text-right align-top">
                       {it.totalPrice.toLocaleString("vi-VN")}đ
                     </td>
@@ -343,17 +366,14 @@ export default function CheckoutRetro() {
                 );
               })}
             </tbody>
-            {/* ======================================= */}
-            {/* === KẾT THÚC SỬA ĐỔI === */}
-            {/* ======================================= */}
           </table>
 
-          {/* ... (Phần còn lại của component giữ nguyên) ... */}
+          {/* List Coupons */}
           {appliedCoupons.length > 0 && (
             <div className="mt-5 border-t border-black/40 pt-3">
               <h3 className="font-bold text-sm mb-2 flex items-center gap-1">
-                <Gift size={15} className="text-[#b9915f]" />
-                Ưu đãi đang áp dụng
+                <Gift size={15} className="text-[#b9915f]" /> Ưu đãi đang áp
+                dụng
               </h3>
               <div className="space-y-2">
                 {appliedCoupons.map((c) => (
@@ -368,13 +388,6 @@ export default function CheckoutRetro() {
                       <div className="flex items-center gap-2 text-xs text-gray-700 mt-0.5">
                         <Tag size={12} className="text-[#b9915f]" />
                         <span>{c.code}</span>
-                        <span className="px-1.5 py-0.5 bg-[#b9915f]/10 rounded">
-                          {c.type === "freeship"
-                            ? "Free Ship"
-                            : c.valueType === "percentage"
-                            ? `-${c.value}%`
-                            : `-${c.value.toLocaleString("vi-VN")}đ`}
-                        </span>
                       </div>
                     </div>
                     <button
@@ -389,14 +402,27 @@ export default function CheckoutRetro() {
             </div>
           )}
 
+          {/* Totals Section */}
           <div className="mt-6 border-t border-black/40 pt-3 text-sm space-y-1.5">
             <div className="flex justify-between">
               <span>Tạm tính</span>
               <span>{subtotal.toLocaleString("vi-VN")}đ</span>
             </div>
-            <div className="flex justify-between">
-              <span>Phí vận chuyển</span>
-              <span>{SHIPPING_FEE.toLocaleString("vi-VN")}đ</span>
+
+            {/* HIỂN THỊ SHIP & KM (SAFE CHECK ADDED) */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span>Phí vận chuyển</span>
+                {shippingDistance > 0 && (
+                  <span className="text-xs bg-gray-100 text-gray-600 px-1.5 rounded">
+                    ({shippingDistance} km)
+                  </span>
+                )}
+                {isCalculatingShip && (
+                  <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
+                )}
+              </div>
+              <span>{(originalShippingFee || 0).toLocaleString("vi-VN")}đ</span>
             </div>
 
             {itemDiscount > 0 && (
@@ -428,7 +454,7 @@ export default function CheckoutRetro() {
 
         {/* ===== RIGHT: Recipient + Payment ===== */}
         <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4">
-          {/* Recipient (Giữ nguyên) */}
+          {/* Info Inputs */}
           <div>
             <label className="block text-sm font-semibold mb-1">
               Tên người nhận: <span className="text-red-600"> *</span>
@@ -437,7 +463,6 @@ export default function CheckoutRetro() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nguyễn Văn A"
               className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
@@ -449,11 +474,11 @@ export default function CheckoutRetro() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="09xxxxxxxx"
               className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
-          {/* Delivery Options (SỬA: Đọc/ghi state từ store) */}
+
+          {/* Delivery Time Selection */}
           <div className="px-1 pb-1">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
               <div className="flex items-center gap-2 mb-2.5">
@@ -463,82 +488,49 @@ export default function CheckoutRetro() {
                 </h3>
               </div>
               <div className="space-y-2">
-                {/* Immediate */}
                 <label className="flex items-start gap-2.5 cursor-pointer group">
-                  <div className="flex items-center h-5">
-                    <input
-                      type="radio"
-                      name="delivery"
-                      value="immediate"
-                      checked={deliveryOption === "immediate"}
-                      onChange={() => setDeliveryOption("immediate")}
-                      className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500 focus:ring-2"
-                    />
-                  </div>
+                  <input
+                    type="radio"
+                    checked={deliveryOption === "immediate"}
+                    onChange={() => setDeliveryOption("immediate")}
+                    className="w-4 h-4 mt-0.5 text-orange-500 focus:ring-orange-500"
+                  />
                   <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Zap size={14} className="text-orange-500" />
-                      <span className="font-semibold text-sm text-gray-800">
-                        Giao ngay
-                      </span>
-                      <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-medium">
-                        Nhanh
-                      </span>
-                    </div>
+                    <span className="font-semibold text-sm text-gray-800">
+                      Giao ngay
+                    </span>
                     <p className="text-xs text-gray-600">
                       Giao hàng trong 2-4 giờ
                     </p>
                   </div>
                 </label>
-                {/* Scheduled */}
+
                 <label className="flex items-start gap-2.5 cursor-pointer group">
-                  <div className="flex items-center h-5">
-                    <input
-                      type="radio"
-                      name="delivery"
-                      value="scheduled"
-                      checked={deliveryOption === "scheduled"}
-                      onChange={() => setDeliveryOption("scheduled")}
-                      className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500 focus:ring-2"
-                    />
-                  </div>
+                  <input
+                    type="radio"
+                    checked={deliveryOption === "scheduled"}
+                    onChange={() => setDeliveryOption("scheduled")}
+                    className="w-4 h-4 mt-0.5 text-orange-500 focus:ring-orange-500"
+                  />
                   <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <Calendar size={14} className="text-blue-600" />
-                      <span className="font-semibold text-sm text-gray-800">
-                        Hẹn giờ giao
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-2">
-                      Chọn ngày bạn muốn nhận hàng
-                    </p>
+                    <span className="font-semibold text-sm text-gray-800">
+                      Hẹn giờ giao
+                    </span>
                     {deliveryOption === "scheduled" && (
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        {/* Ngày giao */}
-                        <div className="sm:flex-[2]">
-                          <label className="block text-xs text-gray-600 mb-1">
-                            Ngày giao
-                          </label>
-                          <input
-                            type="date"
-                            value={scheduledDate}
-                            onChange={(e) => setScheduledDate(e.target.value)}
-                            min={getMinDate()}
-                            className="w-full px-2.5 py-1.5 text-sm border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        {/* Giờ giao */}
-                        <div className="sm:flex-[1]">
-                          <label className="block text-xs text-gray-600 mb-1">
-                            Giờ giao
-                          </label>
-                          <input
-                            type="time"
-                            value={scheduledTime}
-                            onChange={(e) => setScheduledTime(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-sm border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          type="date"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          min={getMinDate()}
+                          className="w-full px-2 py-1 border rounded text-xs"
+                        />
+                        <input
+                          type="time"
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          className="w-full px-2 py-1 border rounded text-xs"
+                        />
                       </div>
                     )}
                   </div>
@@ -547,7 +539,7 @@ export default function CheckoutRetro() {
             </div>
           </div>
 
-          {/* SỬA: Voucher input */}
+          {/* Voucher Input */}
           <div>
             <label className="block text-sm font-semibold mb-1">
               Nhập thêm mã giảm giá:
@@ -557,14 +549,14 @@ export default function CheckoutRetro() {
                 type="text"
                 value={voucherInput}
                 onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
-                placeholder="Nhập mã của bạn"
+                placeholder="Nhập mã..."
                 className="flex-1 text-sm border border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f]"
                 disabled={couponStatus.isLoading}
               />
               <button
                 onClick={handleApplyCoupon}
                 disabled={couponStatus.isLoading || loading}
-                className="px-4 py-2 bg-[#b9915f] text-white rounded-lg font-medium hover:bg-[#9a7e4e] w-28 text-center"
+                className="px-4 py-2 bg-[#b9915f] text-white rounded-lg font-medium hover:bg-[#9a7e4e] w-24 text-center"
               >
                 {couponStatus.isLoading ? (
                   <Loader2 className="inline h-4 w-4 animate-spin" />
@@ -578,69 +570,55 @@ export default function CheckoutRetro() {
             )}
           </div>
 
-          {/* THÊM: Ô Ghi chú */}
+          {/* Note */}
           <div>
-            <label htmlFor="note" className="block text-sm font-semibold mb-1">
-              Ghi chú cho đơn hàng:
-            </label>
+            <label className="block text-sm font-semibold mb-1">Ghi chú:</label>
             <textarea
-              id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="Ghi chú thêm cho tài xế (ví dụ: ít đường, nhiều đá...)"
+              placeholder="Ít đường, nhiều đá..."
               className="w-full border text-sm border-black/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#b9915f] outline-none"
             />
           </div>
 
-          {/* 🔹 Payment method section (Giữ nguyên) */}
+          {/* Payment Methods */}
           <div className="pt-3 border-t border-black/30">
             <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <CheckCircle size={15} className="text-[#b9915f]" /> Phương thức
               thanh toán
             </h3>
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-[#b9915f]/30 rounded-lg p-3 space-y-3">
-              {/* COD */}
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="payment"
                   value="cod"
                   checked={paymentMethod === "cod"}
                   onChange={() => setPaymentMethod("cod")}
-                  className="w-4 h-4 text-[#b9915f] border-gray-400 focus:ring-[#b9915f]"
+                  className="w-4 h-4 text-[#b9915f] focus:ring-[#b9915f]"
                 />
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm text-gray-800">
-                    Tiền mặt khi nhận hàng (COD)
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    Thanh toán trực tiếp cho shipper khi nhận hàng.
-                  </span>
-                </div>
+                <span className="font-semibold text-sm text-gray-800">
+                  Tiền mặt (COD)
+                </span>
               </label>
-              {/* Bank Transfer */}
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="payment"
                   value="bank"
                   checked={paymentMethod === "bank"}
                   onChange={() => setPaymentMethod("bank")}
-                  className="w-4 h-4 text-[#b9915f] border-gray-400 focus:ring-[#b9915f]"
+                  className="w-4 h-4 text-[#b9915f] focus:ring-[#b9915f]"
                 />
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm text-gray-800">
-                    Chuyển khoản qua ngân hàng / Mã QR
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    Thanh toán nhanh qua Internet Banking hoặc quét mã QR.
-                  </span>
-                </div>
+                <span className="font-semibold text-sm text-gray-800">
+                  Chuyển khoản / QR
+                </span>
               </label>
             </div>
           </div>
-          {/* Confirm button (Giữ nguyên) */}
+
+          {/* Submit Button */}
           <div className="pt-4 border-t border-black/30">
             <button
               onClick={handleSubmit}

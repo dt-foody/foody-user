@@ -77,4 +77,12 @@ export const orderService = {
       body: JSON.stringify(data),
     });
   },
+
+  /** 🚚 Tính phí vận chuyển từ toạ độ */
+  async getShippingFee(lat: number, lng: number): Promise<{ distance: number; shippingFee: number }> {
+    // Gọi API Backend: GET /v1/orders/shipping-fee?lat=...&lng=...
+    return apiFetch(`/orders/shipping-fee?lat=${lat}&lng=${lng}`, {
+      method: "GET",
+    });
+  },
 };

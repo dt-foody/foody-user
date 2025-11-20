@@ -14,8 +14,9 @@ import {
 } from "@/types";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 
-export const SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v8"; // Đổi key để reset cache cũ
+// Giá mặc định nếu chưa có địa chỉ (Fallback)
+const DEFAULT_SHIPPING_FEE = 15000;
+const CART_STORAGE_KEY = "foody_cart_v10"; // Tăng version để clear cache cũ
 const PUBLIC_COUPON_TTL_MS = 30_000;
 
 // === Types ===
@@ -32,25 +33,24 @@ export interface EligibilityStatus {
 // 1. Phần dữ liệu cho Product
 type ProductCartLine = {
   itemType: "Product";
-  item: CreateOrderItem_ItemSnapshot; // Snapshot của Product
-  options: Record<string, CreateOrderItem_Option[]>; // Giữ cấu trúc Record
+  item: CreateOrderItem_ItemSnapshot;
+  options: Record<string, CreateOrderItem_Option[]>;
   comboSelections: null;
 };
 
 // 2. Phần dữ liệu cho Combo
 type ComboCartLine = {
   itemType: "Combo";
-  item: CreateOrderItem_ItemSnapshot; // Snapshot của Combo
+  item: CreateOrderItem_ItemSnapshot;
   options: null;
-  comboSelections: CreateOrderItem_ComboSelection[]; // Mảng các lựa chọn
+  comboSelections: CreateOrderItem_ComboSelection[];
 };
 
 export type CartLine = (ProductCartLine | ComboCartLine) & {
-  cartId: string; // ID duy nhất cho biến thể (variant)
+  cartId: string;
   quantity: number;
-  totalPrice: number; // Giá CUỐI CÙNG của 1 item (đã tính options/combo)
+  totalPrice: number;
   note: string;
-  // Metadata để hiển thị UI (lấy từ product/combo gốc)
   _image?: string;
   _categoryIds?: string[];
 };
@@ -71,17 +71,16 @@ interface CartState {
   currentUser: UserData;
   deliveryOption: DeliveryOption;
   scheduledDate: string;
+
+  // --- STATE MỚI CHO SHIP ---
+  shippingFee: number;
+  shippingDistance: number;
 }
 
 interface CartActions {
-  // NÂNG CẤP: Phân tách rõ ràng
   startProductConfiguration: (product: Product) => void;
   startComboConfiguration: (combo: Combo) => void;
-
-  // NÂNG CẤP: Một hàm `addItemToCart` duy nhất
-  // Nhận vào một item đã được modal cấu hình (chưa có quantity & cartId)
   addItemToCart: (itemData: Omit<CartLine, "cartId" | "quantity">) => void;
-
   updateQuantity: (cartId: string, amount: number) => void;
   clearCart: () => void;
   applyPublicCoupon: (coupon: Coupon) => void;
@@ -90,16 +89,16 @@ interface CartActions {
   ) => Promise<{ success: boolean; message: string }>;
   removeCoupon: (id: string) => void;
   setShowCart: (show: boolean) => void;
-
-  // NÂNG CẤP: Action cho 2 modal
   setProductForOptions: (product: Product | null) => void;
   setComboForSelection: (combo: Combo | null) => void;
-
   fetchPublicCoupons: () => Promise<void>;
   updateItemNote: (cartId: string, note: string) => void;
   removeItem: (cartId: string) => void;
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
+
+  // --- ACTION MỚI CHO SHIP ---
+  setShippingFee: (fee: number, distance?: number) => void;
 }
 
 const buildVariantKey = (
@@ -116,17 +115,16 @@ const buildVariantKey = (
           .map((opt) => opt.name)
           .sort()
           .join(",");
-        return `${key}:${selectedNames}`; // "Size:L", "Topping:Pudding,Trân châu"
+        return `${key}:${selectedNames}`;
       })
       .join("|");
-    return `${baseId}::${optionSig}`; // "prod_123::Size:L|Topping:Pudding,Trân châu"
+    return `${baseId}::${optionSig}`;
   }
 
   if (itemData.itemType === "Combo") {
     const selections = itemData.comboSelections || [];
     const selectionSig = selections
       .map((sel) => {
-        // Tuần tự hóa options CỦA SẢN PHẨM CON (nếu có)
         const subOptions = sel.options || {};
         const subOptionKeys = Object.keys(subOptions).sort();
         const subOptionSig = subOptionKeys
@@ -138,16 +136,14 @@ const buildVariantKey = (
             return `${key}:${names}`;
           })
           .join("|");
-
-        // Gộp: slotName:productId[subOptions]
         return `${sel.slotName}:${sel.product.id}[${subOptionSig}]`;
       })
       .sort()
       .join("|");
-    return `${baseId}::${selectionSig}`; // "combo_456::Đồ uống:prod_coca[Size:L]|Món ăn:prod_bap[]"
+    return `${baseId}::${selectionSig}`;
   }
 
-  return baseId; // Fallback
+  return baseId;
 };
 
 /** ===== Initial state ===== */
@@ -163,13 +159,16 @@ const initialState: Omit<CartState, "currentUser"> = {
   comboForSelection: null,
   deliveryOption: "immediate",
   scheduledDate: "",
+
+  // Khởi tạo phí ship mặc định
+  shippingFee: DEFAULT_SHIPPING_FEE,
+  shippingDistance: 0,
 };
 
 export const useCartStore = create<CartState & CartActions>()(
   persist(
     (set, get) => ({
       ...initialState,
-      // Dữ liệu User không nên persist cùng giỏ hàng
       currentUser: { isNew: true, age: 18 },
 
       startProductConfiguration: (product) => {
@@ -189,38 +188,30 @@ export const useCartStore = create<CartState & CartActions>()(
       },
 
       addItemToCart: (itemData) => {
-        // 1. Tạo variant key (KHÔNG CÓ NOTE)
         const cartId = buildVariantKey(itemData);
-
         set((state) => {
           const exists = state.cartItems.find((i) => i.cartId === cartId);
-
           if (exists) {
-            // 2. Nếu Đã có: Chỉ tăng số lượng
-            // (Lưu ý: note của item mới sẽ bị bỏ qua, giữ note của item cũ)
             return {
               cartItems: state.cartItems.map((i) =>
                 i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i
               ),
-              productForOptions: null, // Đóng modal
-              comboForSelection: null, // Đóng modal
-              showCart: false, // Mở giỏ hàng
+              productForOptions: null,
+              comboForSelection: null,
+              showCart: false,
             };
           }
-
-          // 3. Nếu Chưa có: Thêm item mới vào giỏ
           const newLine: any = {
             ...itemData,
             cartId: cartId,
             quantity: 1,
-            note: itemData.note || "", // Đảm bảo note là string
+            note: itemData.note || "",
           };
-
           return {
             cartItems: [...state.cartItems, newLine],
-            productForOptions: null, // Đóng modal
-            comboForSelection: null, // Đóng modal
-            showCart: false, // Mở giỏ hàng
+            productForOptions: null,
+            comboForSelection: null,
+            showCart: false,
           };
         });
       },
@@ -231,7 +222,7 @@ export const useCartStore = create<CartState & CartActions>()(
             .map((i) =>
               i.cartId === cartId ? { ...i, quantity: i.quantity + amount } : i
             )
-            .filter((i) => i.quantity > 0), // Xóa nếu quantity <= 0
+            .filter((i) => i.quantity > 0),
         }));
       },
 
@@ -257,7 +248,10 @@ export const useCartStore = create<CartState & CartActions>()(
       setDeliveryOption: (option) => set({ deliveryOption: option }),
       setScheduledDate: (date) => set({ scheduledDate: date }),
 
-      // ... (Các hàm coupon và fetchPublicCoupons giữ nguyên từ code của bạn) ...
+      // --- IMPLEMENT ACTION MỚI ---
+      setShippingFee: (fee, distance = 0) => {
+        set({ shippingFee: fee, shippingDistance: distance });
+      },
 
       applyPublicCoupon: (coupon) => {
         const current = get().appliedCoupons;
@@ -287,12 +281,7 @@ export const useCartStore = create<CartState & CartActions>()(
 
       applyPrivateCoupon: async (code: string) => {
         set({ couponStatus: { isLoading: true, error: null } });
-
         const { cartItems, appliedCoupons } = get();
-        const subtotal = cartItems.reduce(
-          (sum, i) => sum + i.totalPrice * i.quantity,
-          0
-        );
 
         if (
           appliedCoupons.some(
@@ -354,17 +343,17 @@ export const useCartStore = create<CartState & CartActions>()(
     {
       name: CART_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      // Chỉ persist giỏ hàng
       partialize: (state) => ({
         cartItems: state.cartItems,
         appliedCoupons: state.appliedCoupons,
+        // Persist phí ship để tránh flash giá khi reload
+        shippingFee: state.shippingFee,
       }),
     }
   )
 );
 
-/** ===== Public hook (Không đổi) ===== */
-// Hook này của bạn đã tốt (tính toán memoized), giữ nguyên
+/** ===== Public hook ===== */
 export function useCart() {
   const {
     cartItems,
@@ -373,6 +362,9 @@ export function useCart() {
     publicCoupons,
     deliveryOption,
     scheduledDate,
+    // Lấy state ship ra
+    shippingFee,
+    shippingDistance,
     ...actionsAndState
   } = useCartStore((s) => s);
 
@@ -387,7 +379,7 @@ export function useCart() {
   );
 
   const publicCouponStatuses = useMemo(() => {
-    // @ts-ignore (Giả định cartItems có thể dùng cho checkCouponEligibility)
+    // @ts-ignore
     const cartData = { items: cartItems, subtotal };
     return publicCoupons.map((coupon) => {
       // @ts-ignore
@@ -403,7 +395,8 @@ export function useCart() {
 
     const freeship = appliedCoupons.find((c) => c.type === "freeship");
     if (freeship)
-      totalShippingDiscount = Math.min(SHIPPING_FEE, freeship.value);
+      // Logic FreeShip: Tối đa bằng phí ship hiện tại
+      totalShippingDiscount = Math.min(shippingFee, freeship.value);
 
     const discountCoupons = appliedCoupons
       .filter((c) => c.type === "discount_code")
@@ -426,9 +419,10 @@ export function useCart() {
       itemDiscount: totalItemDiscount,
       shippingDiscount: totalShippingDiscount,
     };
-  }, [subtotal, appliedCoupons]);
+  }, [subtotal, appliedCoupons, shippingFee]); // Thêm shippingFee vào dependencies
 
-  const finalShippingFee = Math.max(0, SHIPPING_FEE - shippingDiscount);
+  // Tính tổng tiền cuối cùng dựa trên state shippingFee
+  const finalShippingFee = Math.max(0, shippingFee - shippingDiscount);
   const finalTotal = Math.max(0, subtotal - itemDiscount + finalShippingFee);
 
   return {
@@ -446,6 +440,9 @@ export function useCart() {
     finalTotal,
     deliveryOption,
     scheduledDate,
+    // Expose biến ship để dùng ở UI
+    originalShippingFee: shippingFee,
+    shippingDistance,
   };
 }
 
