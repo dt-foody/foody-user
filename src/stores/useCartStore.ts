@@ -4,6 +4,7 @@ import { useMemo, useEffect, useRef } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
+import { orderService } from "@/services/order.service"; // Đảm bảo import đúng đường dẫn service
 import {
   Coupon,
   Product,
@@ -13,21 +14,42 @@ import {
   CreateOrderItem_ItemSnapshot,
 } from "@/types";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
+import { toast } from "sonner";
 
-// Giá mặc định nếu chưa có địa chỉ (Fallback)
+// --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v10"; // Tăng version để clear cache cũ
+const CART_STORAGE_KEY = "foody_cart_v11"; // Tăng version để clear cache cũ
 const PUBLIC_COUPON_TTL_MS = 30_000;
 
-// === Types ===
 export type DeliveryOption = "immediate" | "scheduled";
+
 interface UserData {
   isNew: boolean;
   age: number | null;
 }
+
 export interface EligibilityStatus {
   isEligible: boolean;
   reason: string | null;
+}
+
+// Type cho Address (dựa trên schema User/Customer của bạn)
+export interface Address {
+  _id?: string;
+  id?: string;
+  label: string; // Nhà riêng, Công ty...
+  recipientName: string;
+  recipientPhone: string;
+  street: string;
+  ward: string;
+  district: string;
+  city: string;
+  fullAddress: string;
+  isDefault: boolean;
+  location?: {
+    type: string;
+    coordinates: [number, number]; // [lng, lat]
+  };
 }
 
 // 1. Phần dữ liệu cho Product
@@ -72,9 +94,11 @@ interface CartState {
   deliveryOption: DeliveryOption;
   scheduledDate: string;
 
-  // --- STATE MỚI CHO SHIP ---
+  // --- STATE MỚI CHO SHIP & ADDRESS ---
   shippingFee: number;
   shippingDistance: number;
+  selectedAddress: Address | null; // Địa chỉ đang được chọn
+  isCalculatingShip: boolean; // Trạng thái đang tính phí ship
 }
 
 interface CartActions {
@@ -97,8 +121,10 @@ interface CartActions {
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
 
-  // --- ACTION MỚI CHO SHIP ---
+  // --- ACTION MỚI ---
   setShippingFee: (fee: number, distance?: number) => void;
+  setSelectedAddress: (address: Address | null) => Promise<void>;
+  syncUserAddress: (user: any) => void; // Tự động chọn địa chỉ mặc định khi user login
 }
 
 const buildVariantKey = (
@@ -160,9 +186,11 @@ const initialState: Omit<CartState, "currentUser"> = {
   deliveryOption: "immediate",
   scheduledDate: "",
 
-  // Khởi tạo phí ship mặc định
+  // Khởi tạo phí ship & address
   shippingFee: DEFAULT_SHIPPING_FEE,
   shippingDistance: 0,
+  selectedAddress: null,
+  isCalculatingShip: false,
 };
 
 export const useCartStore = create<CartState & CartActions>()(
@@ -248,9 +276,79 @@ export const useCartStore = create<CartState & CartActions>()(
       setDeliveryOption: (option) => set({ deliveryOption: option }),
       setScheduledDate: (date) => set({ scheduledDate: date }),
 
-      // --- IMPLEMENT ACTION MỚI ---
       setShippingFee: (fee, distance = 0) => {
         set({ shippingFee: fee, shippingDistance: distance });
+      },
+
+      // --- LOGIC MỚI: SET ADDRESS & AUTO CALCULATE SHIP ---
+      setSelectedAddress: async (address) => {
+        set({ selectedAddress: address });
+
+        if (!address) {
+          set({ shippingFee: DEFAULT_SHIPPING_FEE, shippingDistance: 0 });
+          return;
+        }
+
+        // Nếu có tọa độ -> Gọi API tính ship
+        if (address.location?.coordinates) {
+          const [lng, lat] = address.location.coordinates;
+          try {
+            set({ isCalculatingShip: true });
+            const res = await orderService.getShippingFee(lat, lng);
+            set({
+              shippingFee: res.shippingFee,
+              shippingDistance: res.distance,
+              isCalculatingShip: false,
+            });
+          } catch (error) {
+            console.error("Failed to calculate shipping:", error);
+            toast.error("Không thể tính phí vận chuyển cho địa chỉ này");
+            // Fallback về phí mặc định
+            set({
+              isCalculatingShip: false,
+              shippingFee: DEFAULT_SHIPPING_FEE,
+              shippingDistance: 0,
+            });
+          }
+        } else {
+          // Địa chỉ cũ không có tọa độ
+          set({ shippingFee: DEFAULT_SHIPPING_FEE, shippingDistance: 0 });
+        }
+      },
+
+      syncUserAddress: (user) => {
+        const { selectedAddress } = get();
+
+        // Nếu user có danh sách địa chỉ
+        if (user && user.addresses && user.addresses.length > 0) {
+          // Tìm địa chỉ mặc định
+          const defaultAddr =
+            user.addresses.find((a: any) => a.isDefault) || user.addresses[0];
+
+          // 1. Nếu chưa chọn địa chỉ nào -> Lấy mặc định
+          if (!selectedAddress) {
+            get().setSelectedAddress(defaultAddr);
+            return;
+          }
+
+          // 2. Nếu đã chọn, kiểm tra xem địa chỉ đó có còn thuộc user này không (tránh case switch account)
+          const exists = user.addresses.find(
+            (a: any) =>
+              a._id === selectedAddress._id || a.id === selectedAddress.id
+          );
+          if (!exists) {
+            get().setSelectedAddress(defaultAddr);
+          } else {
+            // Nếu tồn tại, update lại thông tin mới nhất (vd: user vừa sửa tên/sđt địa chỉ đó)
+            // Lưu ý: Nếu tọa độ không đổi thì không cần tính lại ship, nhưng ở đây gọi lại cho chắc hoặc chỉ update state
+            if (JSON.stringify(exists) !== JSON.stringify(selectedAddress)) {
+              get().setSelectedAddress(exists);
+            }
+          }
+        } else {
+          // User không có địa chỉ nào -> Reset
+          set({ selectedAddress: null, shippingFee: DEFAULT_SHIPPING_FEE });
+        }
       },
 
       applyPublicCoupon: (coupon) => {
@@ -281,7 +379,7 @@ export const useCartStore = create<CartState & CartActions>()(
 
       applyPrivateCoupon: async (code: string) => {
         set({ couponStatus: { isLoading: true, error: null } });
-        const { cartItems, appliedCoupons } = get();
+        const { appliedCoupons } = get();
 
         if (
           appliedCoupons.some(
@@ -346,8 +444,9 @@ export const useCartStore = create<CartState & CartActions>()(
       partialize: (state) => ({
         cartItems: state.cartItems,
         appliedCoupons: state.appliedCoupons,
-        // Persist phí ship để tránh flash giá khi reload
         shippingFee: state.shippingFee,
+        selectedAddress: state.selectedAddress, // Persist địa chỉ
+        shippingDistance: state.shippingDistance,
       }),
     }
   )
@@ -362,9 +461,10 @@ export function useCart() {
     publicCoupons,
     deliveryOption,
     scheduledDate,
-    // Lấy state ship ra
     shippingFee,
     shippingDistance,
+    selectedAddress,
+    isCalculatingShip,
     ...actionsAndState
   } = useCartStore((s) => s);
 
@@ -394,9 +494,7 @@ export function useCart() {
     let currentSubtotal = subtotal;
 
     const freeship = appliedCoupons.find((c) => c.type === "freeship");
-    if (freeship)
-      // Logic FreeShip: Tối đa bằng phí ship hiện tại
-      totalShippingDiscount = Math.min(shippingFee, freeship.value);
+    if (freeship) totalShippingDiscount = Math.min(shippingFee, freeship.value);
 
     const discountCoupons = appliedCoupons
       .filter((c) => c.type === "discount_code")
@@ -419,9 +517,8 @@ export function useCart() {
       itemDiscount: totalItemDiscount,
       shippingDiscount: totalShippingDiscount,
     };
-  }, [subtotal, appliedCoupons, shippingFee]); // Thêm shippingFee vào dependencies
+  }, [subtotal, appliedCoupons, shippingFee]);
 
-  // Tính tổng tiền cuối cùng dựa trên state shippingFee
   const finalShippingFee = Math.max(0, shippingFee - shippingDiscount);
   const finalTotal = Math.max(0, subtotal - itemDiscount + finalShippingFee);
 
@@ -440,9 +537,10 @@ export function useCart() {
     finalTotal,
     deliveryOption,
     scheduledDate,
-    // Expose biến ship để dùng ở UI
     originalShippingFee: shippingFee,
     shippingDistance,
+    selectedAddress,
+    isCalculatingShip,
   };
 }
 

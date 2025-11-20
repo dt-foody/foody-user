@@ -1,11 +1,12 @@
 "use client";
 
-import React, { FC, useState } from "react";
+import React, { FC, useState, useEffect } from "react";
 import { Alex_Brush, Bahianita } from "next/font/google";
 import { useRouter } from "next/navigation";
 import NotifyDropdown from "./NotifyDropdown";
 import AvatarDropdown from "./AvatarDropdown";
 import LoginButton from "./LoginButton";
+import AddressDropdown from "./AddressDropdown"; // Import mới
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -19,6 +20,7 @@ const bahianita = Bahianita({
   weight: "400",
   subsets: ["latin"],
 });
+
 const NAV_ITEMS = [
   {
     id: "homepage",
@@ -36,19 +38,26 @@ const NAV_ITEMS = [
 ];
 
 const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
-  const { cartCount, setShowCart } = useCart();
-  const { user } = useAuthStore();
+  const { cartCount, setShowCart, syncUserAddress } = useCart();
+  const { user, me } = useAuthStore();
   const [activeTab, setActiveTab] = useState("menu");
   const router = useRouter();
 
+  // EFFECT: Tự động đồng bộ địa chỉ mặc định khi user đăng nhập
+  useEffect(() => {
+    if (me) {
+      syncUserAddress(me);
+    }
+  }, [me, syncUserAddress]);
+
   return (
-    <header
-      className={`MainNav2 relative z-20 w-full bg-white`}
-    >
+    <header className={`MainNav2 relative z-20 w-full bg-white`}>
       <div className="h-16 flex justify-between items-center text-[1.7rem]">
         {/* LEFT ACTIONS: Logo + Curved Tabs */}
         <div className="flex items-center gap-6 h-full">
-          <nav className={`hidden md:block h-full flex items-center ${bahianita.className}`}>
+          <nav
+            className={`hidden md:block h-full flex items-center ${bahianita.className}`}
+          >
             <ul className="flex items-stretch gap-0 list-none p-0 m-0 h-full">
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.id;
@@ -112,7 +121,14 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
         </div>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center flex-1 justify-end space-x-2 text-primary-600 h-full border-b-2 border-black pr-3">
+        <div className="flex items-center flex-1 justify-end space-x-4 text-primary-600 h-full border-b-2 border-black pr-3">
+          {/* ADDRESS DROPDOWN (Chỉ hiện khi đã login hoặc tùy logic của bạn) */}
+          {user && (
+            <div className="hidden lg:block">
+              <AddressDropdown />
+            </div>
+          )}
+
           <button
             onClick={() => setShowCart(true)}
             className="relative rounded-full flex items-center justify-center transition-colors"
