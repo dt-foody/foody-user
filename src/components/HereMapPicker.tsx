@@ -33,7 +33,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  
+
   // State hiển thị
   const [address, setAddress] = useState(initialAddress);
   const [coordinates, setCoordinates] = useState({
@@ -51,7 +51,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
   const markerInstanceRef = useRef<any>(null);
   const platformRef = useRef<any>(null);
 
-  // 1. Cleanup map khi unmount (QUAN TRỌNG: Tránh lỗi map khởi tạo 2 lần)
+  // 1. Cleanup map khi unmount
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
@@ -67,7 +67,12 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
 
   // 2. Khởi tạo Platform khi script loaded
   useEffect(() => {
-    if (isMapLoaded && HERE_API_KEY && (window as any).H && !platformRef.current) {
+    if (
+      isMapLoaded &&
+      HERE_API_KEY &&
+      (window as any).H &&
+      !platformRef.current
+    ) {
       try {
         platformRef.current = new (window as any).H.service.Platform({
           apikey: HERE_API_KEY,
@@ -104,19 +109,38 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     );
   };
 
+  // --- ĐÃ SỬA ĐỔI: Xử lý chọn địa điểm ---
   const handleSelectSuggestion = (item: any) => {
     const { position, address: addrObj } = item;
-    const lat = position.lat;
-    const lng = position.lng;
+    // FIX: Ép kiểu Number để đảm bảo tọa độ chính xác
+    const lat = Number(position.lat);
+    const lng = Number(position.lng);
     const label = addrObj.label;
 
-    setSearchQuery(""); 
+    setSearchQuery("");
     setSuggestions([]);
 
+    // 1. Cập nhật state hiển thị & dữ liệu gửi ra ngoài
+    setAddress(label);
+    setCoordinates({ lat, lng });
+    onLocationSelect({ lat, lng, address: label });
+
+    // 2. Cập nhật Map & Marker
     if (mapInstanceRef.current && markerInstanceRef.current) {
-      updateMapLocation(lat, lng, mapInstanceRef.current, markerInstanceRef.current);
-      setAddress(label);
-      onLocationSelect({ lat, lng, address: label });
+      const map = mapInstanceRef.current;
+      const marker = markerInstanceRef.current;
+
+      // Move Marker
+      marker.setGeometry({ lat, lng });
+
+      // FIX: Dùng setLookAtData thay cho setCenter + setZoom để animation mượt hơn và chắc chắn map di chuyển
+      map.getViewModel().setLookAtData(
+        {
+          position: { lat, lng },
+          zoom: 16,
+        },
+        true
+      );
     }
   };
 
@@ -135,7 +159,11 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
             onLocationSelect({ lat, lng, address: addressLabel });
           } else {
             setAddress("Không tìm thấy địa chỉ chính xác");
-            onLocationSelect({ lat, lng, address: "Không tìm thấy địa chỉ chính xác" });
+            onLocationSelect({
+              lat,
+              lng,
+              address: "Không tìm thấy địa chỉ chính xác",
+            });
           }
         },
         (error: any) => console.error("Error fetching address:", error)
@@ -148,10 +176,16 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     (lat: number, lng: number, map: any, marker: any) => {
       setCoordinates({ lat, lng });
       marker.setGeometry({ lat, lng });
-      map.setCenter({ lat, lng }, true);
-      map.setZoom(16, true);
-      // Chỉ gọi reverseGeocode khi cần thiết (ví dụ drag drop)
-      // Ở đây gọi luôn để đảm bảo đồng bộ address hiển thị
+
+      // Dùng setLookAtData ở đây luôn cho đồng bộ
+      map.getViewModel().setLookAtData(
+        {
+          position: { lat, lng },
+          zoom: 16,
+        },
+        true
+      );
+
       reverseGeocode(lat, lng);
     },
     [reverseGeocode]
@@ -159,8 +193,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
 
   const initMap = useCallback(() => {
     if (!mapRef.current || !(window as any).H || !platformRef.current) return;
-    
-    // Nếu map đã tồn tại, không khởi tạo lại
+
     if (mapInstanceRef.current) return;
 
     try {
@@ -169,36 +202,31 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
       const defaultLayers = platform.createDefaultLayers();
       const initialCenter = { lat: initialLat, lng: initialLng };
 
-      // FIX QUAN TRỌNG: Chọn layer hợp lệ. Nếu vector không có, dùng raster.
-      // Tuyệt đối không truyền null vào tham số thứ 2 của H.Map
-      const baseLayer = defaultLayers.vector?.normal?.map || defaultLayers.raster?.normal?.map;
+      const baseLayer =
+        defaultLayers.vector?.normal?.map || defaultLayers.raster?.normal?.map;
 
       if (!baseLayer) {
         console.error("HERE Maps: Could not find a valid base layer.");
         return;
       }
 
-      // Khởi tạo Map với layer đã chọn
       const map = new H.Map(mapRef.current, baseLayer, {
         zoom: 14,
         center: initialCenter,
         pixelRatio: window.devicePixelRatio || 1,
       });
 
-      // UI & Behaviors
       const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
       H.ui.UI.createDefault(map, defaultLayers);
 
-      // Marker
       const marker = new H.map.Marker(initialCenter, { volatility: true });
       marker.draggable = true;
       map.addObject(marker);
 
-      // Lưu refs
       mapInstanceRef.current = map;
       markerInstanceRef.current = marker;
 
-      // Events
+      // Events: Drag/Click -> updateMapLocation
       marker.addEventListener("dragend", (evt: any) => {
         const coord = map.screenToGeo(
           evt.currentPointer.viewportX,
@@ -215,24 +243,34 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
         updateMapLocation(coord.lat, coord.lng, map, marker);
       });
 
-      // Resize handler
       window.addEventListener("resize", () => map.getViewPort().resize());
-      
-      // Set vị trí ban đầu (update text address)
-      // Dùng timeout nhỏ để đảm bảo map render xong
-      setTimeout(() => {
-          updateMapLocation(initialLat, initialLng, map, marker);
-      }, 100);
 
+      setTimeout(() => {
+        if (!initialAddress) {
+          // Nếu chưa có address, reverse geocode vị trí ban đầu
+          updateMapLocation(initialLat, initialLng, map, marker);
+        } else {
+          // Nếu đã có, chỉ set view
+          map.getViewModel().setLookAtData({
+            position: { lat: initialLat, lng: initialLng },
+            zoom: 14, // Giữ zoom ban đầu thấp hơn chút để nhìn bao quát
+          });
+          marker.setGeometry({ lat: initialLat, lng: initialLng });
+        }
+      }, 100);
     } catch (error) {
       console.error("Error initializing map:", error);
       toast.error("Có lỗi xảy ra khi tải bản đồ.");
     }
-  }, [initialLat, initialLng, updateMapLocation]);
+  }, [initialLat, initialLng, initialAddress, updateMapLocation]);
 
-  // Hook trigger initMap
   useEffect(() => {
-    if (isMapLoaded && platformRef.current && mapRef.current && !mapInstanceRef.current) {
+    if (
+      isMapLoaded &&
+      platformRef.current &&
+      mapRef.current &&
+      !mapInstanceRef.current
+    ) {
       initMap();
     }
   }, [isMapLoaded, initMap]);
@@ -243,23 +281,30 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
       mapInstanceRef.current &&
       markerInstanceRef.current &&
       (Math.abs(coordinates.lat - initialLat) > 0.0001 ||
-       Math.abs(coordinates.lng - initialLng) > 0.0001)
+        Math.abs(coordinates.lng - initialLng) > 0.0001)
     ) {
-      updateMapLocation(
-        initialLat,
-        initialLng,
-        mapInstanceRef.current,
-        markerInstanceRef.current
+      const map = mapInstanceRef.current;
+      const marker = markerInstanceRef.current;
+
+      // Update internal state
+      setCoordinates({ lat: initialLat, lng: initialLng });
+      setAddress(initialAddress);
+
+      // Update UI
+      marker.setGeometry({ lat: initialLat, lng: initialLng });
+      map.getViewModel().setLookAtData(
+        {
+          position: { lat: initialLat, lng: initialLng },
+          zoom: 16,
+        },
+        true
       );
-    } else if (!mapInstanceRef.current) {
-       setCoordinates({ lat: initialLat, lng: initialLng });
-       setAddress(initialAddress);
     }
-  }, [initialLat, initialLng, initialAddress, updateMapLocation]);
+  }, [initialLat, initialLng, initialAddress]);
 
   return (
     <div className={`w-full flex flex-col gap-3 ${className}`}>
-      {/* Load Scripts */}
+      {/* Scripts */}
       {!isMapLoaded && (
         <>
           <Script
@@ -277,16 +322,22 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
               Promise.all([
                 loadScript("https://js.api.here.com/v3/3.2/mapsjs-service.js"),
                 loadScript("https://js.api.here.com/v3/3.2/mapsjs-ui.js"),
-                loadScript("https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"),
+                loadScript(
+                  "https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"
+                ),
               ])
                 .then(() => setIsMapLoaded(true))
                 .catch((err) => {
-                    console.error(err);
-                    toast.error("Không thể tải script bản đồ.");
+                  console.error(err);
+                  toast.error("Không thể tải script bản đồ.");
                 });
             }}
           />
-          <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+          <link
+            rel="stylesheet"
+            type="text/css"
+            href="https://js.api.here.com/v3/3.2/mapsjs-ui.css"
+          />
         </>
       )}
 
@@ -304,7 +355,10 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
           <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
             {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(""); setSuggestions([]); }}
+                onClick={() => {
+                  setSearchQuery("");
+                  setSuggestions([]);
+                }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full"
               >
                 <X size={16} />
@@ -315,7 +369,11 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
               disabled={isSearching}
               className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md"
             >
-              {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+              {isSearching ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Search size={18} />
+              )}
             </button>
           </div>
         </div>
@@ -330,7 +388,9 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
                 className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 flex items-start gap-3"
               >
                 <MapPin className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.address.label}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {item.address.label}
+                </p>
               </div>
             ))}
           </div>
