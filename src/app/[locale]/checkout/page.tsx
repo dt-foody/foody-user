@@ -10,7 +10,7 @@ import {
   Clock,
   Loader2,
   MessageSquare,
-  MapPin, // Import MapPin
+  MapPin,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -66,30 +66,49 @@ export default function CheckoutRetro() {
     appliedCoupons,
     removeCoupon,
     clearCart,
+    // Delivery logic
     deliveryOption,
     setDeliveryOption,
     scheduledDate,
     setScheduledDate,
+    scheduledTime, // [NEW] Dùng state từ store
+    setScheduledTime, // [NEW] Action set state từ store
+    // Coupon & Fee
     applyPrivateCoupon,
     couponStatus,
     originalShippingFee,
     shippingDistance,
-    selectedAddress, // Lấy địa chỉ từ store
-    isCalculatingShip, // Lấy trạng thái loading ship
+    selectedAddress,
+    isCalculatingShip,
+    recalculateShippingFee,
   } = useCart();
 
   const router = useRouter();
-  const { me } = useAuthStore(); // Dùng me để check login nếu cần
+  const { me } = useAuthStore();
 
   const [voucherInput, setVoucherInput] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+
+  // scheduledTime đã được chuyển vào store, bỏ state cục bộ
+
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // EFFECT: Fill thông tin người nhận từ selectedAddress (nếu có)
+  // [EFFECT 1] Tự động tính lại ship khi:
+  // - Người dùng đổi địa chỉ (selectedAddress thay đổi - đã xử lý trong setSelectedAddress, nhưng check lại ở đây cho chắc)
+  // - Người dùng đổi option giao hàng (Immediate <-> Scheduled)
+  // - Người dùng đổi ngày/giờ hẹn
+  useEffect(() => {
+    // Debounce nhẹ nếu cần, nhưng ở đây gọi luôn cũng được
+    const timer = setTimeout(() => {
+      recalculateShippingFee();
+    }, 500); // Đợi 500ms sau khi user chọn xong giờ
+    return () => clearTimeout(timer);
+  }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
+
+  // [EFFECT 2] Fill thông tin người nhận
   useEffect(() => {
     if (selectedAddress) {
       setName(selectedAddress.recipientName || "");
@@ -102,10 +121,12 @@ export default function CheckoutRetro() {
   const getMinDate = () => new Date().toISOString().split("T")[0];
   const formatDeliveryText = () => {
     if (deliveryOption === "immediate") return "Giao hàng nhanh chóng";
-    if (scheduledDate)
-      return `Hẹn giao ngày ${new Date(scheduledDate).toLocaleDateString(
-        "vi-VN"
-      )}`;
+    if (scheduledDate) {
+      const timeStr = scheduledTime ? `${scheduledTime} ` : "";
+      return `Hẹn giao ${timeStr}ngày ${new Date(
+        scheduledDate
+      ).toLocaleDateString("vi-VN")}`;
+    }
     return "Chưa chọn ngày giao";
   };
 
@@ -130,10 +151,8 @@ export default function CheckoutRetro() {
       return;
     }
 
-    // Kiểm tra quan trọng: Phải có selectedAddress
     if (!selectedAddress) {
       toast.error("Vui lòng chọn địa chỉ giao hàng (ở menu trên cùng)!");
-      // Scroll to top để user thấy dropdown
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -143,8 +162,10 @@ export default function CheckoutRetro() {
         toast.error("Vui lòng chọn thời gian giao hàng!");
         return;
       }
-      if (new Date(`${scheduledDate}T${scheduledTime}`) < new Date()) {
-        toast.warning("Thời gian phải ở tương lai!");
+      // Validate quá khứ
+      const selectedDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+      if (selectedDateTime < new Date()) {
+        toast.warning("Thời gian hẹn phải ở tương lai!");
         return;
       }
     }
@@ -154,10 +175,9 @@ export default function CheckoutRetro() {
       return;
     }
 
-    // Payload lấy từ selectedAddress
     const shippingAddress = {
       label: selectedAddress.label,
-      recipientName: name, // Cho phép user override tên người nhận ở form
+      recipientName: name,
       recipientPhone: phone,
       street: selectedAddress.street,
       district: selectedAddress.district,
@@ -189,6 +209,9 @@ export default function CheckoutRetro() {
       },
       shipping: { address: shippingAddress, location: locationData },
       note: note.trim(),
+      // [UPDATE] Gửi thêm thông tin thời gian giao hàng nếu cần thiết cho việc lưu Order
+      // Backend hiện tại có thể chưa lưu field này vào Order Model,
+      // nhưng việc tính ship đã được xử lý trước đó qua API getShippingFee.
     };
 
     try {
@@ -224,7 +247,8 @@ export default function CheckoutRetro() {
               ← Quay lại thực đơn
             </button>
           </div>
-          {/* Table Items... (Giữ nguyên code render table) */}
+
+          {/* LIST ITEM TABLE (Giữ nguyên) */}
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-black/50">
@@ -327,16 +351,21 @@ export default function CheckoutRetro() {
             <div className="flex justify-between text-gray-700">
               <div className="flex items-center gap-2">
                 <span>Phí vận chuyển</span>
-                {isCalculatingShip && (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                )}
-                {!isCalculatingShip && shippingDistance > 0 && (
-                  <span className="text-xs bg-gray-100 px-1 rounded">
+
+                {shippingDistance > 0 && (
+                  <span className="text-xs px-1 rounded">
                     ({shippingDistance} km)
                   </span>
                 )}
               </div>
-              <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
+
+              {!isCalculatingShip && (
+                <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
+              )}
+
+              {isCalculatingShip && (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              )}
             </div>
             {itemDiscount > 0 && (
               <div className="flex justify-between text-red-600">
@@ -361,7 +390,7 @@ export default function CheckoutRetro() {
 
         {/* RIGHT: Info */}
         <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4 h-fit">
-          {/* ADDRESS CARD (MỚI) */}
+          {/* ADDRESS CARD */}
           <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-sm flex items-center gap-1.5 text-primary-700">
@@ -382,12 +411,6 @@ export default function CheckoutRetro() {
                 <p className="text-xs text-gray-600 mt-0.5">
                   {selectedAddress.fullAddress}
                 </p>
-                {isCalculatingShip && (
-                  <p className="text-xs text-orange-500 mt-1 italic flex gap-1">
-                    <Loader2 size={12} className="animate-spin" /> Đang tính phí
-                    ship...
-                  </p>
-                )}
               </div>
             ) : (
               <p className="text-sm text-red-500 font-medium">
@@ -424,7 +447,7 @@ export default function CheckoutRetro() {
               <Clock size={16} /> Thời gian giao
             </div>
             <div className="space-y-2">
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   checked={deliveryOption === "immediate"}
@@ -432,7 +455,7 @@ export default function CheckoutRetro() {
                 />{" "}
                 Giao ngay
               </label>
-              <label className="flex items-start gap-2">
+              <label className="flex items-start gap-2 cursor-pointer">
                 <input
                   type="radio"
                   checked={deliveryOption === "scheduled"}

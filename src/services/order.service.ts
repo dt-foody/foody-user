@@ -79,9 +79,18 @@ export const orderService = {
   },
 
   /** 🚚 Tính phí vận chuyển từ toạ độ */
-  async getShippingFee(lat: number, lng: number): Promise<{ distance: number; shippingFee: number }> {
-    // Gọi API Backend: GET /v1/orders/shipping-fee?lat=...&lng=...
-    return apiFetch(`/orders/shipping-fee?lat=${lat}&lng=${lng}`, {
+  async getShippingFee(
+    lat: number, 
+    lng: number, 
+    orderTime?: string
+  ): Promise<{ distance: number; shippingFee: number }> {
+    // Gọi API Backend: GET /v1/orders/shipping-fee?lat=...&lng=...&orderTime=...
+    let url = `/orders/shipping-fee?lat=${lat}&lng=${lng}`;
+    if (orderTime) {
+      url += `&orderTime=${encodeURIComponent(orderTime)}`;
+    }
+    
+    return apiFetch(url, {
       method: "GET",
     });
   },

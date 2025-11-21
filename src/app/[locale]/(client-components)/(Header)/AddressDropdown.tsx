@@ -7,7 +7,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 
 export default function AddressDropdown() {
-  const { selectedAddress, setSelectedAddress, isCalculatingShip } = useCart();
+  const { selectedAddress, setSelectedAddress } = useCart();
   const { me } = useAuthStore(); // 'me' chứa thông tin user đầy đủ bao gồm addresses
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -57,9 +57,6 @@ export default function AddressDropdown() {
                 ? selectedAddress.label || selectedAddress.street
                 : "Chọn địa chỉ"}
             </span>
-            {isCalculatingShip && (
-              <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
-            )}
           </div>
         </div>
         <ChevronDown

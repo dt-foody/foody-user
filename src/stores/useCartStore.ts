@@ -4,7 +4,7 @@ import { useMemo, useEffect, useRef } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
-import { orderService } from "@/services/order.service"; // Đảm bảo import đúng đường dẫn service
+import { orderService } from "@/services/order.service";
 import {
   Coupon,
   Product,
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v11"; // Tăng version để clear cache cũ
+const CART_STORAGE_KEY = "foody_cart_v12"; // Tăng version lên v12
 const PUBLIC_COUPON_TTL_MS = 30_000;
 
 export type DeliveryOption = "immediate" | "scheduled";
@@ -33,11 +33,10 @@ export interface EligibilityStatus {
   reason: string | null;
 }
 
-// Type cho Address (dựa trên schema User/Customer của bạn)
 export interface Address {
   _id?: string;
   id?: string;
-  label: string; // Nhà riêng, Công ty...
+  label: string;
   recipientName: string;
   recipientPhone: string;
   street: string;
@@ -52,7 +51,7 @@ export interface Address {
   };
 }
 
-// 1. Phần dữ liệu cho Product
+// 1. Product Data
 type ProductCartLine = {
   itemType: "Product";
   item: CreateOrderItem_ItemSnapshot;
@@ -60,7 +59,7 @@ type ProductCartLine = {
   comboSelections: null;
 };
 
-// 2. Phần dữ liệu cho Combo
+// 2. Combo Data
 type ComboCartLine = {
   itemType: "Combo";
   item: CreateOrderItem_ItemSnapshot;
@@ -91,14 +90,17 @@ interface CartState {
   comboForSelection: Combo | null;
 
   currentUser: UserData;
-  deliveryOption: DeliveryOption;
-  scheduledDate: string;
 
-  // --- STATE MỚI CHO SHIP & ADDRESS ---
+  // --- Delivery Time State ---
+  deliveryOption: DeliveryOption;
+  scheduledDate: string; // YYYY-MM-DD
+  scheduledTime: string; // HH:mm [NEW]
+
+  // --- Shipping & Address State ---
   shippingFee: number;
   shippingDistance: number;
-  selectedAddress: Address | null; // Địa chỉ đang được chọn
-  isCalculatingShip: boolean; // Trạng thái đang tính phí ship
+  selectedAddress: Address | null;
+  isCalculatingShip: boolean;
 }
 
 interface CartActions {
@@ -118,13 +120,18 @@ interface CartActions {
   fetchPublicCoupons: () => Promise<void>;
   updateItemNote: (cartId: string, note: string) => void;
   removeItem: (cartId: string) => void;
+
+  // --- Updated Actions ---
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
+  setScheduledTime: (time: string) => void; // [NEW]
 
-  // --- ACTION MỚI ---
   setShippingFee: (fee: number, distance?: number) => void;
   setSelectedAddress: (address: Address | null) => Promise<void>;
-  syncUserAddress: (user: any) => void; // Tự động chọn địa chỉ mặc định khi user login
+  syncUserAddress: (user: any) => void;
+
+  // Tính lại ship dựa trên Option (Immediate/Scheduled)
+  recalculateShippingFee: () => Promise<void>;
 }
 
 const buildVariantKey = (
@@ -183,10 +190,11 @@ const initialState: Omit<CartState, "currentUser"> = {
   couponStatus: { isLoading: false, error: null },
   productForOptions: null,
   comboForSelection: null,
+
   deliveryOption: "immediate",
   scheduledDate: "",
+  scheduledTime: "", // [NEW]
 
-  // Khởi tạo phí ship & address
   shippingFee: DEFAULT_SHIPPING_FEE,
   shippingDistance: 0,
   selectedAddress: null,
@@ -273,14 +281,65 @@ export const useCartStore = create<CartState & CartActions>()(
       setProductForOptions: (product) => set({ productForOptions: product }),
       setComboForSelection: (combo) => set({ comboForSelection: combo }),
       setShowCart: (show) => set({ showCart: show }),
+
       setDeliveryOption: (option) => set({ deliveryOption: option }),
       setScheduledDate: (date) => set({ scheduledDate: date }),
+      setScheduledTime: (time) => set({ scheduledTime: time }), // [NEW]
 
       setShippingFee: (fee, distance = 0) => {
         set({ shippingFee: fee, shippingDistance: distance });
       },
 
-      // --- LOGIC MỚI: SET ADDRESS & AUTO CALCULATE SHIP ---
+      // [UPDATED] Tính lại phí ship có xét đến thời gian
+      recalculateShippingFee: async () => {
+        const {
+          selectedAddress,
+          deliveryOption,
+          scheduledDate,
+          scheduledTime,
+        } = get();
+
+        // 1. Kiểm tra địa chỉ
+        if (!selectedAddress || !selectedAddress.location?.coordinates) {
+          return;
+        }
+        const [lng, lat] = selectedAddress.location.coordinates;
+
+        // 2. Xác định thời gian orderTime gửi lên backend
+        let orderTime = new Date().toISOString(); // Mặc định là Now (cho Immediate)
+
+        if (deliveryOption === "scheduled") {
+          // Nếu user chọn hẹn giờ, phải có cả ngày và giờ mới tính
+          if (scheduledDate && scheduledTime) {
+            try {
+              const combined = new Date(`${scheduledDate}T${scheduledTime}`);
+              // Kiểm tra ngày hợp lệ
+              if (!isNaN(combined.getTime())) {
+                orderTime = combined.toISOString();
+              }
+            } catch (e) {
+              console.warn("Invalid scheduled time, falling back to now");
+            }
+          }
+          // Nếu chưa chọn đủ ngày giờ, có thể fallback về Now hoặc giữ phí ship cũ/mặc định.
+          // Ở đây ta vẫn gọi API với Now để user có con số ước lượng trước.
+        }
+
+        try {
+          set({ isCalculatingShip: true });
+          // 3. Gọi API với orderTime
+          const res = await orderService.getShippingFee(lat, lng, orderTime);
+          set({
+            shippingFee: res.shippingFee,
+            shippingDistance: res.distance,
+            isCalculatingShip: false,
+          });
+        } catch (error) {
+          console.error("Failed to recalculate shipping:", error);
+          set({ isCalculatingShip: false });
+        }
+      },
+
       setSelectedAddress: async (address) => {
         set({ selectedAddress: address });
 
@@ -289,49 +348,25 @@ export const useCartStore = create<CartState & CartActions>()(
           return;
         }
 
-        // Nếu có tọa độ -> Gọi API tính ship
         if (address.location?.coordinates) {
-          const [lng, lat] = address.location.coordinates;
-          try {
-            set({ isCalculatingShip: true });
-            const res = await orderService.getShippingFee(lat, lng);
-            set({
-              shippingFee: res.shippingFee,
-              shippingDistance: res.distance,
-              isCalculatingShip: false,
-            });
-          } catch (error) {
-            console.error("Failed to calculate shipping:", error);
-            toast.error("Không thể tính phí vận chuyển cho địa chỉ này");
-            // Fallback về phí mặc định
-            set({
-              isCalculatingShip: false,
-              shippingFee: DEFAULT_SHIPPING_FEE,
-              shippingDistance: 0,
-            });
-          }
+          // Khi chọn địa chỉ mới, gọi recalculate để dùng logic chung (tính time)
+          get().recalculateShippingFee();
         } else {
-          // Địa chỉ cũ không có tọa độ
           set({ shippingFee: DEFAULT_SHIPPING_FEE, shippingDistance: 0 });
         }
       },
 
       syncUserAddress: (user) => {
         const { selectedAddress } = get();
-
-        // Nếu user có danh sách địa chỉ
         if (user && user.addresses && user.addresses.length > 0) {
-          // Tìm địa chỉ mặc định
           const defaultAddr =
             user.addresses.find((a: any) => a.isDefault) || user.addresses[0];
 
-          // 1. Nếu chưa chọn địa chỉ nào -> Lấy mặc định
           if (!selectedAddress) {
             get().setSelectedAddress(defaultAddr);
             return;
           }
 
-          // 2. Nếu đã chọn, kiểm tra xem địa chỉ đó có còn thuộc user này không (tránh case switch account)
           const exists = user.addresses.find(
             (a: any) =>
               a._id === selectedAddress._id || a.id === selectedAddress.id
@@ -339,14 +374,11 @@ export const useCartStore = create<CartState & CartActions>()(
           if (!exists) {
             get().setSelectedAddress(defaultAddr);
           } else {
-            // Nếu tồn tại, update lại thông tin mới nhất (vd: user vừa sửa tên/sđt địa chỉ đó)
-            // Lưu ý: Nếu tọa độ không đổi thì không cần tính lại ship, nhưng ở đây gọi lại cho chắc hoặc chỉ update state
             if (JSON.stringify(exists) !== JSON.stringify(selectedAddress)) {
               get().setSelectedAddress(exists);
             }
           }
         } else {
-          // User không có địa chỉ nào -> Reset
           set({ selectedAddress: null, shippingFee: DEFAULT_SHIPPING_FEE });
         }
       },
@@ -445,8 +477,12 @@ export const useCartStore = create<CartState & CartActions>()(
         cartItems: state.cartItems,
         appliedCoupons: state.appliedCoupons,
         shippingFee: state.shippingFee,
-        selectedAddress: state.selectedAddress, // Persist địa chỉ
+        selectedAddress: state.selectedAddress,
         shippingDistance: state.shippingDistance,
+        // Persist luôn các lựa chọn thời gian để refresh không mất
+        deliveryOption: state.deliveryOption,
+        scheduledDate: state.scheduledDate,
+        scheduledTime: state.scheduledTime,
       }),
     }
   )
@@ -461,6 +497,7 @@ export function useCart() {
     publicCoupons,
     deliveryOption,
     scheduledDate,
+    scheduledTime, // [NEW]
     shippingFee,
     shippingDistance,
     selectedAddress,
@@ -537,6 +574,7 @@ export function useCart() {
     finalTotal,
     deliveryOption,
     scheduledDate,
+    scheduledTime, // [NEW]
     originalShippingFee: shippingFee,
     shippingDistance,
     selectedAddress,
