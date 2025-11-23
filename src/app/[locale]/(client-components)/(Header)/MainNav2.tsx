@@ -40,7 +40,7 @@ const NAV_ITEMS = [
 const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
   const { cartCount, setShowCart, syncUserAddress } = useCart();
   const { user, me } = useAuthStore();
-  const [activeTab, setActiveTab] = useState("menu");
+  const [activeTab, setActiveTab] = useState("homepage");
   const router = useRouter();
 
   // EFFECT: Tự động đồng bộ địa chỉ mặc định khi user đăng nhập
