@@ -3,7 +3,7 @@ import type { Paginated } from "@/lib";
 
 // ====== Enums / Unions khớp backend ======
 export type CouponType = "discount_code" | "freeship" | "gift";
-export type CouponValueType = "fixed" | "percentage";
+export type CouponValueType = "fixed_amount" | "percentage";
 export type CouponStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED";
 
 // ====== Điều kiện động (runtime condition JSON) ======

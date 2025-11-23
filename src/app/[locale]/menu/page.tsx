@@ -2,7 +2,7 @@ import { menuService } from '@/services/menu.service'; // Import service MỚI
 import FoodyMenuClient from './FoodyMenuClient';
 
 // revalidate mỗi 60 giây (1 phút)
-export const revalidate = 60; 
+export const revalidate = 0; 
 
 export default async function FoodyMenuPage() {
   try {
