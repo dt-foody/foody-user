@@ -43,17 +43,17 @@ const MenuBar: React.FC<MenuBarProps> = ({
             <Dialog.Overlay className="fixed inset-0 bg-black/60 dark:bg-black/70" />
           </Transition.Child>
           <div className="fixed inset-0">
-            <div className="flex justify-end min-h-full ">
+            <div className="flex justify-start min-h-full">
               <Transition.Child
                 as={Fragment}
                 enter="transition duration-100 transform"
-                enterFrom="opacity-0 translate-x-56"
+                enterFrom="opacity-0 -translate-x-56"
                 enterTo="opacity-100 translate-x-0"
                 leave="transition duration-150 transform"
                 leaveFrom="opacity-100 translate-x-0"
-                leaveTo="opacity-0 translate-x-56"
+                leaveTo="opacity-0 -translate-x-56"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden transition-all ">
+                <Dialog.Panel className="w-full max-w-xs transform overflow-hidden transition-all ">
                   <NavMobile onClickClose={handleCloseMenu} />
                 </Dialog.Panel>
               </Transition.Child>

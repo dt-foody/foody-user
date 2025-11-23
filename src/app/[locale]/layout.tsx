@@ -91,7 +91,7 @@ export default async function RootLayout({
           <ClientCommons />
           <SiteHeader ssrUser={data ? data.user : null} />
           {children}
-          <FooterNav />
+          {/* <FooterNav /> */}
           <CartSidebar />
           <ProductOptionsModal />
           <ComboSelectionModal />

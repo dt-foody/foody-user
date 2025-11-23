@@ -9,7 +9,7 @@ export interface User {
   isEmailVerified: boolean;
 
   // IDs from backend (ObjectId as string)
-  rolesCustom: string[];
+  roles: string[];
   extraPermissions: string[];
   excludePermissions: string[];
 
