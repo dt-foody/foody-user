@@ -1,13 +1,13 @@
 "use client";
 
-import React, { FC, useState, useEffect } from "react";
+import React, { FC, useState, useEffect, useRef } from "react";
 import { Alex_Brush, Bahianita } from "next/font/google";
 import { useRouter } from "next/navigation";
 import NotifyDropdown from "./NotifyDropdown";
 import AvatarDropdown from "./AvatarDropdown";
 import LoginButton from "./LoginButton";
-import AddressDropdown from "./AddressDropdown"; // Import mới
-import { ShoppingCart } from "lucide-react";
+import AddressDropdown from "./AddressDropdown";
+import { ShoppingCart, Menu, X } from "lucide-react";
 import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -41,7 +41,9 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
   const { cartCount, setShowCart, syncUserAddress } = useCart();
   const { user, me } = useAuthStore();
   const [activeTab, setActiveTab] = useState("homepage");
+  const [isTabsMenuOpen, setIsTabsMenuOpen] = useState(false);
   const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // EFFECT: Tự động đồng bộ địa chỉ mặc định khi user đăng nhập
   useEffect(() => {
@@ -50,11 +52,112 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
     }
   }, [me, syncUserAddress]);
 
+  // EFFECT: Đóng menu khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsTabsMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsTabsMenuOpen(false);
+      }
+    };
+
+    if (isTabsMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isTabsMenuOpen]);
+
+  const handleTabClick = (item: typeof NAV_ITEMS[0]) => {
+    setActiveTab(item.id);
+    router.push(item.href);
+    setIsTabsMenuOpen(false);
+  };
+
   return (
     <header className={`MainNav2 relative z-20 w-full bg-white`}>
       <div className="h-16 flex justify-between items-center text-[1.7rem]">
-        {/* LEFT ACTIONS: Logo + Curved Tabs */}
-        <div className="flex items-center gap-6 h-full">
+        {/* LEFT ACTIONS: Logo + Curved Tabs + Mobile Menu */}
+        <div className="flex items-center gap-4 h-full">
+          {/* Mobile Tabs Menu Button */}
+          <div className="md:hidden relative" ref={menuRef}>
+            <button
+              onClick={() => setIsTabsMenuOpen(!isTabsMenuOpen)}
+              className={`
+                flex items-center justify-center w-10 h-10 rounded-lg
+                transition-colors
+                ${
+                  isTabsMenuOpen
+                    ? "bg-neutral-100 text-black"
+                    : "text-neutral-600 hover:bg-neutral-50"
+                }
+              `}
+              aria-label="Toggle Menu"
+            >
+              {isTabsMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+
+            {/* Mobile Dropdown Menu */}
+            {isTabsMenuOpen && (
+              <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border-2 border-black py-2 z-50">
+                <div className="px-4 py-2 text-xs font-semibold text-neutral-500 uppercase border-b-2 border-neutral-200">
+                  Menu
+                </div>
+                {NAV_ITEMS.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleTabClick(item)}
+                      className={`
+                        w-full text-left px-4 py-3 text-base transition-colors
+                        ${
+                          isActive
+                            ? "bg-neutral-50 text-black font-semibold border-l-4 border-black"
+                            : "text-neutral-700 hover:bg-neutral-50"
+                        }
+                      `}
+                    >
+                      {item.label}
+                      {item.sublabel && (
+                        <span
+                          className={`block text-sm text-neutral-500 mt-1 ${alexbrush.className}`}
+                        >
+                          {item.sublabel}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>          
+          {/* Mobile Logo */}
+          <div className="md:hidden flex items-center pl-4">
+            <span
+              onClick={() => {
+                setActiveTab("homepage");
+                router.push("/");
+              }}
+              className={`text-[2rem] cursor-pointer ${bahianita.className}`}
+            >
+              Lưu Chi
+            </span>
+          </div>
+          {/* Desktop Curved Tabs Navigation */}
           <nav
             className={`hidden md:block h-full flex items-center ${bahianita.className}`}
           >
@@ -65,10 +168,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
                 return (
                   <li
                     key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      router.push(item.href);
-                    }}
+                    onClick={() => handleTabClick(item)}
                     className={`
                       relative px-8 flex items-center h-full cursor-pointer select-none
                       ${
@@ -122,7 +222,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
 
         {/* RIGHT ACTIONS */}
         <div className="flex items-center flex-1 justify-end space-x-4 text-primary-600 h-full border-b-2 border-black pr-3">
-          {/* ADDRESS DROPDOWN (Chỉ hiện khi đã login hoặc tùy logic của bạn) */}
+          {/* ADDRESS DROPDOWN (Chỉ hiện khi đã login) */}
           {user && (
             <div className="hidden lg:block">
               <AddressDropdown />
