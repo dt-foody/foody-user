@@ -33,7 +33,7 @@ export default function MenuCategory({
   return (
     <div
       className="flex space-x-3 py-6 -mx-4 px-4 overflow-x-auto scrollbar-hide 
-             sticky top-[64px] z-[80] bg-white
+             sticky top-[64px] z-[30] bg-white
              rounded-b-xl border-b shadow-md"
     >
       {tabs.map((tab) => (
