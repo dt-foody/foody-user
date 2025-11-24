@@ -2,6 +2,7 @@
 import type { Paginated } from "@/lib";
 // Giả định import từ file 'product' (dựa trên file gốc)
 import type { Product } from "./product";
+import { PricePromotion } from "./pricePromotion";
 
 /**
  * MỚI: Enum định nghĩa 3 chế độ tính giá
@@ -61,6 +62,8 @@ export interface Combo {
   // --- CÁC TRƯỜNG MỚI ĐÃ REFACTOR ---
   pricingMode: ComboPricingMode;
   comboPrice: number; // Vẫn dùng cho MODE_FIXED
+  salePrice?: number;
+  promotion?: PricePromotion;
 
   /** MỚI: Loại giảm giá (PERCENT | AMOUNT | NONE) */
   discountType: DiscountType;
