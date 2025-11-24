@@ -12,6 +12,7 @@ export interface CreateOrderItem_ItemSnapshot {
   name: string;
   basePrice?: number;
   comboPrice?: number;
+  salePrice?: number;
 }
 
 /**
