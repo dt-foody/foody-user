@@ -2,14 +2,11 @@
 
 import { useCart } from "@/stores/useCartStore";
 import {
-  Truck,
   Gift,
-  Tag,
   XCircle,
   CheckCircle,
   Clock,
   Loader2,
-  MessageSquare,
   MapPin,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -188,7 +185,9 @@ export default function CheckoutRetro() {
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
-      shipping: selectedAddress,
+      shipping: {
+        address: selectedAddress,
+      },
       note: note.trim(),
       // [UPDATE] Gửi thêm thông tin thời gian giao hàng nếu cần thiết cho việc lưu Order
       // Backend hiện tại có thể chưa lưu field này vào Order Model,
