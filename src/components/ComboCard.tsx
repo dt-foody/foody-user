@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import { Plus, Package } from "lucide-react";
-// REFACTORED: Import type mới và Enum
 import type { Combo, PricePromotion, Product } from "@/types";
-// NEW: Import thêm Enum
 import { ComboPricingMode, DiscountType } from "@/types";
 
 const PLACEHOLDER_IMAGE =
@@ -103,7 +101,6 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
             {combo.name}
           </h3>
           <div className="flex items-center gap-2 mb-2">
-            {/* REFACTORED: Hiển thị text giá mới (Đã sửa) */}
             <span className="text-[1rem] font-bold text-primary-600">
               {priceText}
             </span>

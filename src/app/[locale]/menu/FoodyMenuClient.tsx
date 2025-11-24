@@ -1,9 +1,8 @@
 "use client";
 
-// --- THÊM MỚI --- (Import useEffect và useRef)
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Search, Gift, X } from "lucide-react";
-import { Product, Combo, PricePromotion } from "@/types";
+import { Gift } from "lucide-react";
+import { Product, Combo } from "@/types";
 
 // Components
 import ProductCard from "@/components/ProductCard";
@@ -14,14 +13,12 @@ import { useCartStore } from "@/stores/useCartStore";
 
 interface FoodyMenuClientProps {
   initialFlashSaleCategory: any;
-  initialFlashSales: any[];
   initialThucDon: any[];
   initialCombos: any[];
 }
 
 export default function FoodyMenuClient({
   initialFlashSaleCategory,
-  initialFlashSales,
   initialThucDon,
   initialCombos,
 }: FoodyMenuClientProps) {
@@ -33,39 +30,25 @@ export default function FoodyMenuClient({
     type: "category",
     id: "all",
   });
-  const [searchQuery, setSearchQuery] = useState("");
+
   const { startProductConfiguration, startComboConfiguration } = useCartStore();
 
-  // --- THÊM MỚI --- (Ref để quản lý trạng thái cuộn)
+  // --- REF QUẢN LÝ SCROLL ---
   const isProgrammaticScroll = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  const normalizedQuery = searchQuery.trim().toLowerCase();
+  // --- DATA HIỂN THỊ (Không còn filter theo search) ---
+  const categoriesToDisplay = initialThucDon;
+  const combosToDisplay = initialCombos;
 
-  // --- (Các hàm useMemo giữ nguyên) ---
-  const categoriesToDisplay = useMemo(() => {
-    return initialThucDon
-      .map((category) => ({
-        ...category,
-        products: category.products.filter((product: any) =>
-          product.name.toLowerCase().includes(normalizedQuery)
-        ),
-      }))
-      .filter((category) => category.products.length > 0);
-  }, [initialThucDon, normalizedQuery]);
-
-  const combosToDisplay = useMemo(() => {
-    return initialCombos.filter((combo) =>
-      combo.name.toLowerCase().includes(normalizedQuery)
-    );
-  }, [initialCombos, normalizedQuery]);
-
+  // Tạo danh sách tab cho thanh MenuCategory
   const categoryTabs = useMemo(() => {
     return initialThucDon
-      .filter((c) => c.id !== "flash_sale_category")
+      .filter((c) => c.id !== "flash_sale_category") // Ẩn category flash sale khỏi thanh tab thường (nếu muốn)
       .map((c) => ({ id: c.id, name: c.name, priority: c.priority }));
   }, [initialThucDon]);
 
+  // --- LOGIC CUỘN & CLICK TAB ---
   const handleTabClick = (
     type: "category" | "combo" | "flashsale",
     id: string
@@ -78,7 +61,7 @@ export default function FoodyMenuClient({
 
     let elementId = "";
     if (type === "flashsale") {
-      elementId = `category-${id}`; // id là 'flash_sale_category'
+      elementId = `category-${id}`;
     } else if (type === "combo") {
       elementId = "section-combo";
     } else if (id === "all") {
@@ -90,7 +73,7 @@ export default function FoodyMenuClient({
     const element = document.getElementById(elementId);
 
     if (element) {
-      const yOffset = -170; // header + MenuCategory cao 150px
+      const yOffset = -170; // Offset cho header
       const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
 
       window.scrollTo({
@@ -99,11 +82,13 @@ export default function FoodyMenuClient({
       });
     }
 
+    // Reset cờ sau khi animation cuộn kết thúc (ước lượng 1s)
     setTimeout(() => {
       isProgrammaticScroll.current = false;
     }, 1000);
   };
 
+  // --- INTERSECTION OBSERVER (SCROLL SPY) ---
   useEffect(() => {
     const observerCallback: IntersectionObserverCallback = (entries) => {
       // Không làm gì nếu người dùng đang chủ động click cuộn
@@ -112,20 +97,22 @@ export default function FoodyMenuClient({
       // Tìm entry đang ở trên cùng của "vùng nóng"
       const topEntry = entries.find((e) => e.isIntersecting);
 
-      console.log("topEntry", topEntry);
-
       if (topEntry) {
         const type = topEntry.target.getAttribute("data-scroll-spy-type") as
           | "category"
           | "combo"
           | "flashsale";
         const id = topEntry.target.getAttribute("data-scroll-spy-id")!;
-        setActiveTab({ type, id });
+
+        // Chỉ set state nếu khác state hiện tại để tránh re-render thừa
+        setActiveTab((prev) =>
+          prev.type === type && prev.id === id ? prev : { type, id }
+        );
       }
     };
 
     const options = {
-      rootMargin: "-150px 0px -55% 0px",
+      rootMargin: "-150px 0px -55% 0px", // Căn chỉnh vùng nhận diện active
       threshold: 0,
     };
 
@@ -136,16 +123,14 @@ export default function FoodyMenuClient({
     const sections = document.querySelectorAll("[data-scroll-spy-id]");
     sections.forEach((section) => currentObserver.observe(section));
 
-    // Dọn dẹp khi component unmount
     return () => {
       sections.forEach((section) => currentObserver.unobserve(section));
     };
-    // Chạy lại khi danh sách section thay đổi (do tìm kiếm)
-  }, [categoriesToDisplay, combosToDisplay]);
+  }, [categoriesToDisplay, combosToDisplay]); // Chạy lại khi data thay đổi
 
   const hasCombos = combosToDisplay.length > 0;
   const hasProducts = categoriesToDisplay.length > 0;
-  const isNotFound = !hasCombos && !hasProducts;
+  const isNotFound = !hasCombos && !hasProducts && !initialFlashSaleCategory;
 
   // --- RENDER ---
   return (
@@ -186,17 +171,16 @@ export default function FoodyMenuClient({
           </section>
         )}
 
-        {/* 1. Render Combos (nếu có) */}
+        {/* 1. Render Combos */}
         {hasCombos && (
           <section
             id="section-combo"
             className="my-6"
-            // --- CẬP NHẬT --- Thêm data-scroll-spy-*
             data-scroll-spy-type="combo"
             data-scroll-spy-id="combo"
           >
             <h2 className="text-xl font-bold mb-4 text-gray-800">
-              Combo Đặc Biệt
+              Combo
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {combosToDisplay.map((combo) => (
@@ -210,44 +194,41 @@ export default function FoodyMenuClient({
           </section>
         )}
 
-        <>
-          {/* 2. Render Products (đã nhóm theo category) */}
-          {hasProducts &&
-            categoriesToDisplay.map((group) => (
-              <section
-                key={group.id}
-                id={`category-${group.id}`}
-                className="my-6"
-                // --- CẬP NHẬT --- Thêm data-scroll-spy-*
-                data-scroll-spy-type={
-                  group.id === "flash_sale_category" ? "flashsale" : "category"
-                }
-                data-scroll-spy-id={group.id}
-              >
-                <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                  {group.id === "flash_sale_category" && (
-                    <Gift className="w-6 h-6 text-primary-500 mr-2" />
-                  )}
-                  {group.name}
-                  {group.id === "flash_sale_category" && " 🔥"}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {group.products.map((product: any) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onClick={() =>
-                        startProductConfiguration(product as Product)
-                      }
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+        {/* 2. Render Products (Category thường) */}
+        {hasProducts &&
+          categoriesToDisplay.map((group) => (
+            <section
+              key={group.id}
+              id={`category-${group.id}`}
+              className="my-6"
+              data-scroll-spy-type={
+                group.id === "flash_sale_category" ? "flashsale" : "category"
+              }
+              data-scroll-spy-id={group.id}
+            >
+              <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                {group.id === "flash_sale_category" && (
+                  <Gift className="w-6 h-6 text-primary-500 mr-2" />
+                )}
+                {group.name}
+                {group.id === "flash_sale_category" && " 🔥"}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.products.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={() =>
+                      startProductConfiguration(product as Product)
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
 
-          {/* 3. Hiển thị "Không tìm thấy" */}
-          {isNotFound && <ProductNotFound />}
-        </>
+        {/* 3. Hiển thị "Không tìm thấy" (chỉ hiện khi data rỗng hoàn toàn) */}
+        {isNotFound && <ProductNotFound />}
       </main>
     </div>
   );

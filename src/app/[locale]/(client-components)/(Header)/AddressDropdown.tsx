@@ -2,9 +2,10 @@
 
 import React from "react";
 import { MapPin, ChevronDown, Check, PlusCircle, Loader2 } from "lucide-react";
-import { useCart, Address } from "@/stores/useCartStore";
+import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
+import { CustomerAddress } from "@/types";
 
 export default function AddressDropdown() {
   const { selectedAddress, setSelectedAddress } = useCart();
@@ -27,10 +28,9 @@ export default function AddressDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Ép kiểu me.addresses nếu cần, giả sử nó khớp với Address interface
-  const addresses: Address[] = (me?.addresses as any) || [];
+  const addresses: CustomerAddress[] = me?.addresses || [];
 
-  const handleSelect = (addr: Address) => {
+  const handleSelect = (addr: CustomerAddress) => {
     setSelectedAddress(addr);
     setIsOpen(false);
   };

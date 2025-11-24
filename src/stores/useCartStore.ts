@@ -5,133 +5,20 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
 import { orderService } from "@/services/order.service";
-import {
-  Coupon,
-  Product,
-  Combo,
-  CreateOrderItem_Option,
-  CreateOrderItem_ComboSelection,
-  CreateOrderItem_ItemSnapshot,
-} from "@/types";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import { toast } from "sonner";
+import { CartActions, CartLine, CartState } from "@/types/cart";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v12"; // Tăng version lên v12
+const CART_STORAGE_KEY = "foody_cart_v12";
 const PUBLIC_COUPON_TTL_MS = 30_000;
 
 export type DeliveryOption = "immediate" | "scheduled";
 
-interface UserData {
-  isNew: boolean;
-  age: number | null;
-}
-
 export interface EligibilityStatus {
   isEligible: boolean;
   reason: string | null;
-}
-
-export interface Address {
-  _id?: string;
-  id?: string;
-  label: string;
-  recipientName: string;
-  recipientPhone: string;
-  street: string;
-  ward: string;
-  district: string;
-  city: string;
-  fullAddress: string;
-  isDefault: boolean;
-  location?: {
-    type: string;
-    coordinates: [number, number]; // [lng, lat]
-  };
-}
-
-// 1. Product Data
-type ProductCartLine = {
-  itemType: "Product";
-  item: CreateOrderItem_ItemSnapshot;
-  options: Record<string, CreateOrderItem_Option[]>;
-  comboSelections: null;
-};
-
-// 2. Combo Data
-type ComboCartLine = {
-  itemType: "Combo";
-  item: CreateOrderItem_ItemSnapshot;
-  options: null;
-  comboSelections: CreateOrderItem_ComboSelection[];
-};
-
-export type CartLine = (ProductCartLine | ComboCartLine) & {
-  cartId: string;
-  quantity: number;
-  totalPrice: number;
-  note: string;
-  _image?: string;
-  _categoryIds?: string[];
-};
-
-/** ===== Cart state & actions ===== */
-interface CartState {
-  cartItems: CartLine[];
-  showCart: boolean;
-  publicCoupons: Coupon[];
-  appliedCoupons: Coupon[];
-  isLoadingPublicCoupons: boolean;
-  publicCouponsFetchedAt: number;
-  couponStatus: { isLoading: boolean; error: string | null };
-
-  productForOptions: Product | null;
-  comboForSelection: Combo | null;
-
-  currentUser: UserData;
-
-  // --- Delivery Time State ---
-  deliveryOption: DeliveryOption;
-  scheduledDate: string; // YYYY-MM-DD
-  scheduledTime: string; // HH:mm [NEW]
-
-  // --- Shipping & Address State ---
-  shippingFee: number;
-  shippingDistance: number;
-  selectedAddress: Address | null;
-  isCalculatingShip: boolean;
-}
-
-interface CartActions {
-  startProductConfiguration: (product: Product) => void;
-  startComboConfiguration: (combo: Combo) => void;
-  addItemToCart: (itemData: Omit<CartLine, "cartId" | "quantity">) => void;
-  updateQuantity: (cartId: string, amount: number) => void;
-  clearCart: () => void;
-  applyPublicCoupon: (coupon: Coupon) => void;
-  applyPrivateCoupon: (
-    code: string
-  ) => Promise<{ success: boolean; message: string }>;
-  removeCoupon: (id: string) => void;
-  setShowCart: (show: boolean) => void;
-  setProductForOptions: (product: Product | null) => void;
-  setComboForSelection: (combo: Combo | null) => void;
-  fetchPublicCoupons: () => Promise<void>;
-  updateItemNote: (cartId: string, note: string) => void;
-  removeItem: (cartId: string) => void;
-
-  // --- Updated Actions ---
-  setDeliveryOption: (option: DeliveryOption) => void;
-  setScheduledDate: (date: string) => void;
-  setScheduledTime: (time: string) => void; // [NEW]
-
-  setShippingFee: (fee: number, distance?: number) => void;
-  setSelectedAddress: (address: Address | null) => Promise<void>;
-  syncUserAddress: (user: any) => void;
-
-  // Tính lại ship dựa trên Option (Immediate/Scheduled)
-  recalculateShippingFee: () => Promise<void>;
 }
 
 const buildVariantKey = (
@@ -180,7 +67,8 @@ const buildVariantKey = (
 };
 
 /** ===== Initial state ===== */
-const initialState: Omit<CartState, "currentUser"> = {
+// Đã loại bỏ currentUser khỏi initialState
+const initialState: CartState = {
   cartItems: [],
   showCart: false,
   publicCoupons: [],
@@ -193,7 +81,7 @@ const initialState: Omit<CartState, "currentUser"> = {
 
   deliveryOption: "immediate",
   scheduledDate: "",
-  scheduledTime: "", // [NEW]
+  scheduledTime: "",
 
   shippingFee: DEFAULT_SHIPPING_FEE,
   shippingDistance: 0,
@@ -205,7 +93,6 @@ export const useCartStore = create<CartState & CartActions>()(
   persist(
     (set, get) => ({
       ...initialState,
-      currentUser: { isNew: true, age: 18 },
 
       startProductConfiguration: (product) => {
         set({
@@ -284,13 +171,12 @@ export const useCartStore = create<CartState & CartActions>()(
 
       setDeliveryOption: (option) => set({ deliveryOption: option }),
       setScheduledDate: (date) => set({ scheduledDate: date }),
-      setScheduledTime: (time) => set({ scheduledTime: time }), // [NEW]
+      setScheduledTime: (time) => set({ scheduledTime: time }),
 
       setShippingFee: (fee, distance = 0) => {
         set({ shippingFee: fee, shippingDistance: distance });
       },
 
-      // [UPDATED] Tính lại phí ship có xét đến thời gian
       recalculateShippingFee: async () => {
         const {
           selectedAddress,
@@ -299,21 +185,17 @@ export const useCartStore = create<CartState & CartActions>()(
           scheduledTime,
         } = get();
 
-        // 1. Kiểm tra địa chỉ
         if (!selectedAddress || !selectedAddress.location?.coordinates) {
           return;
         }
         const [lng, lat] = selectedAddress.location.coordinates;
 
-        // 2. Xác định thời gian orderTime gửi lên backend
-        let orderTime = new Date().toISOString(); // Mặc định là Now (cho Immediate)
+        let orderTime = new Date().toISOString();
 
         if (deliveryOption === "scheduled") {
-          // Nếu user chọn hẹn giờ, phải có cả ngày và giờ mới tính
           if (scheduledDate && scheduledTime) {
             try {
               const combined = new Date(`${scheduledDate}T${scheduledTime}`);
-              // Kiểm tra ngày hợp lệ
               if (!isNaN(combined.getTime())) {
                 orderTime = combined.toISOString();
               }
@@ -321,13 +203,10 @@ export const useCartStore = create<CartState & CartActions>()(
               console.warn("Invalid scheduled time, falling back to now");
             }
           }
-          // Nếu chưa chọn đủ ngày giờ, có thể fallback về Now hoặc giữ phí ship cũ/mặc định.
-          // Ở đây ta vẫn gọi API với Now để user có con số ước lượng trước.
         }
 
         try {
           set({ isCalculatingShip: true });
-          // 3. Gọi API với orderTime
           const res = await orderService.getShippingFee(lat, lng, orderTime);
           set({
             shippingFee: res.shippingFee,
@@ -349,7 +228,6 @@ export const useCartStore = create<CartState & CartActions>()(
         }
 
         if (address.location?.coordinates) {
-          // Khi chọn địa chỉ mới, gọi recalculate để dùng logic chung (tính time)
           get().recalculateShippingFee();
         } else {
           set({ shippingFee: DEFAULT_SHIPPING_FEE, shippingDistance: 0 });
@@ -479,7 +357,6 @@ export const useCartStore = create<CartState & CartActions>()(
         shippingFee: state.shippingFee,
         selectedAddress: state.selectedAddress,
         shippingDistance: state.shippingDistance,
-        // Persist luôn các lựa chọn thời gian để refresh không mất
         deliveryOption: state.deliveryOption,
         scheduledDate: state.scheduledDate,
         scheduledTime: state.scheduledTime,
@@ -493,11 +370,11 @@ export function useCart() {
   const {
     cartItems,
     appliedCoupons,
-    currentUser,
+    // Đã xóa currentUser khỏi destructuring
     publicCoupons,
     deliveryOption,
     scheduledDate,
-    scheduledTime, // [NEW]
+    scheduledTime,
     shippingFee,
     shippingDistance,
     selectedAddress,
@@ -519,11 +396,11 @@ export function useCart() {
     // @ts-ignore
     const cartData = { items: cartItems, subtotal };
     return publicCoupons.map((coupon) => {
-      // @ts-ignore
-      const status = checkCouponEligibility(coupon, cartData, currentUser);
+      // @ts-ignore - Truyền null vào chỗ currentUser vì đã xóa khỏi store
+      const status = checkCouponEligibility(coupon, cartData, null);
       return { coupon, ...status };
     });
-  }, [publicCoupons, cartItems, subtotal, currentUser]);
+  }, [publicCoupons, cartItems, subtotal]); // Đã xóa currentUser khỏi dependency array
 
   const { itemDiscount, shippingDiscount } = useMemo(() => {
     let totalItemDiscount = 0;
@@ -563,7 +440,7 @@ export function useCart() {
     ...actionsAndState,
     cartItems,
     appliedCoupons,
-    currentUser,
+    // Đã xóa currentUser
     publicCoupons,
     subtotal,
     cartCount,
@@ -574,7 +451,7 @@ export function useCart() {
     finalTotal,
     deliveryOption,
     scheduledDate,
-    scheduledTime, // [NEW]
+    scheduledTime,
     originalShippingFee: shippingFee,
     shippingDistance,
     selectedAddress,

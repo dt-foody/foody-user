@@ -1,24 +1,9 @@
 // src/types/customer.ts
-// ======================
-// Full Customer TypeScript Definitions (Next.js) – 100% synced with Backend Schema
-// ======================
 
 import type { Paginated } from "@/lib";
 import type { User } from "./user";
 
-//
-// ────────────────────────────────────────────
-//  GENDER
-// ────────────────────────────────────────────
-//
-
 export type Gender = "male" | "female" | "other";
-
-//
-// ────────────────────────────────────────────
-//  GEO POINT
-// ────────────────────────────────────────────
-//
 
 export interface GeoPoint {
   type: "Point";
@@ -26,28 +11,14 @@ export interface GeoPoint {
   coordinates: [number, number];
 }
 
-//
-// ────────────────────────────────────────────
-//  EMAIL ITEM (mảng emails)
-// ─────────────────────────────────────────────
-//
-
 export type EmailType = "Home" | "Company" | "Other";
-
 export interface CustomerEmail {
   type: EmailType;
   value: string;
   isPrimary: boolean;
 }
 
-//
-// ────────────────────────────────────────────
-//  PHONE ITEM (mảng phones)
-// ─────────────────────────────────────────────
-//
-
 export type PhoneType = "Home" | "Company" | "Other";
-
 export interface CustomerPhone {
   type: PhoneType;
   value: string;
@@ -61,6 +32,8 @@ export interface CustomerPhone {
 //
 
 export interface CustomerAddress {
+  _id?: string;
+  id?: string;
   label?: string;
 
   recipientName: string;

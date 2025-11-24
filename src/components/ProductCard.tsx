@@ -4,11 +4,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
-import type {
-  Product,
-  PricePromotion,
-  CreateOrderItem_ItemSnapshot,
-} from "@/types";
+import type { Product, PricePromotion } from "@/types";
+import { CreateOrderItem_ItemSnapshot } from "@/types/cart";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";

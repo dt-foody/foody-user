@@ -7,14 +7,13 @@ import type {
   Product,
   ComboItem,
   ComboSelectableProduct,
-  CreateOrderItem_ComboSelection,
   Combo,
   OptionItem,
   OptionGroup,
-  CreateOrderItem_Option,
 } from "@/types";
 import { ComboPricingMode, DiscountType } from "@/types";
 import { nanoid } from "nanoid"; // Cần cài đặt: npm install nanoid
+import { CreateOrderItem_ComboSelection, CreateOrderItem_Option } from "@/types/cart";
 
 type ConfiguredComboItem = {
   instanceId: string; // ID duy nhất (vì khách có thể chọn 2 "Gà Rán" nếu max > 1)

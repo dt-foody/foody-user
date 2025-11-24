@@ -18,8 +18,8 @@ import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { CreateOrderItem_Option } from "@/types";
 import Image from "next/image";
+import { CreateOrderItem_Option } from "@/types/cart";
 
 // === HELPERS ===
 const PLACEHOLDER_IMAGE =
@@ -175,25 +175,6 @@ export default function CheckoutRetro() {
       return;
     }
 
-    const shippingAddress = {
-      label: selectedAddress.label,
-      recipientName: name,
-      recipientPhone: phone,
-      street: selectedAddress.street,
-      district: selectedAddress.district,
-      ward: selectedAddress.ward,
-      city: selectedAddress.city,
-      fullAddress: selectedAddress.fullAddress,
-    };
-
-    let locationData = undefined;
-    if (selectedAddress.location?.coordinates) {
-      locationData = {
-        lat: selectedAddress.location.coordinates[1],
-        lng: selectedAddress.location.coordinates[0],
-      };
-    }
-
     const payload = {
       items: cartItems.map(({ _image, _categoryIds, ...rest }) => rest),
       appliedCoupons: appliedCoupons.map((el) => ({
@@ -207,7 +188,7 @@ export default function CheckoutRetro() {
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
-      shipping: { address: shippingAddress, location: locationData },
+      shipping: selectedAddress,
       note: note.trim(),
       // [UPDATE] Gửi thêm thông tin thời gian giao hàng nếu cần thiết cho việc lưu Order
       // Backend hiện tại có thể chưa lưu field này vào Order Model,

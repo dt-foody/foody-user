@@ -4,11 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import type {
-  Product,
   OptionItem, // Kiểu UI
   OptionGroup, // Kiểu UI
-  CreateOrderItem_Option, // Kiểu Payload
 } from "@/types";
+import { CreateOrderItem_Option } from "@/types/cart";
 
 export default function ProductOptionsModal() {
   const { productForOptions, setProductForOptions, addItemToCart } =
@@ -19,7 +18,7 @@ export default function ProductOptionsModal() {
   >({});
   const [note, setNote] = useState("");
 
-  // Preselect (logic cũ, đã tốt)
+  // Preselect
   useEffect(() => {
     if (!productForOptions) return;
     const initial: Record<string, OptionItem[]> = {};
@@ -42,7 +41,7 @@ export default function ProductOptionsModal() {
     setNote("");
   }, [productForOptions]);
 
-  // Logic change (logic cũ, đã tốt)
+  // Option change
   const handleOptionChange = (
     group: OptionGroup,
     option: OptionItem,
@@ -135,7 +134,7 @@ export default function ProductOptionsModal() {
       },
       totalPrice: totalPrice,
       note: note.trim(),
-      options: payloadOptions, // <-- Cấu trúc Record lồng nhau
+      options: payloadOptions,
       comboSelections: null,
       // Metadata
       _image: productForOptions.image,
@@ -143,7 +142,6 @@ export default function ProductOptionsModal() {
     };
 
     // 3. Gọi action mới của store
-    // @ts-ignore (Vì itemData đang Omit 2 trường cartId, quantity)
     addItemToCart(itemData);
   };
 

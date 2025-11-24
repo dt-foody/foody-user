@@ -7,15 +7,6 @@ import { apiFetch } from "@/lib/api";
  * Dùng apiFetch (wrapper fetch thô) cho tất cả các request
  */
 export const orderService = {
-  /** 🟢 Tạo đơn hàng mới (admin tạo đơn thủ công hoặc API backend trực tiếp) */
-  async create(data: CreateOrderInput): Promise<Order> {
-    return apiFetch("/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-  },
-
   /** 🟡 Lấy danh sách đơn hàng (có phân trang + filter) */
   async paginate(params?: {
     page?: number;

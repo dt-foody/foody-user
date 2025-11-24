@@ -12,7 +12,6 @@ export default async function FoodyMenuPage() {
       <FoodyMenuClient
         // Truyền các prop mới, đã được xử lý từ backend
         initialFlashSaleCategory={menuData.flashSaleCategory}
-        initialFlashSales={menuData.flashSales || []}
         initialThucDon={menuData.thucDon || []}
         initialCombos={menuData.combos || []}
       />
