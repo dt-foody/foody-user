@@ -17,6 +17,7 @@ export interface PricePromotion {
 
   discountType: PricePromotionDiscountTypeBE;
   discountValue: number;
+  maxDiscountAmount: number;
 
   startDate: string;
   endDate: string;
