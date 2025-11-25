@@ -4,29 +4,63 @@ import { Coupon } from "./coupon";
 import { Product } from "./product";
 import { CustomerAddress } from "./customer";
 
+// --- Pricing Mode Definition ---
+export type CartComboPricingMode = "FIXED" | "SLOT_PRICE" | "DISCOUNT";
+
 /**
- * Snapshot của một mục Product / Combo
+ * Snapshot chi tiết của từng món con trong Combo
  */
+export interface CartComboItemSnapshot {
+  productId: string;
+  productName: string;
+
+  // Giá thị trường của món này (Product Base Price) - dùng để so sánh tiết kiệm
+  originalBasePrice: number;
+
+  // Giá tính trong combo (VD: Slot Price hoặc Giá sau chiết khấu)
+  appliedItemPrice: number;
+
+  // Phụ thu riêng của món này (Additional Price)
+  surcharge: number;
+
+  // Tổng tiền options của món này
+  optionsTotal: number;
+}
+
+/**
+ * Snapshot tổng thể của Combo
+ * Lưu lại để không phải tính lại ở Cart/Checkout
+ */
+export interface CartComboSnapshot {
+  mode: CartComboPricingMode;
+
+  // Tổng giá trị thực tế nếu mua lẻ (Tổng Base các món + Tổng Phụ thu + Tổng Options)
+  totalMarketPrice: number;
+
+  // Tổng giá khách phải trả (Final Price)
+  totalFinalPrice: number;
+
+  // Tổng tiết kiệm được
+  totalSavings: number;
+
+  // Danh sách chi tiết từng món để render
+  items: CartComboItemSnapshot[];
+}
+
 export interface CreateOrderItem_ItemSnapshot {
   id: string;
   name: string;
-  basePrice: number;
-  comboPrice: number;
+  basePrice: number; // Giá gốc sản phẩm lẻ
+  comboPrice: number; // Giá combo gốc (nếu là combo)
   salePrice?: number;
   promotion: string | "";
 }
 
-/**
- * Snapshot của một TÙY CHỌN
- */
 export interface CreateOrderItem_Option {
-  name: string;             // "L"
-  priceModifier: number;    // "+5000 VND"
+  name: string;
+  priceModifier: number;
 }
 
-/**
- * Snapshot của một LỰA CHỌN TRONG COMBO (VD: chọn "Coca" cho slot "Đồ uống")
- */
 export interface CreateOrderItem_ComboSelection {
   slotName: string;
   product: {
@@ -35,8 +69,9 @@ export interface CreateOrderItem_ComboSelection {
     basePrice: number;
   };
   additionalPrice: number;
-  // Tùy chọn cho sản phẩm con đó (VD: Coca Size L)
   options: Record<string, CreateOrderItem_Option[]>;
+  // Field này giữ lại để tương thích ngược nếu cần, nhưng logic chính sẽ dùng snapshot
+  itemPrice: number;
 }
 
 // 1. Product Data
@@ -45,6 +80,7 @@ type ProductCartLine = {
   item: CreateOrderItem_ItemSnapshot;
   options: Record<string, CreateOrderItem_Option[]>;
   comboSelections: null;
+  comboSnapshot: null;
 };
 
 // 2. Combo Data
@@ -53,12 +89,15 @@ type ComboCartLine = {
   item: CreateOrderItem_ItemSnapshot;
   options: null;
   comboSelections: CreateOrderItem_ComboSelection[];
+
+  // --- QUAN TRỌNG: Dấu ? giúp tránh lỗi 'never' khi check tồn tại ---
+  comboSnapshot?: CartComboSnapshot;
 };
 
 export type CartLine = (ProductCartLine | ComboCartLine) & {
   cartId: string;
   quantity: number;
-  totalPrice: number;
+  totalPrice: number; // Đơn giá cuối cùng của 1 item (đã bao gồm tất cả)
   note: string;
   _image?: string;
   _categoryIds?: string[];
@@ -73,8 +112,8 @@ export interface CartState {
 
   // --- Delivery Time State ---
   deliveryOption: DeliveryOption;
-  scheduledDate: string; // YYYY-MM-DD
-  scheduledTime: string; // HH:mm [NEW]
+  scheduledDate: string;
+  scheduledTime: string;
 
   // --- Shipping State ---
   shippingFee: number;
@@ -94,7 +133,6 @@ export interface CartActions {
   startProductConfiguration: (product: Product) => void;
   startComboConfiguration: (combo: Combo) => void;
 
-  
   addItemToCart: (itemData: Omit<CartLine, "cartId" | "quantity">) => void;
   removeItem: (cartId: string) => void;
   updateItemNote: (cartId: string, note: string) => void;

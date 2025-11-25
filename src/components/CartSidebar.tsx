@@ -23,65 +23,27 @@ import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 import type { Coupon } from "@/types";
-import { CreateOrderItem_Option, CartLine } from "@/types/cart";
+import {
+  CreateOrderItem_Option,
+  CartLine,
+  CreateOrderItem_ComboSelection,
+} from "@/types/cart";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
 
-// --- HELPER: Tính tổng tiền Options + Phụ thu (Additional) ---
-const calculateExtrasPrice = (item: CartLine) => {
-  let total = 0;
-  if (item.itemType === "Product") {
-    // Chỉ có options
-    if (item.options) {
-      total += Object.values(item.options)
-        .flat()
-        .reduce((acc, opt) => acc + opt.priceModifier, 0);
-    }
-  } else if (item.itemType === "Combo") {
-    // Combo: Options + Additional Price của từng món
-    if (item.comboSelections) {
-      item.comboSelections.forEach((sel) => {
-        const optionsPrice = Object.values(sel.options || {})
-          .flat()
-          .reduce((acc, opt) => acc + opt.priceModifier, 0);
-        total += (sel.additionalPrice || 0) + optionsPrice;
-      });
-    }
-  }
-  return total;
-};
-
-// --- HELPER: Tính giá gốc thị trường (Market Price) chưa bao gồm Extras ---
-const calculateBaseMarketPrice = (item: CartLine) => {
-  let total = 0;
-  if (item.itemType === "Product") {
-    total = item.item.basePrice;
-  } else if (item.itemType === "Combo") {
-    // Tổng giá base của các món thành phần (chưa cộng phụ thu hay options)
-    if (!item.comboSelections || item.comboSelections.length === 0) {
-      return item.item.comboPrice;
-    }
-    item.comboSelections.forEach((sel) => {
-      total += sel.product.basePrice;
-    });
-  }
-  return total;
-};
-
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
 }: {
   options: Record<string, CreateOrderItem_Option[]>;
 }) {
-  const allOptions = React.useMemo(() => {
-    return Object.values(options || {}).flat();
-  }, [options]);
-
+  const allOptions = React.useMemo(
+    () => Object.values(options || {}).flat(),
+    [options]
+  );
   if (allOptions.length === 0) return null;
-
   return (
     <div className="pl-3 mt-1 space-y-0.5">
       {allOptions.map((opt, index) => (
@@ -98,6 +60,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   );
 });
 
+// @ts-ignore
 const ItemNoteView = React.memo(function ItemNoteView({
   cartId,
   note,
@@ -107,16 +70,7 @@ const ItemNoteView = React.memo(function ItemNoteView({
   noteDraft,
   setNoteDraft,
   saveNote,
-}: {
-  cartId: string;
-  note?: string;
-  isEditing: boolean;
-  beginEditNote: (id: string, current?: string) => void;
-  cancelEditNote: () => void;
-  noteDraft: string;
-  setNoteDraft: (v: string) => void;
-  saveNote: (id: string) => void;
-}) {
+}: any) {
   if (!isEditing) {
     return (
       <div className="mt-2">
@@ -136,14 +90,12 @@ const ItemNoteView = React.memo(function ItemNoteView({
             onClick={() => beginEditNote(cartId, "")}
             className="text-[11px] text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            Thêm ghi chú
+            <Pencil className="w-3.5 h-3.5" /> Thêm ghi chú
           </button>
         )}
       </div>
     );
   }
-
   return (
     <div className="mt-2">
       <textarea
@@ -151,7 +103,7 @@ const ItemNoteView = React.memo(function ItemNoteView({
         onChange={(e) => setNoteDraft(e.target.value)}
         rows={2}
         placeholder="Ghi chú..."
-        className="w-full p-2 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition"
+        className="w-full p-2 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-400 transition"
       />
       <div className="mt-1.5 flex items-center gap-2">
         <button
@@ -198,10 +150,8 @@ export default function CartSidebar() {
     selectedAddress,
     shippingDistance,
   } = useCart();
-
   const router = useRouter();
   const { user } = useAuthStore();
-
   const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
   const [manualCouponCode, setManualCouponCode] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -244,24 +194,106 @@ export default function CartSidebar() {
       acc[key].push(status);
       return acc;
     }, {} as Record<string, (EligibilityStatus & { coupon: Coupon })[]>);
-
-    for (const key in groups) {
-      groups[key].sort((a, b) => {
-        const getValue = (coupon: Coupon) =>
-          coupon.valueType === "percentage" ? coupon.value : coupon.value ?? 0;
-        return getValue(b.coupon) - getValue(a.coupon);
-      });
-    }
     return groups;
   }, [publicCouponStatuses]);
-
   const groupTitles: Record<string, string> = {
     discount_code: "Mã Giảm Giá",
     freeship: "Miễn Phí Vận Chuyển",
   };
 
+  // --- RENDER COMBO HEADER ---
+  const renderPriceHeader = (item: CartLine) => {
+    if (item.itemType === "Product") {
+      const optionsPrice = Object.values(item.options || {})
+        .flat()
+        .reduce((acc, opt) => acc + opt.priceModifier, 0);
+      const unitTotal = item.totalPrice;
+      const displayBaseSale = Math.max(0, unitTotal - optionsPrice);
+      const displayBaseMarket = item.item.basePrice;
+      const hasDiscount = displayBaseSale < displayBaseMarket;
+      return (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+          <p className="text-sm font-medium text-primary-600">
+            {formatPrice(displayBaseSale)}
+          </p>
+          {hasDiscount && (
+            <p className="text-xs text-gray-400 line-through">
+              {formatPrice(displayBaseMarket)}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // Logic fallback nếu không có snapshot (dù rất hiếm vì đã fix ở modal)
+    const snapshot = item.comboSnapshot;
+    if (!snapshot)
+      return (
+        <p className="text-sm font-medium text-primary-600">
+          {formatPrice(item.totalPrice)}
+        </p>
+      );
+
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+        <p className="text-sm font-medium text-primary-600">
+          {formatPrice(snapshot.totalFinalPrice)}
+        </p>
+        {snapshot.totalSavings > 0 && (
+          <p className="text-xs text-gray-400 line-through decoration-gray-400">
+            {formatPrice(snapshot.totalMarketPrice)}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // --- RENDER COMBO ITEM DETAIL ---
+  const renderComboItemDetail = (
+    item: CartLine,
+    sel: CreateOrderItem_ComboSelection,
+    idx: number
+  ) => {
+    if (item.itemType !== "Combo" || !item.comboSnapshot) return null;
+
+    // Tìm snapshot tương ứng
+    const itemSnapshot = item.comboSnapshot.items.find(
+      (s) => s.productId === sel.product.id
+    );
+
+    const surcharge = itemSnapshot
+      ? itemSnapshot.surcharge
+      : sel.additionalPrice;
+    const appliedPrice = itemSnapshot ? itemSnapshot.appliedItemPrice : 0;
+
+    return (
+      <div key={idx} className="mb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs font-medium text-gray-800 flex-1">
+            • {sel.product.name}
+          </p>
+
+          <div className="flex flex-col items-end">
+            {item.comboSnapshot.mode === "SLOT_PRICE" && appliedPrice > 0 && (
+              <span className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded mb-0.5">
+                Slot: {formatPrice(appliedPrice)}
+              </span>
+            )}
+            {surcharge > 0 && (
+              <span className="text-[10px] font-medium text-red-600 bg-red-50 px-1 rounded border border-red-100">
+                Phụ thu: +{formatPrice(surcharge)}
+              </span>
+            )}
+          </div>
+        </div>
+        <RenderSelectedOptions options={sel.options} />
+      </div>
+    );
+  };
+
   const renderCartContent = () => (
     <div className="flex flex-col h-full bg-white">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-primary-50 to-white">
         <div className="flex items-center gap-2">
           <ShoppingCart size={20} className="text-primary-600" />
@@ -287,6 +319,7 @@ export default function CartSidebar() {
         </div>
       </div>
 
+      {/* Address */}
       {user && selectedAddress && (
         <div className="px-4 py-2 bg-orange-50 border-b border-orange-100 flex items-center gap-2">
           <MapPin size={14} className="text-orange-600 flex-shrink-0" />
@@ -306,6 +339,7 @@ export default function CartSidebar() {
         </div>
       )}
 
+      {/* Items */}
       <div className="flex-1 overflow-y-auto">
         {cartItems.length === 0 ? (
           <div className="text-center h-full flex flex-col justify-center items-center p-4">
@@ -313,26 +347,13 @@ export default function CartSidebar() {
               <ShoppingCart className="w-10 h-10 text-gray-300" />
             </div>
             <p className="text-lg text-gray-500 font-medium">Giỏ hàng trống</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Thêm sản phẩm để bắt đầu mua sắm
-            </p>
           </div>
         ) : (
           <>
             <div className="p-3 space-y-2.5">
               {cartItems.map((item) => {
                 const isEditing = editingNoteId === item.cartId;
-
-                // --- LOGIC GIÁ MỚI ---
-                const extrasPrice = calculateExtrasPrice(item); // Tổng tiền phụ thu + options
-                const unitTotal = item.totalPrice; // Giá cuối cùng của 1 unit (đã bao gồm tất cả)
-                const lineTotal = unitTotal * item.quantity; // Tổng tiền (cột bên phải)
-
-                // Giá hiển thị dưới tên món (không bao gồm options/phụ thu)
-                const displayBaseSale = Math.max(0, unitTotal - extrasPrice);
-                const displayBaseMarket = calculateBaseMarketPrice(item);
-
-                const hasDiscount = displayBaseSale < displayBaseMarket;
+                const lineTotal = item.totalPrice * item.quantity;
 
                 return (
                   <div
@@ -353,46 +374,22 @@ export default function CartSidebar() {
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
                             {item.item.name}
                           </h4>
-                          {/* Giá gốc sản phẩm (đã tách options) */}
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-                            <p className="text-sm font-medium text-primary-600">
-                              {formatPrice(displayBaseSale)}
-                            </p>
-                            {hasDiscount && (
-                              <p className="text-xs text-gray-400 line-through decoration-gray-400">
-                                {formatPrice(displayBaseMarket)}
-                              </p>
-                            )}
-                          </div>
+                          {renderPriceHeader(item)}
                         </div>
-                        <div className="mt-1.5">
+
+                        <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
                           {item.itemType === "Product" && (
                             <RenderSelectedOptions options={item.options} />
                           )}
                           {item.itemType === "Combo" && (
-                            <div className="pl-2 mt-1 space-y-1 border-l-2 border-gray-100">
-                              {(item.comboSelections || []).map((sel, idx) => (
-                                <div key={idx}>
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    <p className="text-xs font-medium text-gray-700">
-                                      • {sel.product.name}
-                                    </p>
-                                    {/* Hiển thị phụ thu */}
-                                    {sel.additionalPrice &&
-                                      sel.additionalPrice > 0 && (
-                                        <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1 rounded">
-                                          +{formatPrice(sel.additionalPrice)}
-                                        </span>
-                                      )}
-                                  </div>
-                                  <RenderSelectedOptions
-                                    options={sel.options}
-                                  />
-                                </div>
-                              ))}
+                            <div className="pl-1 space-y-1">
+                              {(item.comboSelections || []).map((sel, idx) =>
+                                renderComboItemDetail(item, sel, idx)
+                              )}
                             </div>
                           )}
                         </div>
+
                         <ItemNoteView
                           cartId={item.cartId}
                           note={item.note}
@@ -404,6 +401,7 @@ export default function CartSidebar() {
                           saveNote={saveNote}
                         />
                       </div>
+
                       <div className="flex flex-col items-end gap-3.5">
                         <div className="flex items-center gap-1.5">
                           <button
@@ -441,79 +439,7 @@ export default function CartSidebar() {
             </div>
 
             <div className="px-3 pb-3 space-y-2.5">
-              <div className="bg-gray-50 rounded-lg p-3 border">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="font-semibold text-sm flex items-center gap-1.5">
-                    <Tag size={13} className="text-primary-500" />
-                    Mã khuyến mãi
-                  </label>
-                  <button
-                    onClick={() => setIsCouponPanelOpen(true)}
-                    className="text-sm font-medium hover:text-primary-700 flex items-center gap-1"
-                  >
-                    Xem thêm
-                    <ChevronRight size={12} />
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={manualCouponCode}
-                    onChange={(e) =>
-                      setManualCouponCode(e.target.value.toUpperCase())
-                    }
-                    placeholder="Nhập mã..."
-                    className="flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-primary-500"
-                  />
-                  <button
-                    onClick={handleApplyPrivateCoupon}
-                    disabled={couponStatus.isLoading || !manualCouponCode}
-                    className="px-4 py-2 bg-primary-500 hover:bg-gray-900 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {couponStatus.isLoading ? (
-                      <Loader className="animate-spin mx-auto" size={16} />
-                    ) : (
-                      "Áp dụng"
-                    )}
-                  </button>
-                </div>
-                {couponStatus.error && (
-                  <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                    <XCircle size={12} />
-                    {couponStatus.error}
-                  </p>
-                )}
-              </div>
-
-              {appliedCoupons.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="font-semibold text-xs text-gray-700 flex items-center gap-1">
-                    <Check size={12} className="text-green-600" />
-                    Đã áp dụng ({appliedCoupons.length})
-                  </p>
-                  {appliedCoupons.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
-                    >
-                      <div>
-                        <p className="text-green-800 font-semibold text-xs">
-                          {c.name}
-                        </p>
-                        <p className="text-xs text-gray-600 font-mono">
-                          {c.code}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeCoupon(c.id)}
-                        className="p-1 hover:bg-red-100 rounded-full"
-                      >
-                        <XCircle size={16} className="text-red-500" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
+              {/* Coupon & Summary */}
               <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-3 border space-y-1.5">
                 <h3 className="font-semibold text-sm text-gray-800 mb-2 pb-2 border-b">
                   Chi tiết đơn hàng
@@ -592,50 +518,40 @@ export default function CartSidebar() {
         <div className="w-8" />
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {isLoadingPublicCoupons ? (
-          <div className="flex justify-center items-center h-full">
-            <Loader className="animate-spin text-primary-500" size={28} />
-          </div>
-        ) : Object.keys(groupedCoupons).length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <Tag className="w-10 h-10 text-primary-400 mb-3" />
-            <p className="text-sm text-gray-500">Chưa có khuyến mãi</p>
-          </div>
-        ) : (
-          Object.entries(groupedCoupons).map(([type, coupons]) => (
-            <div key={type}>
-              <h3 className="font-bold text-sm text-gray-800 mb-2">
-                {groupTitles[type] || "Khác"}
-              </h3>
-              <div className="space-y-2">
-                {coupons.map(({ coupon }) => {
-                  const isApplied = appliedCoupons.some(
-                    (c) => c.id === coupon.id
-                  );
-                  return (
-                    <label
-                      key={coupon.id}
-                      className={`block relative overflow-hidden rounded-lg border bg-white p-3 flex gap-3 ${
-                        isApplied ? "ring-2 ring-primary-500" : ""
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm">{coupon.name}</h4>
-                        <p className="text-xs text-gray-600">{coupon.code}</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isApplied}
-                        onChange={() => handleTogglePublicCoupon(coupon)}
-                        className="w-4 h-4"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
+        {/* Render coupons... */}
+        {Object.entries(groupedCoupons).map(([type, coupons]) => (
+          <div key={type}>
+            <h3 className="font-bold text-sm text-gray-800 mb-2">
+              {groupTitles[type] || "Khác"}
+            </h3>
+            <div className="space-y-2">
+              {coupons.map(({ coupon }) => {
+                const isApplied = appliedCoupons.some(
+                  (c) => c.id === coupon.id
+                );
+                return (
+                  <label
+                    key={coupon.id}
+                    className={`block relative overflow-hidden rounded-lg border bg-white p-3 flex gap-3 ${
+                      isApplied ? "ring-2 ring-primary-500" : ""
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm">{coupon.name}</h4>
+                      <p className="text-xs text-gray-600">{coupon.code}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isApplied}
+                      onChange={() => handleTogglePublicCoupon(coupon)}
+                      className="w-4 h-4"
+                    />
+                  </label>
+                );
+              })}
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </div>
   );
