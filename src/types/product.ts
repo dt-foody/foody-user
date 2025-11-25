@@ -27,7 +27,11 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  
   basePrice: number;
+  salePrice?: number;
+  promotion?: PricePromotion;
+
   image: string;
   category: string | Category | null;
   isActive: boolean;

@@ -290,10 +290,11 @@ export default function CartSidebar() {
               {cartItems.map((item) => {
                 const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
+
                 const baseOrComboPrice =
                   (item.itemType === "Product"
-                    ? item.item.basePrice
-                    : item.item.comboPrice) ?? 0;
+                    ? item.item.salePrice || item.item.basePrice // Check salePrice first
+                    : item.item.comboPrice) || 0;
 
                 return (
                   <div

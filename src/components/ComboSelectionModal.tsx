@@ -116,9 +116,6 @@ export default function ComboSelectionModal() {
     setNote("");
   }, [comboForSelection]);
 
-  // ====================================================================
-  // [FIX] LOGIC TÍNH GIÁ ĐÃ ĐƯỢC SỬA LẠI
-  // ====================================================================
   const { finalPrice, validationErrors, isFormValid } = useMemo(() => {
     const errors: Record<string, string> = {};
     if (!comboForSelection) {

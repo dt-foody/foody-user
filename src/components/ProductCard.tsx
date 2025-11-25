@@ -11,10 +11,7 @@ const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 interface ProductCardProps {
-  product: Product & {
-    promotion?: PricePromotion;
-    salePrice?: number;
-  };
+  product: Product;
   onClick: () => void;
 }
 
@@ -32,7 +29,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     !product.optionGroups || product.optionGroups.length === 0;
 
   /** 🔹 Cập nhật quantity dựa trên giỏ hàng */
-  // SỬA: Logic này giờ sẽ chạy cho CẢ hai loại sản phẩm
   useEffect(() => {
     // ID tiền tố để tìm kiếm
     const productIdPrefix = `${product.id}::`;
@@ -44,7 +40,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       .reduce((sum, currentItem) => sum + currentItem.quantity, 0);
 
     setQuantity(totalQuantity);
-  }, [cartItems, product.id]); // Bỏ isSimpleProduct khỏi dependency array
+  }, [cartItems, product.id]);
 
   // --- HANDLERS ---
   const increase = (e: React.MouseEvent) => {
@@ -54,6 +50,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       id: product.id,
       name: product.name,
       basePrice: product.basePrice,
+      salePrice: hasSale ? product.salePrice : undefined,
     };
 
     const newItemPayload: any = {
@@ -61,7 +58,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       item: itemSnapshot,
       options: {},
       comboSelections: null,
-      totalPrice: finalPrice,
+      totalPrice: finalPrice, // Giá này đã là giá sale (nếu có)
       note: "",
       _image: product.image,
       _categoryIds: product.category ? [product.category.toString()] : [],
@@ -73,6 +70,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const decrease = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Logic này CHỈ hoạt động cho SP đơn giản
+    // Lưu ý: key phải khớp logic buildVariantKey trong store (thường là id + "::")
     const simpleCartId = `${product.id}::`;
     const cartLine = cartItems.find((i) => i.cartId === simpleCartId);
     if (cartLine) updateQuantity(cartLine.cartId, -1);
@@ -83,7 +81,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     e.currentTarget.src = PLACEHOLDER_IMAGE;
   };
 
-  // SỬA: Tạo một biến điều kiện cho nút decrease
   // Nút decrease chỉ được kích hoạt khi:
   // 1. Số lượng > 0
   // 2. VÀ đó LÀ sản phẩm đơn giản
@@ -135,7 +132,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           <div className="flex border border-gray-300 rounded-md overflow-hidden">
             <button
               onClick={decrease}
-              // SỬA: Dùng biến `canDecrease`
               disabled={!canDecrease}
               className={`w-9 h-9 flex items-center justify-center text-lg font-bold transition-colors ${
                 canDecrease

@@ -3,10 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
-import type {
-  OptionItem, // Kiểu UI
-  OptionGroup, // Kiểu UI
-} from "@/types";
+import type { OptionItem, OptionGroup } from "@/types";
 import { CreateOrderItem_Option } from "@/types/cart";
 
 export default function ProductOptionsModal() {
@@ -71,7 +68,7 @@ export default function ProductOptionsModal() {
     });
   };
 
-  // Tính totalPrice (SỬA LỖI TÍNH % TRÊN GIÁ GỐC)
+  // Tính totalPrice
   const { totalPrice, isFormValid, validationErrors } = useMemo(() => {
     if (!productForOptions)
       return {
@@ -80,17 +77,19 @@ export default function ProductOptionsModal() {
         validationErrors: {} as Record<string, string>,
       };
 
-    // `price` là giá đã áp dụng khuyến mãi (nếu có)
-    const displayPrice =
-      (productForOptions as any).price ?? productForOptions.basePrice;
-    let price = displayPrice;
+    // === FIX: Use salePrice if available, otherwise basePrice ===
+    // We check for salePrice explicitly based on your data structure
+    const initialPrice =
+      (productForOptions as any).salePrice ?? productForOptions.basePrice;
+    let price = initialPrice;
+
     const errors: Record<string, string> = {};
 
     Object.values(selectedOptions)
       .flat()
       .forEach((opt) => {
         if (opt.type === "percentage") {
-          // LUÔN TÍNH % TRÊN GIÁ GỐC (basePrice)
+          // LUÔN TÍNH % TRÊN GIÁ GỐC (basePrice) - Keep this logic as per comment
           price += Math.round(
             productForOptions.basePrice * (opt.priceModifier / 100)
           );
@@ -131,6 +130,8 @@ export default function ProductOptionsModal() {
         id: productForOptions.id,
         name: productForOptions.name,
         basePrice: productForOptions.basePrice,
+        // === FIX: Pass salePrice to the cart item snapshot ===
+        salePrice: (productForOptions as any).salePrice,
       },
       totalPrice: totalPrice,
       note: note.trim(),
@@ -148,7 +149,6 @@ export default function ProductOptionsModal() {
   const handleClose = () => setProductForOptions(null);
   if (!productForOptions) return null;
 
-  // ... (Toàn bộ JSX của bạn giữ nguyên từ file cũ) ...
   return (
     <div
       role="dialog"
