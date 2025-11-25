@@ -296,6 +296,16 @@ export default function CartSidebar() {
                     ? item.item.salePrice || item.item.basePrice // Check salePrice first
                     : item.item.comboPrice) || 0;
 
+                const isProduct = item.itemType === "Product";
+                const currentPrice = isProduct
+                  ? item.item.salePrice ?? item.item.basePrice
+                  : item.item.comboPrice || 0;
+                const originalPrice = isProduct ? item.item.basePrice : 0;
+                const hasDiscount =
+                  isProduct &&
+                  typeof item.item.salePrice === "number" &&
+                  item.item.salePrice < item.item.basePrice;
+
                 return (
                   <div
                     key={item.cartId}
@@ -315,11 +325,18 @@ export default function CartSidebar() {
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
                             {item.item.name}
                           </h4>
-                          {baseOrComboPrice > 0 && (
-                            <p className="text-sm text-gray-500">
-                              {formatPrice(baseOrComboPrice)}
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                            {currentPrice > 0 && (
+                              <p className="text-sm font-medium text-primary-600">
+                                {formatPrice(currentPrice)}
+                              </p>
+                            )}
+                            {hasDiscount && (
+                              <p className="text-xs text-gray-400 line-through decoration-gray-400">
+                                {formatPrice(originalPrice)}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="mt-1.5">
                           {item.itemType === "Product" && (

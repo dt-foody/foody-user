@@ -130,8 +130,10 @@ export default function ProductOptionsModal() {
         id: productForOptions.id,
         name: productForOptions.name,
         basePrice: productForOptions.basePrice,
+        comboPrice: 0,
         // === FIX: Pass salePrice to the cart item snapshot ===
         salePrice: (productForOptions as any).salePrice,
+        promotion: (productForOptions as any).promotion?.id || (productForOptions as any).promotion?._id || null,
       },
       totalPrice: totalPrice,
       note: note.trim(),

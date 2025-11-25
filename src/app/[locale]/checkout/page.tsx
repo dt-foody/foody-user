@@ -240,10 +240,16 @@ export default function CheckoutRetro() {
             </thead>
             <tbody>
               {cartItems.map((it) => {
-                const baseOrComboPrice =
-                  (it.itemType === "Product"
-                    ? it.item.basePrice
-                    : it.item.comboPrice) ?? 0;
+                const isProduct = it.itemType === "Product";
+                const currentPrice = isProduct
+                  ? it.item.salePrice ?? it.item.basePrice
+                  : it.item.comboPrice || 0;
+                const originalPrice = isProduct ? it.item.basePrice : 0;
+                const hasDiscount =
+                  isProduct &&
+                  typeof it.item.salePrice === "number" &&
+                  it.item.salePrice < it.item.basePrice;
+
                 return (
                   <tr
                     key={it.cartId}
@@ -261,11 +267,18 @@ export default function CheckoutRetro() {
                         />
                         <div>
                           <span className="font-semibold">{it.item.name}</span>
-                          {baseOrComboPrice > 0 && (
-                            <p className="text-gray-500 text-xs">
-                              {formatPrice(baseOrComboPrice)}
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                            {currentPrice > 0 && (
+                              <p className="text-sm font-medium text-primary-600">
+                                {formatPrice(currentPrice)}
+                              </p>
+                            )}
+                            {hasDiscount && (
+                              <p className="text-xs text-gray-400 line-through decoration-gray-400">
+                                {formatPrice(originalPrice)}
+                              </p>
+                            )}
+                          </div>
                           {it.itemType === "Product" && (
                             <RenderSelectedOptions options={it.options} />
                           )}

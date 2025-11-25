@@ -51,6 +51,8 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       name: product.name,
       basePrice: product.basePrice,
       salePrice: hasSale ? product.salePrice : undefined,
+      comboPrice: 0,
+      promotion: product.promotion?.id || "",
     };
 
     const newItemPayload: any = {

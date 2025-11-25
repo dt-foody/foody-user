@@ -10,9 +10,10 @@ import { CustomerAddress } from "./customer";
 export interface CreateOrderItem_ItemSnapshot {
   id: string;
   name: string;
-  basePrice?: number;
-  comboPrice?: number;
+  basePrice: number;
+  comboPrice: number;
   salePrice?: number;
+  promotion: string | "";
 }
 
 /**
