@@ -15,7 +15,7 @@ import {
   Check,
   MessageSquare,
   Pencil,
-  MapPin, // Import MapPin
+  MapPin,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -23,12 +23,41 @@ import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 import type { Coupon } from "@/types";
-import { CreateOrderItem_Option } from "@/types/cart";
+import { CreateOrderItem_Option, CartLine } from "@/types/cart"; // Import CartLine
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
+
+// --- HELPER: Tính tổng giá trị Option ---
+const getOptionsPrice = (
+  options?: Record<string, CreateOrderItem_Option[]>
+) => {
+  if (!options) return 0;
+  return Object.values(options)
+    .flat()
+    .reduce((acc, opt) => acc + opt.priceModifier, 0);
+};
+
+// --- HELPER: Tính giá trị thị trường (Giá gốc) của Item ---
+const calculateMarketPrice = (item: CartLine) => {
+  let total = 0;
+  if (item.itemType === "Product") {
+    // Giá gốc sản phẩm + Options
+    total = item.item.basePrice + getOptionsPrice(item.options);
+  } else if (item.itemType === "Combo") {
+    // Tổng giá gốc các món trong combo + Options của từng món
+    // Đây là giá trị thực tế nếu mua lẻ từng món
+    item.comboSelections?.forEach((sel) => {
+      total += sel.product.basePrice + getOptionsPrice(sel.options);
+    });
+
+    // Fallback: Nếu combo không có selections (trường hợp cũ), dùng comboPrice
+    if (total === 0) total = item.item.comboPrice;
+  }
+  return total;
+};
 
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
@@ -154,8 +183,8 @@ export default function CartSidebar() {
     applyPrivateCoupon,
     removeCoupon,
     originalShippingFee,
-    selectedAddress, // Lấy selectedAddress
-    shippingDistance, // Lấy khoảng cách
+    selectedAddress,
+    shippingDistance,
   } = useCart();
 
   const router = useRouter();
@@ -218,11 +247,6 @@ export default function CartSidebar() {
     discount_code: "Mã Giảm Giá",
     freeship: "Miễn Phí Vận Chuyển",
   };
-  const formatDiscountValue = (coupon: Coupon) => {
-    if (coupon.type === "freeship") return "Free Ship";
-    if (coupon.valueType === "percentage") return `${coupon.value}%`;
-    return `${coupon.value.toLocaleString("vi-VN")}đ`;
-  };
 
   const renderCartContent = () => (
     <div className="flex flex-col h-full bg-white">
@@ -252,7 +276,7 @@ export default function CartSidebar() {
         </div>
       </div>
 
-      {/* === THÔNG TIN ĐỊA CHỈ (MỚI) === */}
+      {/* Address Info */}
       {user && selectedAddress && (
         <div className="px-4 py-2 bg-orange-50 border-b border-orange-100 flex items-center gap-2">
           <MapPin size={14} className="text-orange-600 flex-shrink-0" />
@@ -272,7 +296,7 @@ export default function CartSidebar() {
         </div>
       )}
 
-      {/* Items */}
+      {/* Items List */}
       <div className="flex-1 overflow-y-auto">
         {cartItems.length === 0 ? (
           <div className="text-center h-full flex flex-col justify-center items-center p-4">
@@ -288,23 +312,14 @@ export default function CartSidebar() {
           <>
             <div className="p-3 space-y-2.5">
               {cartItems.map((item) => {
-                const lineTotal = item.totalPrice * item.quantity;
                 const isEditing = editingNoteId === item.cartId;
 
-                const baseOrComboPrice =
-                  (item.itemType === "Product"
-                    ? item.item.salePrice || item.item.basePrice // Check salePrice first
-                    : item.item.comboPrice) || 0;
+                // [UPDATE] Logic hiển thị giá chuẩn
+                const unitPrice = item.totalPrice; // Giá bán (Sale Price) - Đã bao gồm discount
+                const lineTotal = unitPrice * item.quantity;
+                const marketPrice = calculateMarketPrice(item); // Giá trị thực tế (Base Price + Options)
 
-                const isProduct = item.itemType === "Product";
-                const currentPrice = isProduct
-                  ? item.item.salePrice ?? item.item.basePrice
-                  : item.item.comboPrice || 0;
-                const originalPrice = isProduct ? item.item.basePrice : 0;
-                const hasDiscount =
-                  isProduct &&
-                  typeof item.item.salePrice === "number" &&
-                  item.item.salePrice < item.item.basePrice;
+                const hasDiscount = unitPrice < marketPrice;
 
                 return (
                   <div
@@ -326,14 +341,12 @@ export default function CartSidebar() {
                             {item.item.name}
                           </h4>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-                            {currentPrice > 0 && (
-                              <p className="text-sm font-medium text-primary-600">
-                                {formatPrice(currentPrice)}
-                              </p>
-                            )}
+                            <p className="text-sm font-medium text-primary-600">
+                              {formatPrice(unitPrice)}
+                            </p>
                             {hasDiscount && (
                               <p className="text-xs text-gray-400 line-through decoration-gray-400">
-                                {formatPrice(originalPrice)}
+                                {formatPrice(marketPrice)}
                               </p>
                             )}
                           </div>
@@ -343,11 +356,11 @@ export default function CartSidebar() {
                             <RenderSelectedOptions options={item.options} />
                           )}
                           {item.itemType === "Combo" && (
-                            <div className="pl-2 mt-1 space-y-1">
+                            <div className="pl-2 mt-1 space-y-1 border-l-2 border-gray-100">
                               {(item.comboSelections || []).map((sel, idx) => (
                                 <div key={idx}>
-                                  <p className="text-sm font-medium text-gray-700">
-                                    - {sel.product.name}
+                                  <p className="text-xs font-medium text-gray-700">
+                                    • {sel.product.name}
                                   </p>
                                   <RenderSelectedOptions
                                     options={sel.options}
@@ -404,9 +417,9 @@ export default function CartSidebar() {
               })}
             </div>
 
-            {/* Summary */}
+            {/* Summary Section - Keep as is... */}
             <div className="px-3 pb-3 space-y-2.5">
-              {/* Private Input */}
+              {/* ... (Giữ nguyên phần Coupon Input và Summary) ... */}
               <div className="bg-gray-50 rounded-lg p-3 border">
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-semibold text-sm flex items-center gap-1.5">
@@ -547,7 +560,7 @@ export default function CartSidebar() {
   );
 
   const renderCouponPanel = () => (
-    /* Giữ nguyên renderCouponPanel như cũ, không thay đổi */
+    // ... (Giữ nguyên logic render Coupon Panel)
     <div className="flex flex-col h-full bg-gradient-to-b from-primary-50 to-gray-50">
       <div className="flex items-center px-4 py-3 border-b bg-white shadow-sm">
         <button
@@ -562,9 +575,6 @@ export default function CartSidebar() {
         <div className="w-8" />
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {/* Copy nội dung coupon panel cũ vào đây */}
-        {/* ... */}
-        {/* Code cũ dài, tôi sẽ rút gọn phần hiển thị list coupon vì logic ko đổi */}
         {isLoadingPublicCoupons ? (
           <div className="flex justify-center items-center h-full">
             <Loader className="animate-spin text-primary-500" size={28} />
@@ -581,7 +591,7 @@ export default function CartSidebar() {
                 {groupTitles[type] || "Khác"}
               </h3>
               <div className="space-y-2">
-                {coupons.map(({ coupon, isEligible }) => {
+                {coupons.map(({ coupon }) => {
                   const isApplied = appliedCoupons.some(
                     (c) => c.id === coupon.id
                   );

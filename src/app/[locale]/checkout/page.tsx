@@ -16,7 +16,7 @@ import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Image from "next/image";
-import { CreateOrderItem_Option } from "@/types/cart";
+import { CreateOrderItem_Option, CartLine } from "@/types/cart"; // Import CartLine
 
 // === HELPERS ===
 const PLACEHOLDER_IMAGE =
@@ -26,6 +26,30 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 };
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
+
+// --- HELPER: Tính tổng giá trị Option ---
+const getOptionsPrice = (
+  options?: Record<string, CreateOrderItem_Option[]>
+) => {
+  if (!options) return 0;
+  return Object.values(options)
+    .flat()
+    .reduce((acc, opt) => acc + opt.priceModifier, 0);
+};
+
+// --- HELPER: Tính giá trị thị trường (Giá gốc) của Item ---
+const calculateMarketPrice = (item: CartLine) => {
+  let total = 0;
+  if (item.itemType === "Product") {
+    total = item.item.basePrice + getOptionsPrice(item.options);
+  } else if (item.itemType === "Combo") {
+    item.comboSelections?.forEach((sel) => {
+      total += sel.product.basePrice + getOptionsPrice(sel.options);
+    });
+    if (total === 0) total = item.item.comboPrice;
+  }
+  return total;
+};
 
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
@@ -68,8 +92,8 @@ export default function CheckoutRetro() {
     setDeliveryOption,
     scheduledDate,
     setScheduledDate,
-    scheduledTime, // [NEW] Dùng state từ store
-    setScheduledTime, // [NEW] Action set state từ store
+    scheduledTime,
+    setScheduledTime,
     // Coupon & Fee
     applyPrivateCoupon,
     couponStatus,
@@ -87,25 +111,17 @@ export default function CheckoutRetro() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
-  // scheduledTime đã được chuyển vào store, bỏ state cục bộ
-
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // [EFFECT 1] Tự động tính lại ship khi:
-  // - Người dùng đổi địa chỉ (selectedAddress thay đổi - đã xử lý trong setSelectedAddress, nhưng check lại ở đây cho chắc)
-  // - Người dùng đổi option giao hàng (Immediate <-> Scheduled)
-  // - Người dùng đổi ngày/giờ hẹn
   useEffect(() => {
-    // Debounce nhẹ nếu cần, nhưng ở đây gọi luôn cũng được
     const timer = setTimeout(() => {
       recalculateShippingFee();
-    }, 500); // Đợi 500ms sau khi user chọn xong giờ
+    }, 500);
     return () => clearTimeout(timer);
   }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
 
-  // [EFFECT 2] Fill thông tin người nhận
   useEffect(() => {
     if (selectedAddress) {
       setName(selectedAddress.recipientName || "");
@@ -116,16 +132,6 @@ export default function CheckoutRetro() {
   const formatDiscount = (val: number) =>
     val > 0 ? `-${val.toLocaleString("vi-VN")}đ` : "0đ";
   const getMinDate = () => new Date().toISOString().split("T")[0];
-  const formatDeliveryText = () => {
-    if (deliveryOption === "immediate") return "Giao hàng nhanh chóng";
-    if (scheduledDate) {
-      const timeStr = scheduledTime ? `${scheduledTime} ` : "";
-      return `Hẹn giao ${timeStr}ngày ${new Date(
-        scheduledDate
-      ).toLocaleDateString("vi-VN")}`;
-    }
-    return "Chưa chọn ngày giao";
-  };
 
   const handleApplyCoupon = async () => {
     if (!voucherInput.trim()) {
@@ -159,7 +165,6 @@ export default function CheckoutRetro() {
         toast.error("Vui lòng chọn thời gian giao hàng!");
         return;
       }
-      // Validate quá khứ
       const selectedDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
       if (selectedDateTime < new Date()) {
         toast.warning("Thời gian hẹn phải ở tương lai!");
@@ -189,9 +194,6 @@ export default function CheckoutRetro() {
         address: selectedAddress,
       },
       note: note.trim(),
-      // [UPDATE] Gửi thêm thông tin thời gian giao hàng nếu cần thiết cho việc lưu Order
-      // Backend hiện tại có thể chưa lưu field này vào Order Model,
-      // nhưng việc tính ship đã được xử lý trước đó qua API getShippingFee.
     };
 
     try {
@@ -228,7 +230,7 @@ export default function CheckoutRetro() {
             </button>
           </div>
 
-          {/* LIST ITEM TABLE (Giữ nguyên) */}
+          {/* LIST ITEM TABLE */}
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-black/50">
@@ -240,15 +242,10 @@ export default function CheckoutRetro() {
             </thead>
             <tbody>
               {cartItems.map((it) => {
-                const isProduct = it.itemType === "Product";
-                const currentPrice = isProduct
-                  ? it.item.salePrice ?? it.item.basePrice
-                  : it.item.comboPrice || 0;
-                const originalPrice = isProduct ? it.item.basePrice : 0;
-                const hasDiscount =
-                  isProduct &&
-                  typeof it.item.salePrice === "number" &&
-                  it.item.salePrice < it.item.basePrice;
+                // [UPDATE] Logic tính giá chuẩn
+                const unitPrice = it.totalPrice;
+                const marketPrice = calculateMarketPrice(it);
+                const hasDiscount = unitPrice < marketPrice;
 
                 return (
                   <tr
@@ -268,14 +265,12 @@ export default function CheckoutRetro() {
                         <div>
                           <span className="font-semibold">{it.item.name}</span>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-                            {currentPrice > 0 && (
-                              <p className="text-sm font-medium text-primary-600">
-                                {formatPrice(currentPrice)}
-                              </p>
-                            )}
+                            <p className="text-sm font-medium text-primary-600">
+                              {formatPrice(unitPrice)}
+                            </p>
                             {hasDiscount && (
                               <p className="text-xs text-gray-400 line-through decoration-gray-400">
-                                {formatPrice(originalPrice)}
+                                {formatPrice(marketPrice)}
                               </p>
                             )}
                           </div>
@@ -300,11 +295,11 @@ export default function CheckoutRetro() {
                       </div>
                     </td>
                     <td className="p-2 text-right">
-                      {it.totalPrice.toLocaleString("vi-VN")}đ
+                      {unitPrice.toLocaleString("vi-VN")}đ
                     </td>
                     <td className="p-2 text-center">{it.quantity}</td>
                     <td className="p-2 text-right font-medium">
-                      {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}đ
+                      {(unitPrice * it.quantity).toLocaleString("vi-VN")}đ
                     </td>
                   </tr>
                 );
@@ -312,7 +307,7 @@ export default function CheckoutRetro() {
             </tbody>
           </table>
 
-          {/* Coupons List */}
+          {/* Coupons & Totals section - Keep as is... */}
           {appliedCoupons.length > 0 && (
             <div className="mt-5 border-t pt-3 space-y-2">
               <h3 className="font-bold text-sm flex gap-1">
@@ -335,7 +330,6 @@ export default function CheckoutRetro() {
             </div>
           )}
 
-          {/* Totals */}
           <div className="mt-6 border-t pt-3 text-sm space-y-1.5">
             <div className="flex justify-between">
               <span>Tạm tính</span>
@@ -381,7 +375,7 @@ export default function CheckoutRetro() {
           </div>
         </div>
 
-        {/* RIGHT: Info */}
+        {/* RIGHT: Info - Keep as is... */}
         <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4 h-fit">
           {/* ADDRESS CARD */}
           <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
