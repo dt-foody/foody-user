@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, CheckCircle, Circle } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import type {
@@ -93,6 +93,7 @@ export default function ComboSelectionModal() {
       let preselected: ConfiguredComboItem[] = [];
 
       if (slot.minSelection > 0) {
+        // Ưu tiên chọn món có giá thấp nhất để hiển thị giá base tốt nhất cho khách
         const priceKey =
           comboMode === ComboPricingMode.SLOT_PRICE
             ? "slotPrice"
@@ -116,85 +117,131 @@ export default function ComboSelectionModal() {
     setNote("");
   }, [comboForSelection]);
 
-  const { finalPrice, validationErrors, isFormValid } = useMemo(() => {
-    const errors: Record<string, string> = {};
-    if (!comboForSelection) {
-      return { finalPrice: 0, validationErrors: {}, isFormValid: false };
-    }
-
-    const combo = comboForSelection as Combo;
-    let price = 0;
-
-    // 1. Validation
-    combo.items.forEach((slot) => {
-      const count = (selections[slot.slotName] || []).length;
-      if (count < slot.minSelection) {
-        errors[
-          slot.slotName
-        ] = `Vui lòng chọn ít nhất ${slot.minSelection} món.`;
+  // --- LOGIC TÍNH GIÁ ĐÃ UPDATE (Tách biệt Base Price & Surcharges) ---
+  const { finalPrice, originalPrice, validationErrors, isFormValid } =
+    useMemo(() => {
+      const errors: Record<string, string> = {};
+      if (!comboForSelection) {
+        return {
+          finalPrice: 0,
+          originalPrice: 0,
+          validationErrors: {},
+          isFormValid: false,
+        };
       }
-    });
-    const isValid = Object.keys(errors).length === 0;
 
-    // 2. Tính toán các thành phần giá
-    const allSelections = Object.values(selections).flat();
+      const combo = comboForSelection as Combo;
 
-    // Tổng phụ thu (Additional Price)
-    const totalAdditional = allSelections.reduce(
-      (sum, sel) => sum + sel.productInfo.additionalPrice,
-      0
-    );
+      // Biến lưu giá trị tính toán
+      let baseComboPrice = 0; // Giá gốc của combo (chưa cộng phụ thu)
+      let priceAfterInternalDiscount = 0; // Giá sau khi áp dụng Internal Discount (Mode DISCOUNT)
 
-    // Tổng tiền Options
-    const totalOptionsPrice = allSelections.reduce(
-      (sum, sel) => sum + sel.calculatedOptionsPrice,
-      0
-    );
+      // 1. Validation & Tổng hợp selections
+      combo.items.forEach((slot) => {
+        const count = (selections[slot.slotName] || []).length;
+        if (count < slot.minSelection) {
+          errors[
+            slot.slotName
+          ] = `Vui lòng chọn ít nhất ${slot.minSelection} món.`;
+        }
+      });
+      const isValid = Object.keys(errors).length === 0;
 
-    // --- LOGIC THEO TỪNG MODE ---
+      const allSelections = Object.values(selections).flat();
 
-    if (combo.pricingMode === ComboPricingMode.FIXED) {
-      // FIXED: Giá cứng + Phụ thu + Options
-      price = combo.comboPrice + totalAdditional + totalOptionsPrice;
-    } else if (combo.pricingMode === ComboPricingMode.SLOT_PRICE) {
-      // SLOT_PRICE: Tổng Slot Price + Phụ thu + Options
-      const totalSlotPrice = allSelections.reduce(
-        (sum, sel) => sum + sel.productInfo.slotPrice,
-        0
-      );
-      price = totalSlotPrice + totalAdditional + totalOptionsPrice;
-    } else if (combo.pricingMode === ComboPricingMode.DISCOUNT) {
-      // DISCOUNT: (Tổng Snapshot Price + Phụ thu + Options) - Discount
-      const baseTotal = allSelections.reduce(
-        (sum, sel) => sum + sel.productInfo.snapshotPrice,
+      // 2. Tách biệt các loại phí phụ thu (Surcharges) -> KHÔNG ĐƯỢC GIẢM GIÁ
+      const totalAdditional = allSelections.reduce(
+        (sum, sel) => sum + sel.productInfo.additionalPrice,
         0
       );
 
-      // Tổng giá trị trước khi giảm giá
-      const subTotal = baseTotal + totalAdditional + totalOptionsPrice;
+      const totalOptionsPrice = allSelections.reduce(
+        (sum, sel) => sum + sel.calculatedOptionsPrice,
+        0
+      );
 
-      console.log("subTotal", subTotal);
-      console.log("baseTotal", baseTotal);
-      console.log("totalAdditional", totalAdditional);
-      console.log("totalOptionsPrice", totalOptionsPrice);
+      const totalSurcharges = totalAdditional + totalOptionsPrice;
 
-      if (combo.discountType === DiscountType.PERCENT) {
-        price = Math.round(subTotal * (1 - combo.discountValue / 100));
-      } else if (combo.discountType === DiscountType.AMOUNT) {
-        price = Math.max(0, subTotal - combo.discountValue);
-      } else {
-        price = subTotal;
+      // 3. Tính Base Combo Price (Dựa trên Pricing Mode)
+      if (combo.pricingMode === ComboPricingMode.FIXED) {
+        // Mode FIXED: Giá cứng từ cấu hình (VD: 30000)
+        baseComboPrice = combo.comboPrice;
+        priceAfterInternalDiscount = baseComboPrice;
+      } else if (combo.pricingMode === ComboPricingMode.SLOT_PRICE) {
+        // Mode SLOT_PRICE: Tổng giá slot của các món đã chọn
+        baseComboPrice = allSelections.reduce(
+          (sum, sel) => sum + sel.productInfo.slotPrice,
+          0
+        );
+        priceAfterInternalDiscount = baseComboPrice;
+      } else if (combo.pricingMode === ComboPricingMode.DISCOUNT) {
+        // Mode DISCOUNT: Tổng giá snapshot (giá niêm yết)
+        baseComboPrice = allSelections.reduce(
+          (sum, sel) => sum + sel.productInfo.snapshotPrice,
+          0
+        );
+
+        // Áp dụng giảm giá nội bộ (Internal Discount)
+        if (combo.discountType === DiscountType.PERCENT) {
+          priceAfterInternalDiscount = Math.round(
+            baseComboPrice * (1 - combo.discountValue / 100)
+          );
+        } else if (combo.discountType === DiscountType.AMOUNT) {
+          priceAfterInternalDiscount = Math.max(
+            0,
+            baseComboPrice - combo.discountValue
+          );
+        } else {
+          priceAfterInternalDiscount = baseComboPrice;
+        }
       }
-    }
 
-    return {
-      finalPrice: price,
-      validationErrors: errors,
-      isFormValid: isValid,
-    };
-  }, [selections, comboForSelection]);
+      // 4. Áp dụng EXTERNAL PROMOTION (Flash Sale / Campaign)
+      // Logic: Chỉ giảm trên giá trị gói Combo (priceAfterInternalDiscount), KHÔNG giảm trên phụ thu (totalSurcharges)
+      let finalBasePrice = priceAfterInternalDiscount;
 
-  // ... [Keep handleSelectProduct, handleOptionChange, handleSubmit, helper functions, and Render logic as they are] ...
+      if (combo.promotion) {
+        const { discountType, discountValue, maxDiscountAmount } =
+          combo.promotion;
+        let discountAmount = 0;
+
+        if (discountType === "percentage") {
+          discountAmount = priceAfterInternalDiscount * (discountValue / 100);
+          // Check max discount (trần giảm giá)
+          if (maxDiscountAmount && maxDiscountAmount > 0) {
+            discountAmount = Math.min(discountAmount, maxDiscountAmount);
+          }
+        } else if (discountType === "fixed_amount") {
+          discountAmount = discountValue;
+        }
+
+        // Trừ tiền giảm giá, không được âm
+        finalBasePrice = Math.max(
+          0,
+          Math.round(priceAfterInternalDiscount - discountAmount)
+        );
+      }
+
+      // 5. Tổng kết giá cuối cùng
+      // Final = (Giá Base sau tất cả khuyến mãi) + (Phụ thu sản phẩm) + (Tiền Topping)
+      const finalPrice = finalBasePrice + totalSurcharges;
+
+      // Giá gốc để hiển thị so sánh (Gạch ngang)
+      // Lưu ý: Với mode DISCOUNT, giá gốc so sánh là tổng snapshot price để KH thấy được tổng giá trị thực.
+      // Với các mode khác, giá gốc là giá trước khi áp dụng External Promotion.
+      const originalBase =
+        combo.pricingMode === ComboPricingMode.DISCOUNT
+          ? baseComboPrice
+          : priceAfterInternalDiscount;
+      const originalPrice = originalBase + totalSurcharges;
+
+      return {
+        finalPrice,
+        originalPrice,
+        validationErrors: errors,
+        isFormValid: isValid,
+      };
+    }, [selections, comboForSelection]);
 
   const handleSelectProduct = (
     slot: ComboItem,
@@ -209,10 +256,12 @@ export default function ComboSelectionModal() {
       const isSelected = existingIndex !== -1;
 
       if (slot.maxSelection === 1) {
+        // Logic chọn 1: Nếu đang chọn cái này rồi thì thôi, chưa chọn thì thay thế cái cũ
         if (isSelected) return prev;
         const newItem = createConfiguredItem(productInfo);
         newState[slot.slotName] = [newItem];
       } else {
+        // Logic chọn nhiều (Multi-select)
         if (isSelected) {
           currentSlotSelections.splice(existingIndex, 1);
           newState[slot.slotName] = currentSlotSelections;
@@ -335,7 +384,7 @@ export default function ComboSelectionModal() {
         name: comboForSelection.name,
         comboPrice: comboForSelection.comboPrice,
       },
-      totalPrice: finalPrice,
+      totalPrice: finalPrice, // Sử dụng giá cuối cùng đã tính toán chính xác
       note: note.trim(),
       options: null,
       comboSelections: payloadSelections,
@@ -366,7 +415,6 @@ export default function ComboSelectionModal() {
   };
 
   if (!comboForSelection) return null;
-  const displayPrice = finalPrice;
 
   return (
     <div
@@ -432,22 +480,25 @@ export default function ComboSelectionModal() {
                     );
                     const isChecked = !!selectedItem;
 
+                    // LOGIC HIỂN THỊ GIÁ TRONG TỪNG MÓN
                     let priceDisplay = null;
                     const comboMode = (comboForSelection as Combo).pricingMode;
+
+                    // Nếu là Slot Price thì hiện giá slot (nếu có phụ thu thì cộng vào)
                     if (comboMode === ComboPricingMode.SLOT_PRICE) {
                       priceDisplay = (
                         prodInfo.slotPrice + prodInfo.additionalPrice
                       ).toLocaleString("vi-VN");
-                    } else if (prodInfo.additionalPrice > 0) {
+                    }
+                    // Nếu các mode khác thì chỉ hiện phụ thu nếu có
+                    else if (prodInfo.additionalPrice > 0) {
                       priceDisplay = `+${prodInfo.additionalPrice.toLocaleString(
                         "vi-VN"
                       )}`;
                     }
-                    const originalSlotPrice =
-                      comboMode === ComboPricingMode.SLOT_PRICE &&
-                      prodInfo.snapshotPrice > prodInfo.slotPrice
-                        ? prodInfo.snapshotPrice + prodInfo.additionalPrice
-                        : null;
+
+                    // Hiển thị giá gốc (gạch ngang) chỉ cho trường hợp SLOT_PRICE có giảm giá nội bộ trên từng món (ít dùng)
+                    // Ở đây ta chỉ hiển thị giá thực tế phải trả thêm hoặc giá slot.
 
                     return (
                       <div key={`${slot.slotName}__${product.id}`}>
@@ -464,19 +515,13 @@ export default function ComboSelectionModal() {
                           </span>
 
                           <div className="flex items-center space-x-4">
-                            {(priceDisplay !== null ||
-                              originalSlotPrice !== null) && (
+                            {priceDisplay && (
                               <div className="flex flex-col items-end text-sm">
-                                {priceDisplay !== null && (
-                                  <span className="font-bold text-primary-600">
-                                    {priceDisplay}đ
-                                  </span>
-                                )}
-                                {originalSlotPrice !== null && (
-                                  <span className="text-gray-400 line-through">
-                                    {originalSlotPrice.toLocaleString("vi-VN")}đ
-                                  </span>
-                                )}
+                                <span className="font-bold text-primary-600">
+                                  {comboMode === ComboPricingMode.SLOT_PRICE
+                                    ? `${priceDisplay}đ`
+                                    : priceDisplay}
+                                </span>
                               </div>
                             )}
                             {isChecked ? (
@@ -495,7 +540,6 @@ export default function ComboSelectionModal() {
                                 const currentOptions =
                                   selectedItem.selectedOptions[group.name] ||
                                   [];
-                                const count = currentOptions.length;
 
                                 return (
                                   <div key={group.name} className="space-y-2">
@@ -598,16 +642,35 @@ export default function ComboSelectionModal() {
           </div>
         </main>
 
-        <footer className="p-4 bg-gray-50 border-t flex-shrink-0">
-          <button
-            onClick={handleSubmit}
-            disabled={!isFormValid}
-            className="w-full bg-primary-500 text-white py-2 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-primary-300 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
-          >
-            {isFormValid
-              ? `Thêm vào giỏ - ${displayPrice.toLocaleString("vi-VN")}đ`
-              : "Vui lòng chọn đủ mục"}
-          </button>
+        <footer className="p-4 bg-gray-50 border-t flex-shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <div className="flex flex-col gap-2">
+            {/* Hiển thị giá gốc và tiết kiệm nếu có giảm giá */}
+            {finalPrice < originalPrice && (
+              <div className="flex justify-between items-center px-1">
+                <span className="text-gray-500 text-sm">Giá gốc:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                    Tiết kiệm{" "}
+                    {(originalPrice - finalPrice).toLocaleString("vi-VN")}đ
+                  </span>
+                  <span className="text-gray-400 line-through text-sm font-medium">
+                    {originalPrice.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={!isFormValid}
+              className="w-full bg-primary-500 text-white py-3 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-primary-300 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none flex justify-between items-center px-6"
+            >
+              <span>{isFormValid ? "Thêm vào giỏ" : "Chưa chọn đủ món"}</span>
+              {isFormValid && (
+                <span>{finalPrice.toLocaleString("vi-VN")}đ</span>
+              )}
+            </button>
+          </div>
         </footer>
       </div>
     </div>
