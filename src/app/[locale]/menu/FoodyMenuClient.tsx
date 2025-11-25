@@ -147,6 +147,7 @@ export default function FoodyMenuClient({
           onTabClick={handleTabClick}
         />
 
+        {/* --- SECTION FLASH SALE --- */}
         {initialFlashSaleCategory && (
           <section
             id={`category-${initialFlashSaleCategory.id}`}
@@ -160,18 +161,31 @@ export default function FoodyMenuClient({
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {initialFlashSaleCategory.products.map((product: any) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onClick={() => startProductConfiguration(product)}
-                />
-              ))}
+              {initialFlashSaleCategory.products.map((item: any) => {
+                // Kiểm tra logic Type: Combo hoặc Product
+                if (item.type === "Combo") {
+                  return (
+                    <ComboCard
+                      key={item.id}
+                      combo={item}
+                      onClick={() => startComboConfiguration(item as Combo)}
+                    />
+                  );
+                }
+                // Mặc định là Product
+                return (
+                  <ProductCard
+                    key={item.id}
+                    product={item}
+                    onClick={() => startProductConfiguration(item as Product)}
+                  />
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* 1. Render Combos */}
+        {/* --- SECTION COMBO --- */}
         {hasCombos && (
           <section
             id="section-combo"
@@ -179,9 +193,7 @@ export default function FoodyMenuClient({
             data-scroll-spy-type="combo"
             data-scroll-spy-id="combo"
           >
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              Combo
-            </h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Combo</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {combosToDisplay.map((combo) => (
                 <ComboCard
@@ -194,7 +206,7 @@ export default function FoodyMenuClient({
           </section>
         )}
 
-        {/* 2. Render Products (Category thường) */}
+        {/* --- SECTION PRODUCTS (Categories thường) --- */}
         {hasProducts &&
           categoriesToDisplay.map((group) => (
             <section
@@ -227,7 +239,7 @@ export default function FoodyMenuClient({
             </section>
           ))}
 
-        {/* 3. Hiển thị "Không tìm thấy" (chỉ hiện khi data rỗng hoàn toàn) */}
+        {/* --- SECTION NOT FOUND --- */}
         {isNotFound && <ProductNotFound />}
       </main>
     </div>

@@ -10,10 +10,7 @@ const PLACEHOLDER_IMAGE =
 
 interface ComboCardProps {
   // REFACTORED: Type Combo ở đây đã được cập nhật
-  combo: Combo & {
-    promotion?: PricePromotion;
-    salePrice?: number;
-  };
+  combo: Combo;
   onClick: () => void;
 }
 
@@ -44,15 +41,6 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
     : "Tùy chọn"; // Fallback nếu backend không trả về minPrice
 
   // --- KẾT THÚC LOGIC GIÁ ---
-
-  // Hiển thị các món trong combo (Logic này vẫn đúng)
-  const itemNames = combo.items
-    .flatMap((slot) =>
-      slot.selectableProducts.map((p) => (p.product as Product)?.name)
-    )
-    .filter(Boolean)
-    .slice(0, 3)
-    .join(", ");
 
   return (
     <div
