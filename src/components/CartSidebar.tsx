@@ -23,38 +23,50 @@ import { useCart } from "@/stores/useCartStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { EligibilityStatus } from "@/stores/useCartStore";
 import type { Coupon } from "@/types";
-import { CreateOrderItem_Option, CartLine } from "@/types/cart"; // Import CartLine
+import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
 
-// --- HELPER: Tính tổng giá trị Option ---
-const getOptionsPrice = (
-  options?: Record<string, CreateOrderItem_Option[]>
-) => {
-  if (!options) return 0;
-  return Object.values(options)
-    .flat()
-    .reduce((acc, opt) => acc + opt.priceModifier, 0);
-};
-
-// --- HELPER: Tính giá trị thị trường (Giá gốc) của Item ---
-const calculateMarketPrice = (item: CartLine) => {
+// --- HELPER: Tính tổng tiền Options + Phụ thu (Additional) ---
+const calculateExtrasPrice = (item: CartLine) => {
   let total = 0;
   if (item.itemType === "Product") {
-    // Giá gốc sản phẩm + Options
-    total = item.item.basePrice + getOptionsPrice(item.options);
+    // Chỉ có options
+    if (item.options) {
+      total += Object.values(item.options)
+        .flat()
+        .reduce((acc, opt) => acc + opt.priceModifier, 0);
+    }
   } else if (item.itemType === "Combo") {
-    // Tổng giá gốc các món trong combo + Options của từng món
-    // Đây là giá trị thực tế nếu mua lẻ từng món
-    item.comboSelections?.forEach((sel) => {
-      total += sel.product.basePrice + getOptionsPrice(sel.options);
-    });
+    // Combo: Options + Additional Price của từng món
+    if (item.comboSelections) {
+      item.comboSelections.forEach((sel) => {
+        const optionsPrice = Object.values(sel.options || {})
+          .flat()
+          .reduce((acc, opt) => acc + opt.priceModifier, 0);
+        total += (sel.additionalPrice || 0) + optionsPrice;
+      });
+    }
+  }
+  return total;
+};
 
-    // Fallback: Nếu combo không có selections (trường hợp cũ), dùng comboPrice
-    if (total === 0) total = item.item.comboPrice;
+// --- HELPER: Tính giá gốc thị trường (Market Price) chưa bao gồm Extras ---
+const calculateBaseMarketPrice = (item: CartLine) => {
+  let total = 0;
+  if (item.itemType === "Product") {
+    total = item.item.basePrice;
+  } else if (item.itemType === "Combo") {
+    // Tổng giá base của các món thành phần (chưa cộng phụ thu hay options)
+    if (!item.comboSelections || item.comboSelections.length === 0) {
+      return item.item.comboPrice;
+    }
+    item.comboSelections.forEach((sel) => {
+      total += sel.product.basePrice;
+    });
   }
   return total;
 };
@@ -250,7 +262,6 @@ export default function CartSidebar() {
 
   const renderCartContent = () => (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 bg-gradient-to-r from-primary-50 to-white">
         <div className="flex items-center gap-2">
           <ShoppingCart size={20} className="text-primary-600" />
@@ -276,7 +287,6 @@ export default function CartSidebar() {
         </div>
       </div>
 
-      {/* Address Info */}
       {user && selectedAddress && (
         <div className="px-4 py-2 bg-orange-50 border-b border-orange-100 flex items-center gap-2">
           <MapPin size={14} className="text-orange-600 flex-shrink-0" />
@@ -296,7 +306,6 @@ export default function CartSidebar() {
         </div>
       )}
 
-      {/* Items List */}
       <div className="flex-1 overflow-y-auto">
         {cartItems.length === 0 ? (
           <div className="text-center h-full flex flex-col justify-center items-center p-4">
@@ -314,12 +323,16 @@ export default function CartSidebar() {
               {cartItems.map((item) => {
                 const isEditing = editingNoteId === item.cartId;
 
-                // [UPDATE] Logic hiển thị giá chuẩn
-                const unitPrice = item.totalPrice; // Giá bán (Sale Price) - Đã bao gồm discount
-                const lineTotal = unitPrice * item.quantity;
-                const marketPrice = calculateMarketPrice(item); // Giá trị thực tế (Base Price + Options)
+                // --- LOGIC GIÁ MỚI ---
+                const extrasPrice = calculateExtrasPrice(item); // Tổng tiền phụ thu + options
+                const unitTotal = item.totalPrice; // Giá cuối cùng của 1 unit (đã bao gồm tất cả)
+                const lineTotal = unitTotal * item.quantity; // Tổng tiền (cột bên phải)
 
-                const hasDiscount = unitPrice < marketPrice;
+                // Giá hiển thị dưới tên món (không bao gồm options/phụ thu)
+                const displayBaseSale = Math.max(0, unitTotal - extrasPrice);
+                const displayBaseMarket = calculateBaseMarketPrice(item);
+
+                const hasDiscount = displayBaseSale < displayBaseMarket;
 
                 return (
                   <div
@@ -340,13 +353,14 @@ export default function CartSidebar() {
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
                             {item.item.name}
                           </h4>
+                          {/* Giá gốc sản phẩm (đã tách options) */}
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                             <p className="text-sm font-medium text-primary-600">
-                              {formatPrice(unitPrice)}
+                              {formatPrice(displayBaseSale)}
                             </p>
                             {hasDiscount && (
                               <p className="text-xs text-gray-400 line-through decoration-gray-400">
-                                {formatPrice(marketPrice)}
+                                {formatPrice(displayBaseMarket)}
                               </p>
                             )}
                           </div>
@@ -359,9 +373,18 @@ export default function CartSidebar() {
                             <div className="pl-2 mt-1 space-y-1 border-l-2 border-gray-100">
                               {(item.comboSelections || []).map((sel, idx) => (
                                 <div key={idx}>
-                                  <p className="text-xs font-medium text-gray-700">
-                                    • {sel.product.name}
-                                  </p>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <p className="text-xs font-medium text-gray-700">
+                                      • {sel.product.name}
+                                    </p>
+                                    {/* Hiển thị phụ thu */}
+                                    {sel.additionalPrice &&
+                                      sel.additionalPrice > 0 && (
+                                        <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1 rounded">
+                                          +{formatPrice(sel.additionalPrice)}
+                                        </span>
+                                      )}
+                                  </div>
                                   <RenderSelectedOptions
                                     options={sel.options}
                                   />
@@ -417,9 +440,7 @@ export default function CartSidebar() {
               })}
             </div>
 
-            {/* Summary Section - Keep as is... */}
             <div className="px-3 pb-3 space-y-2.5">
-              {/* ... (Giữ nguyên phần Coupon Input và Summary) ... */}
               <div className="bg-gray-50 rounded-lg p-3 border">
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-semibold text-sm flex items-center gap-1.5">
@@ -463,7 +484,6 @@ export default function CartSidebar() {
                 )}
               </div>
 
-              {/* Applied Coupons */}
               {appliedCoupons.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="font-semibold text-xs text-gray-700 flex items-center gap-1">
@@ -494,7 +514,6 @@ export default function CartSidebar() {
                 </div>
               )}
 
-              {/* Order Summary */}
               <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-3 border space-y-1.5">
                 <h3 className="font-semibold text-sm text-gray-800 mb-2 pb-2 border-b">
                   Chi tiết đơn hàng
@@ -541,7 +560,6 @@ export default function CartSidebar() {
         )}
       </div>
 
-      {/* Footer */}
       {cartItems.length > 0 && (
         <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
           <button
@@ -560,7 +578,6 @@ export default function CartSidebar() {
   );
 
   const renderCouponPanel = () => (
-    // ... (Giữ nguyên logic render Coupon Panel)
     <div className="flex flex-col h-full bg-gradient-to-b from-primary-50 to-gray-50">
       <div className="flex items-center px-4 py-3 border-b bg-white shadow-sm">
         <button

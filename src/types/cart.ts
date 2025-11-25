@@ -34,6 +34,7 @@ export interface CreateOrderItem_ComboSelection {
     name: string;
     basePrice: number;
   };
+  additionalPrice: number;
   // Tùy chọn cho sản phẩm con đó (VD: Coca Size L)
   options: Record<string, CreateOrderItem_Option[]>;
 }

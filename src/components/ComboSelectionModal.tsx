@@ -371,6 +371,7 @@ export default function ComboSelectionModal() {
               name: product.name,
               basePrice: product.basePrice,
             },
+            additionalPrice: item.productInfo.additionalPrice,
             options: payloadOptions,
           };
         });

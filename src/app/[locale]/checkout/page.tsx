@@ -16,9 +16,8 @@ import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
 import Image from "next/image";
-import { CreateOrderItem_Option, CartLine } from "@/types/cart"; // Import CartLine
+import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 
-// === HELPERS ===
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
 const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -27,26 +26,40 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
 
-// --- HELPER: Tính tổng giá trị Option ---
-const getOptionsPrice = (
-  options?: Record<string, CreateOrderItem_Option[]>
-) => {
-  if (!options) return 0;
-  return Object.values(options)
-    .flat()
-    .reduce((acc, opt) => acc + opt.priceModifier, 0);
-};
-
-// --- HELPER: Tính giá trị thị trường (Giá gốc) của Item ---
-const calculateMarketPrice = (item: CartLine) => {
+// --- HELPER: Tính tổng tiền Options + Phụ thu (Additional) ---
+const calculateExtrasPrice = (item: CartLine) => {
   let total = 0;
   if (item.itemType === "Product") {
-    total = item.item.basePrice + getOptionsPrice(item.options);
+    if (item.options) {
+      total += Object.values(item.options)
+        .flat()
+        .reduce((acc, opt) => acc + opt.priceModifier, 0);
+    }
   } else if (item.itemType === "Combo") {
-    item.comboSelections?.forEach((sel) => {
-      total += sel.product.basePrice + getOptionsPrice(sel.options);
+    if (item.comboSelections) {
+      item.comboSelections.forEach((sel) => {
+        const optionsPrice = Object.values(sel.options || {})
+          .flat()
+          .reduce((acc, opt) => acc + opt.priceModifier, 0);
+        total += (sel.additionalPrice || 0) + optionsPrice;
+      });
+    }
+  }
+  return total;
+};
+
+// --- HELPER: Tính giá gốc thị trường (Base Market Price) ---
+const calculateBaseMarketPrice = (item: CartLine) => {
+  let total = 0;
+  if (item.itemType === "Product") {
+    total = item.item.basePrice;
+  } else if (item.itemType === "Combo") {
+    if (!item.comboSelections || item.comboSelections.length === 0) {
+      return item.item.comboPrice;
+    }
+    item.comboSelections.forEach((sel) => {
+      total += sel.product.basePrice;
     });
-    if (total === 0) total = item.item.comboPrice;
   }
   return total;
 };
@@ -87,14 +100,12 @@ export default function CheckoutRetro() {
     appliedCoupons,
     removeCoupon,
     clearCart,
-    // Delivery logic
     deliveryOption,
     setDeliveryOption,
     scheduledDate,
     setScheduledDate,
     scheduledTime,
     setScheduledTime,
-    // Coupon & Fee
     applyPrivateCoupon,
     couponStatus,
     originalShippingFee,
@@ -242,10 +253,14 @@ export default function CheckoutRetro() {
             </thead>
             <tbody>
               {cartItems.map((it) => {
-                // [UPDATE] Logic tính giá chuẩn
-                const unitPrice = it.totalPrice;
-                const marketPrice = calculateMarketPrice(it);
-                const hasDiscount = unitPrice < marketPrice;
+                // --- LOGIC TÍNH GIÁ ---
+                const extrasPrice = calculateExtrasPrice(it);
+                const unitTotal = it.totalPrice;
+                const lineTotal = unitTotal * it.quantity;
+
+                const displayBaseSale = Math.max(0, unitTotal - extrasPrice);
+                const displayBaseMarket = calculateBaseMarketPrice(it);
+                const hasDiscount = displayBaseSale < displayBaseMarket;
 
                 return (
                   <tr
@@ -264,13 +279,14 @@ export default function CheckoutRetro() {
                         />
                         <div>
                           <span className="font-semibold">{it.item.name}</span>
+                          {/* Hiển thị giá sản phẩm gốc (đã tách option) */}
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                             <p className="text-sm font-medium text-primary-600">
-                              {formatPrice(unitPrice)}
+                              {formatPrice(displayBaseSale)}
                             </p>
                             {hasDiscount && (
                               <p className="text-xs text-gray-400 line-through decoration-gray-400">
-                                {formatPrice(marketPrice)}
+                                {formatPrice(displayBaseMarket)}
                               </p>
                             )}
                           </div>
@@ -280,9 +296,18 @@ export default function CheckoutRetro() {
                           {it.itemType === "Combo" &&
                             (it.comboSelections || []).map((s, i) => (
                               <div key={i} className="ml-2">
-                                <p className="text-xs font-medium">
-                                  - {s.product.name}
-                                </p>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <p className="text-xs font-medium">
+                                    - {s.product.name}
+                                  </p>
+                                  {/* Hiển thị phụ thu */}
+                                  {s.additionalPrice &&
+                                    s.additionalPrice > 0 && (
+                                      <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1 rounded">
+                                        +{formatPrice(s.additionalPrice)}
+                                      </span>
+                                    )}
+                                </div>
                                 <RenderSelectedOptions options={s.options} />
                               </div>
                             ))}
@@ -295,11 +320,12 @@ export default function CheckoutRetro() {
                       </div>
                     </td>
                     <td className="p-2 text-right">
-                      {unitPrice.toLocaleString("vi-VN")}đ
+                      {/* Giá đơn vị (đầy đủ) */}
+                      {unitTotal.toLocaleString("vi-VN")}đ
                     </td>
                     <td className="p-2 text-center">{it.quantity}</td>
                     <td className="p-2 text-right font-medium">
-                      {(unitPrice * it.quantity).toLocaleString("vi-VN")}đ
+                      {lineTotal.toLocaleString("vi-VN")}đ
                     </td>
                   </tr>
                 );
@@ -307,7 +333,7 @@ export default function CheckoutRetro() {
             </tbody>
           </table>
 
-          {/* Coupons & Totals section - Keep as is... */}
+          {/* Coupons & Totals - Giữ nguyên */}
           {appliedCoupons.length > 0 && (
             <div className="mt-5 border-t pt-3 space-y-2">
               <h3 className="font-bold text-sm flex gap-1">
@@ -375,7 +401,7 @@ export default function CheckoutRetro() {
           </div>
         </div>
 
-        {/* RIGHT: Info - Keep as is... */}
+        {/* RIGHT: Info - Giữ nguyên */}
         <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4 h-fit">
           {/* ADDRESS CARD */}
           <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
