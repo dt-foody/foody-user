@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { X, CheckCircle, Circle } from "lucide-react";
+import { X, CheckCircle, Circle, Tag } from "lucide-react"; // Added Tag icon
 import { useCartStore } from "@/stores/useCartStore";
 import type {
   Product,
@@ -183,10 +183,11 @@ export default function ComboSelectionModal() {
           appliedItemPrice = item.productInfo.slotPrice;
           comboBaseCalc += appliedItemPrice;
         } else if (mode === "DISCOUNT") {
-          appliedItemPrice = item.productInfo.snapshotPrice;
+          // UPDATE: Mode DISCOUNT dùng giá realtime (basePrice)
+          appliedItemPrice = prod.basePrice;
           comboBaseCalc += appliedItemPrice;
         } else {
-          // FIXED: Item không có giá riêng
+          // FIXED: Item không có giá riêng, giá trị nằm ở comboPrice
           appliedItemPrice = 0;
         }
 
@@ -435,7 +436,23 @@ export default function ComboSelectionModal() {
     return `Chọn ${minSelection} - ${maxSelection}`;
   };
 
+  // --- HELPER: Discount Tag Text ---
+  const getDiscountTagText = () => {
+    if (!comboForSelection) return null;
+    if (
+      comboForSelection.pricingMode === ComboPricingMode.DISCOUNT &&
+      comboForSelection.discountValue > 0
+    ) {
+      return comboForSelection.discountType === DiscountType.PERCENT
+        ? `-${comboForSelection.discountValue}%`
+        : `-${comboForSelection.discountValue / 1000}k`;
+    }
+    return null;
+  };
+
   if (!comboForSelection) return null;
+
+  const discountTagText = getDiscountTagText();
 
   return (
     <div
@@ -448,22 +465,22 @@ export default function ComboSelectionModal() {
         className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="p-4 border-b relative flex-shrink-0">
-          <h2 className="text-xl font-bold text-center text-gray-800">
+        <header className="p-4 border-b relative flex-shrink-0 bg-white z-10">
+          <h2 className="text-xl font-bold text-center text-gray-800 pr-8 line-clamp-1">
             {comboForSelection.name}
           </h2>
           <button
             onClick={handleClose}
             aria-label="Close"
-            className="absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full hover:bg-gray-100"
+            className="absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <X className="w-6 h-6 text-gray-500" />
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
           {comboForSelection.description && (
-            <p className="text-gray-600 pb-2 border-b border-gray-100">
+            <p className="text-gray-600 pb-4 border-b border-gray-200 text-sm leading-relaxed">
               {comboForSelection.description}
             </p>
           )}
@@ -474,23 +491,29 @@ export default function ComboSelectionModal() {
             return (
               <div
                 key={slot.slotName}
-                className={`p-4 border rounded-lg ${
-                  error ? "border-red-300 bg-red-50" : "border-gray-200"
+                className={`bg-white p-4 border rounded-xl shadow-sm transition-colors ${
+                  error
+                    ? "border-red-300 ring-1 ring-red-100"
+                    : "border-gray-200"
                 }`}
               >
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {slot.slotName}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {getSlotRequirementText(slot)}
-                </p>
-                {error && (
-                  <p className="text-sm text-red-600 mt-2 font-medium">
-                    {error}
-                  </p>
-                )}
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">
+                      {slot.slotName}
+                    </h3>
+                    <p className="text-xs font-medium text-gray-500 mt-0.5">
+                      {getSlotRequirementText(slot)}
+                    </p>
+                  </div>
+                  {error && (
+                    <span className="text-xs text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md">
+                      {error}
+                    </span>
+                  )}
+                </div>
 
-                <div className="mt-3 space-y-3">
+                <div className="space-y-3">
                   {slot.selectableProducts.map((prodInfo) => {
                     const product = prodInfo.product as Product;
                     if (!product) return null;
@@ -501,53 +524,73 @@ export default function ComboSelectionModal() {
                     );
                     const isChecked = !!selectedItem;
 
+                    // --- LOGIC HIỂN THỊ GIÁ SẢN PHẨM (UPDATED) ---
                     let priceDisplay = null;
                     const comboMode = (comboForSelection as Combo).pricingMode;
 
                     if (comboMode === ComboPricingMode.SLOT_PRICE) {
+                      // SLOT_PRICE: Giá fix theo slot
                       priceDisplay = (
                         prodInfo.slotPrice + prodInfo.additionalPrice
                       ).toLocaleString("vi-VN");
+                    } else if (comboMode === ComboPricingMode.DISCOUNT) {
+                      // DISCOUNT: Hiển thị giá gốc sản phẩm (vì giảm giá áp dụng sau)
+                      // Nếu có additionalPrice thì cộng vào
+                      priceDisplay = (
+                        product.basePrice + prodInfo.additionalPrice
+                      ).toLocaleString("vi-VN");
                     } else if (prodInfo.additionalPrice > 0) {
+                      // FIXED: Chỉ hiện phụ thu nếu có
                       priceDisplay = `+${prodInfo.additionalPrice.toLocaleString(
                         "vi-VN"
                       )}`;
                     }
+                    // ---------------------------------------------
 
                     return (
-                      <div key={`${slot.slotName}__${product.id}`}>
+                      <div
+                        key={`${slot.slotName}__${product.id}`}
+                        className="group"
+                      >
                         <label
                           onClick={() => handleSelectProduct(slot, prodInfo)}
-                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all bg-white hover:border-primary-400 ${
+                          className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all relative overflow-hidden ${
                             isChecked
-                              ? "bg-primary-50 border-primary-500 ring-1 ring-primary-300"
-                              : ""
+                              ? "bg-primary-50/50 border-primary-500 ring-1 ring-primary-200"
+                              : "bg-white hover:border-primary-300 hover:shadow-sm"
                           }`}
                         >
-                          <span className="font-medium text-gray-800">
-                            {product.name}
-                          </span>
+                          <div className="flex items-center gap-3 flex-1">
+                            {isChecked ? (
+                              <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                            ) : (
+                              <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 group-hover:text-primary-400 transition-colors" />
+                            )}
+                            <span
+                              className={`font-medium text-sm ${
+                                isChecked ? "text-primary-900" : "text-gray-700"
+                              }`}
+                            >
+                              {product.name}
+                            </span>
+                          </div>
 
-                          <div className="flex items-center space-x-4">
+                          <div className="flex items-center pl-2">
                             {priceDisplay && (
                               <div className="flex flex-col items-end text-sm">
-                                <span className="font-bold text-primary-600">
-                                  {comboMode === ComboPricingMode.SLOT_PRICE
+                                <span className="font-bold text-gray-900 group-hover:text-primary-700">
+                                  {comboMode === ComboPricingMode.SLOT_PRICE ||
+                                  comboMode === ComboPricingMode.DISCOUNT
                                     ? `${priceDisplay}đ`
                                     : priceDisplay}
                                 </span>
                               </div>
                             )}
-                            {isChecked ? (
-                              <CheckCircle className="w-5 h-5 text-primary-600" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-gray-300" />
-                            )}
                           </div>
                         </label>
 
                         {isChecked && hasOptions && selectedItem && (
-                          <div className="p-4 bg-gray-50 rounded-b-lg border-t border-gray-200 space-y-4">
+                          <div className="p-4 mx-1 bg-gray-50 border-x border-b border-gray-200 rounded-b-lg space-y-4 text-sm animate-in slide-in-from-top-2 duration-200">
                             {(product.optionGroups || [])
                               .sort((a, b) => a.priority - b.priority)
                               .map((group) => {
@@ -558,16 +601,16 @@ export default function ComboSelectionModal() {
                                 return (
                                   <div key={group.name} className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                      <h3 className="font-semibold text-gray-900">
+                                      <h3 className="font-semibold text-gray-800">
                                         {group.name}
                                       </h3>
-                                      <span className="text-xs font-medium text-gray-600 bg-gray-200 px-1.5 py-0.5 rounded-full">
+                                      <span className="text-[10px] uppercase font-bold tracking-wider text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
                                         {group.minOptions > 0
                                           ? "Bắt buộc"
                                           : "Tùy chọn"}
                                       </span>
                                     </div>
-                                    <div className="space-y-2 pt-1">
+                                    <div className="grid grid-cols-1 gap-2">
                                       {group.options
                                         .sort((a, b) => a.priority - b.priority)
                                         .map((option) => {
@@ -598,23 +641,30 @@ export default function ComboSelectionModal() {
                                                   option
                                                 )
                                               }
-                                              className="flex items-center justify-between p-2.5 border rounded-md cursor-pointer transition-all bg-white hover:border-primary-300 has-[:checked]:bg-primary-50 has-[:checked]:border-primary-400"
+                                              className={`flex items-center justify-between p-2 border rounded-md cursor-pointer transition-all ${
+                                                isOptChecked
+                                                  ? "bg-white border-primary-400 shadow-sm"
+                                                  : "bg-white border-transparent hover:border-gray-300"
+                                              }`}
                                             >
-                                              <span className="font-medium text-gray-800 text-sm">
-                                                {option.name}
-                                              </span>
-                                              <div className="flex items-center space-x-3">
-                                                <span className="text-gray-700 text-sm">
-                                                  {priceText}
-                                                </span>
+                                              <div className="flex items-center gap-2">
                                                 <input
                                                   type={inputType}
                                                   name={`${selectedItem.instanceId}-${group.name}`}
                                                   checked={isOptChecked}
                                                   readOnly
-                                                  className={`pointer-events-none form-${inputType} h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300`}
+                                                  className={`pointer-events-none form-${inputType} h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 bg-gray-50`}
                                                 />
+                                                <span className="font-medium text-gray-700">
+                                                  {option.name}
+                                                </span>
                                               </div>
+
+                                              {option.priceModifier > 0 && (
+                                                <span className="text-xs text-gray-500 font-medium">
+                                                  {priceText}
+                                                </span>
+                                              )}
                                             </label>
                                           );
                                         })}
@@ -635,46 +685,61 @@ export default function ComboSelectionModal() {
           <div>
             <label
               htmlFor="combo-note"
-              className="text-lg font-semibold text-gray-900 mb-2 block"
+              className="text-sm font-bold text-gray-900 mb-2 block uppercase tracking-wide"
             >
-              Ghi chú
+              Ghi chú món ăn
             </label>
             <textarea
               id="combo-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="Ghi chú cho quán (ví dụ: ít đường, không cay...)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition"
+              placeholder="Ví dụ: ít đường, không cay..."
+              className="w-full p-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-200 focus:border-primary-500 transition resize-none"
             />
           </div>
         </main>
 
-        <footer className="p-4 bg-gray-50 border-t flex-shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-          <div className="flex flex-col gap-2">
-            {comboSnapshot && comboSnapshot.totalSavings > 0 && (
-              <div className="flex justify-between items-center px-1">
-                <span className="text-gray-500 text-sm">Giá gốc:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+        <footer className="p-4 bg-white border-t flex-shrink-0 shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.05)] z-20">
+          <div className="flex flex-col gap-3">
+            {/* Information Row: Savings + Discount Tag */}
+            <div className="flex justify-between items-center text-sm">
+              <div className="flex items-center gap-2">
+                {discountTagText && (
+                  <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">
+                    <Tag className="w-3 h-3" />
+                    {discountTagText}
+                  </span>
+                )}
+                {comboSnapshot && comboSnapshot.totalSavings > 0 && (
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
                     Tiết kiệm{" "}
                     {comboSnapshot.totalSavings.toLocaleString("vi-VN")}đ
                   </span>
-                  <span className="text-gray-400 line-through text-sm font-medium">
+                )}
+              </div>
+
+              {comboSnapshot && comboSnapshot.totalMarketPrice > finalPrice && (
+                <div className="text-right">
+                  <span className="text-gray-400 line-through text-xs mr-1">
                     {comboSnapshot.totalMarketPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <button
               onClick={handleSubmit}
               disabled={!isFormValid}
-              className="w-full bg-primary-500 text-white py-3 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-primary-300 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none flex justify-between items-center px-6"
+              className="group w-full bg-primary-500 text-white py-3.5 rounded-xl font-bold text-base transition-all shadow-md hover:shadow-lg hover:shadow-primary-500/30 hover:bg-primary-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none flex justify-between items-center px-5 active:scale-[0.98]"
             >
-              <span>{isFormValid ? "Thêm vào giỏ" : "Chưa chọn đủ món"}</span>
+              <span className="font-bold">
+                {isFormValid ? "Thêm vào giỏ hàng" : "Vui lòng chọn đủ món"}
+              </span>
               {isFormValid && (
-                <span>{finalPrice.toLocaleString("vi-VN")}đ</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded text-sm group-hover:bg-white/30 transition-colors">
+                  {finalPrice.toLocaleString("vi-VN")}đ
+                </span>
               )}
             </button>
           </div>
