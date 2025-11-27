@@ -439,6 +439,79 @@ export default function CartSidebar() {
             </div>
 
             <div className="px-3 pb-3 space-y-2.5">
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-semibold text-sm flex items-center gap-1.5">
+                    <Tag size={13} className="text-primary-500" />
+                    Mã khuyến mãi
+                  </label>
+                  <button
+                    onClick={() => setIsCouponPanelOpen(true)}
+                    className="text-sm font-medium hover:text-primary-700 flex items-center gap-1"
+                  >
+                    Xem thêm
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={manualCouponCode}
+                    onChange={(e) =>
+                      setManualCouponCode(e.target.value.toUpperCase())
+                    }
+                    placeholder="Nhập mã..."
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border focus:ring-primary-500"
+                  />
+                  <button
+                    onClick={handleApplyPrivateCoupon}
+                    disabled={couponStatus.isLoading || !manualCouponCode}
+                    className="px-4 py-2 bg-primary-500 hover:bg-gray-900 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {couponStatus.isLoading ? (
+                      <Loader className="animate-spin mx-auto" size={16} />
+                    ) : (
+                      "Áp dụng"
+                    )}
+                  </button>
+                </div>
+                {couponStatus.error && (
+                  <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    <XCircle size={12} />
+                    {couponStatus.error}
+                  </p>
+                )}
+              </div>
+
+              {/* Applied Coupons */}
+              {appliedCoupons.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-xs text-gray-700 flex items-center gap-1">
+                    <Check size={12} className="text-green-600" />
+                    Đã áp dụng ({appliedCoupons.length})
+                  </p>
+                  {appliedCoupons.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
+                    >
+                      <div>
+                        <p className="text-green-800 font-semibold text-xs">
+                          {c.name}
+                        </p>
+                        <p className="text-xs text-gray-600 font-mono">
+                          {c.code}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeCoupon(c.id)}
+                        className="p-1 hover:bg-red-100 rounded-full"
+                      >
+                        <XCircle size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {/* Coupon & Summary */}
               <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-3 border space-y-1.5">
                 <h3 className="font-semibold text-sm text-gray-800 mb-2 pb-2 border-b">
