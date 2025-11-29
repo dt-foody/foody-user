@@ -12,7 +12,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v13"; // Bump version
+const CART_STORAGE_KEY = "foody_cart_v14"; // Bump version để reset state cũ tránh lỗi
 const DATA_TTL_MS = 60_000; // 1 phút cache
 
 export type DeliveryOption = "immediate" | "scheduled";
@@ -70,14 +70,12 @@ const buildVariantKey = (
 
 // --- TYPE DEFINITIONS ---
 
-// Định nghĩa phần State mở rộng thêm các field mới
 interface ExtendedStateData {
   availableCoupons: Coupon[];
   isLoadingCoupons: boolean;
   couponsFetchedAt: number;
 }
 
-// Interface đầy đủ cho Store (State cũ + State mới + Actions)
 interface ExtendedCartStore extends CartState, ExtendedStateData, CartActions {
   fetchAvailableCoupons: () => Promise<void>;
   toggleCoupon: (coupon: Coupon) => void;
@@ -88,12 +86,10 @@ const initialState: CartState & ExtendedStateData = {
   cartItems: [],
   showCart: false,
 
-  // Fields cũ (để tương thích TypeScript CartState, dù không dùng)
   publicCoupons: [],
   isLoadingPublicCoupons: false,
   publicCouponsFetchedAt: 0,
 
-  // Fields mới
   availableCoupons: [],
   isLoadingCoupons: false,
   couponsFetchedAt: 0,
@@ -287,7 +283,7 @@ export const useCartStore = create<ExtendedCartStore>()(
         }
       },
 
-      // --- NEW COUPON LOGIC ---
+      // --- COUPON LOGIC ---
 
       fetchAvailableCoupons: async () => {
         const { isLoadingCoupons, couponsFetchedAt } = get();
@@ -314,23 +310,33 @@ export const useCartStore = create<ExtendedCartStore>()(
         await get().fetchAvailableCoupons();
       },
 
+      // [FIX] Cập nhật toggleCoupon để xử lý chuyển đổi mượt mà
       toggleCoupon: (coupon: Coupon) => {
-        const { appliedCoupons } = get();
-        const isApplied = appliedCoupons.some(
-          (c) => c.id === coupon.id || (c as any)._id === (coupon as any)._id
-        );
+        set((state) => {
+          // Kiểm tra xem coupon này đã được áp dụng chưa (so sánh id)
+          const isApplied = state.appliedCoupons.some(
+            (c) => c.id === coupon.id
+          );
 
-        if (isApplied) {
-          set({
-            appliedCoupons: appliedCoupons.filter(
-              (c) =>
-                c.id !== coupon.id && (c as any)._id !== (coupon as any)._id
-            ),
-          });
-        } else {
-          const others = appliedCoupons.filter((c) => c.type !== coupon.type);
-          set({ appliedCoupons: [...others, coupon] });
-        }
+          if (isApplied) {
+            // Nếu đang áp dụng -> Bỏ chọn (Remove)
+            return {
+              appliedCoupons: state.appliedCoupons.filter(
+                (c) => c.id !== coupon.id
+              ),
+            };
+          } else {
+            // Nếu chưa áp dụng -> Chọn (Switch)
+            // 1. Loại bỏ các coupon cùng loại (VD: chọn mã giảm giá mới thì bỏ mã cũ)
+            const others = state.appliedCoupons.filter(
+              (c) => c.type !== coupon.type
+            );
+            // 2. Thêm coupon mới vào
+            return {
+              appliedCoupons: [...others, coupon],
+            };
+          }
+        });
       },
 
       applyPrivateCoupon: async (code: string) => {
@@ -406,7 +412,7 @@ export function useCart() {
     [store.cartItems]
   );
 
-  // 2. Xử lý danh sách Coupon
+  // 2. Xử lý danh sách Coupon & Override Logic Backend
   const processedCoupons = useMemo(() => {
     // @ts-ignore
     const cartContext = { items: store.cartItems, subtotal };
@@ -436,6 +442,7 @@ export function useCart() {
     }
 
     return store.availableCoupons.map((coupon) => {
+      // Check lại điều kiện tại Frontend (Realtime theo giỏ hàng)
       // @ts-ignore
       const check = checkCouponEligibility(coupon, cartContext, userData);
 
@@ -452,7 +459,11 @@ export function useCart() {
       let isEligible = check.isEligible;
       let reason = check.reason;
 
+      // Logic Override:
+      // Nếu FE thấy thỏa điều kiện (isEligible=true), ta sẽ BỎ QUA lỗi mềm từ backend
+      // (vì backend trả về status lúc chưa có giỏ hàng)
       if (isEligible) {
+        // Chỉ chặn nếu gặp lỗi hệ thống cứng
         if (
           !isBackendApplicable &&
           backendReason &&
@@ -461,12 +472,13 @@ export function useCart() {
           isEligible = false;
           reason = backendReason;
         }
+        // Nếu không phải lỗi cứng -> Coupon hợp lệ (Override backend)
       }
 
       return {
         ...coupon,
         isEligible: isEligible,
-        reason: reason || backendReason,
+        reason: reason || backendReason, // Ưu tiên lý do realtime từ FE
         scope:
           (coupon as any).couponScope ||
           ((coupon as any).voucherId ? "PERSONAL" : "PUBLIC"),
@@ -474,13 +486,13 @@ export function useCart() {
     });
   }, [store.availableCoupons, store.cartItems, subtotal, me]);
 
-  // [FIX] Lọc Voucher cá nhân
+  // Lọc coupon cá nhân
   const personalCoupons = useMemo(
     () => processedCoupons.filter((c) => c.scope === "PERSONAL"),
     [processedCoupons]
   );
 
-  // [FIX] Lọc Voucher công khai & Loại bỏ các mã đã có trong Personal
+  // Lọc coupon công khai & Loại bỏ trùng lặp nếu đã có trong Personal
   const publicCoupons = useMemo(
     () =>
       processedCoupons.filter(
