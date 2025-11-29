@@ -6,21 +6,22 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
 import { orderService } from "@/services/order.service";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
-import { toast } from "sonner";
 import { CartActions, CartLine, CartState } from "@/types/cart";
+import { Coupon } from "@/types";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v12";
-const PUBLIC_COUPON_TTL_MS = 30_000;
+const CART_STORAGE_KEY = "foody_cart_v13"; // Bump version
+const DATA_TTL_MS = 60_000; // 1 phút cache
 
 export type DeliveryOption = "immediate" | "scheduled";
 
-export interface EligibilityStatus {
+export interface CouponStatus extends Coupon {
   isEligible: boolean;
-  reason: string | null;
+  reason?: string | null;
 }
 
+// Hàm tạo key unique cho cart item
 const buildVariantKey = (
   itemData: Omit<CartLine, "cartId" | "quantity">
 ): string => {
@@ -66,16 +67,40 @@ const buildVariantKey = (
   return baseId;
 };
 
-/** ===== Initial state ===== */
-// Đã loại bỏ currentUser khỏi initialState
-const initialState: CartState = {
+// --- TYPE DEFINITIONS ---
+
+// Định nghĩa phần State mở rộng thêm các field mới
+interface ExtendedStateData {
+  availableCoupons: Coupon[];
+  isLoadingCoupons: boolean;
+  couponsFetchedAt: number;
+}
+
+// Interface đầy đủ cho Store (State cũ + State mới + Actions)
+interface ExtendedCartStore extends CartState, ExtendedStateData, CartActions {
+  fetchAvailableCoupons: () => Promise<void>;
+  toggleCoupon: (coupon: Coupon) => void;
+}
+
+// --- INITIAL STATE ---
+// Fix lỗi TS: Khai báo đầy đủ type cho initialState
+const initialState: CartState & ExtendedStateData = {
   cartItems: [],
   showCart: false,
+
+  // Fields cũ (để tương thích TypeScript CartState, dù không dùng)
   publicCoupons: [],
-  appliedCoupons: [],
   isLoadingPublicCoupons: false,
   publicCouponsFetchedAt: 0,
+
+  // Fields mới
+  availableCoupons: [],
+  isLoadingCoupons: false,
+  couponsFetchedAt: 0,
+
+  appliedCoupons: [],
   couponStatus: { isLoading: false, error: null },
+
   productForOptions: null,
   comboForSelection: null,
 
@@ -89,11 +114,12 @@ const initialState: CartState = {
   isCalculatingShip: false,
 };
 
-export const useCartStore = create<CartState & CartActions>()(
+export const useCartStore = create<ExtendedCartStore>()(
   persist(
     (set, get) => ({
       ...initialState,
 
+      // --- UI & Basic Actions ---
       startProductConfiguration: (product) => {
         set({
           productForOptions: product,
@@ -261,92 +287,92 @@ export const useCartStore = create<CartState & CartActions>()(
         }
       },
 
-      applyPublicCoupon: (coupon) => {
-        const current = get().appliedCoupons;
-        if (current.some((c) => c.id === coupon.id)) return;
+      // --- NEW COUPON LOGIC ---
 
-        set((state) => {
-          const others = state.appliedCoupons.filter((c) => c.id !== coupon.id);
-          if (coupon.type === "freeship") {
-            return {
-              appliedCoupons: [
-                ...others.filter((c) => c.type !== "freeship"),
-                coupon,
-              ],
-            };
-          }
-          if (coupon.type === "discount_code") {
-            return {
-              appliedCoupons: [
-                ...others.filter((c) => c.type !== "discount_code"),
-                coupon,
-              ],
-            };
-          }
-          return { appliedCoupons: [...others, coupon] };
-        });
+      fetchAvailableCoupons: async () => {
+        const { isLoadingCoupons, couponsFetchedAt } = get();
+        const now = Date.now();
+        // Cache 1 phút
+        if (isLoadingCoupons || now - couponsFetchedAt < DATA_TTL_MS) return;
+
+        try {
+          set({ isLoadingCoupons: true });
+          const data = await couponService.getAvailables({});
+
+          set({
+            availableCoupons: data || [],
+            isLoadingCoupons: false,
+            couponsFetchedAt: now,
+          });
+        } catch (e) {
+          console.error("Failed to fetch coupons:", e);
+          set({ isLoadingCoupons: false });
+        }
+      },
+
+      fetchPublicCoupons: async () => {
+        // Alias function để tương thích ngược nếu component cũ gọi
+        await get().fetchAvailableCoupons();
+      },
+
+      toggleCoupon: (coupon: Coupon) => {
+        const { appliedCoupons } = get();
+        const isApplied = appliedCoupons.some(
+          (c) => c.id === coupon.id || (c as any)._id === (coupon as any)._id
+        );
+
+        if (isApplied) {
+          set({
+            appliedCoupons: appliedCoupons.filter(
+              (c) =>
+                c.id !== coupon.id && (c as any)._id !== (coupon as any)._id
+            ),
+          });
+        } else {
+          // Logic thay thế: Chỉ cho phép 1 coupon mỗi loại (Freeship/Discount)
+          const others = appliedCoupons.filter((c) => c.type !== coupon.type);
+          set({ appliedCoupons: [...others, coupon] });
+        }
       },
 
       applyPrivateCoupon: async (code: string) => {
         set({ couponStatus: { isLoading: true, error: null } });
-        const { appliedCoupons } = get();
-
-        if (
-          appliedCoupons.some(
-            (c) => c?.code?.toUpperCase() === code.toUpperCase()
-          )
-        ) {
-          const msg = "Mã này đã được áp dụng.";
-          set({ couponStatus: { isLoading: false, error: msg } });
-          return { success: false, message: msg };
-        }
-
         try {
           const res = await couponService.validate(code);
-          set((state) => ({
-            appliedCoupons: [...state.appliedCoupons, res],
-          }));
-          set({ couponStatus: { isLoading: false, error: null } });
+          const { appliedCoupons } = get();
+
+          if (appliedCoupons.some((c) => c.code === res.code)) {
+            set({
+              couponStatus: {
+                isLoading: false,
+                error: "Mã này đã được áp dụng.",
+              },
+            });
+            return { success: false, message: "Mã đã tồn tại." };
+          }
+
+          const others = appliedCoupons.filter((c) => c.type !== res.type);
+          set({
+            appliedCoupons: [...others, res],
+            couponStatus: { isLoading: false, error: null },
+          });
           return { success: true, message: "Áp dụng thành công!" };
-        } catch (err: any) {
-          const msg = err?.message || "Mã không hợp lệ.";
-          set({ couponStatus: { isLoading: false, error: msg } });
-          return { success: false, message: msg };
+        } catch (e: any) {
+          set({
+            couponStatus: {
+              isLoading: false,
+              error: e.message || "Mã không hợp lệ.",
+            },
+          });
+          return { success: false, message: e.message };
         }
       },
 
-      removeCoupon: (id) => {
-        set((state) => ({
-          appliedCoupons: state.appliedCoupons.filter((c) => c.id !== id),
-        }));
-      },
-
-      fetchPublicCoupons: async () => {
-        const { isLoadingPublicCoupons, publicCouponsFetchedAt } = get();
-        if (isLoadingPublicCoupons) return;
-        const now = Date.now();
-        if (
-          publicCouponsFetchedAt &&
-          now - publicCouponsFetchedAt < PUBLIC_COUPON_TTL_MS
-        ) {
-          return;
-        }
-        try {
-          set({ isLoadingPublicCoupons: true });
-          const data = await couponService.getAvailables({});
-          set({
-            publicCoupons: data || [],
-            isLoadingPublicCoupons: false,
-            publicCouponsFetchedAt: now,
-          });
-        } catch (e) {
-          console.error("Failed to fetch public coupons:", e);
-          set({
-            isLoadingPublicCoupons: false,
-            publicCouponsFetchedAt: now,
-          });
-        }
-      },
+      applyPublicCoupon: (c) => get().toggleCoupon(c),
+      removeCoupon: (id) =>
+        set((s) => ({
+          appliedCoupons: s.appliedCoupons.filter((c) => c.id !== id),
+        })),
     }),
     {
       name: CART_STORAGE_KEY,
@@ -360,114 +386,123 @@ export const useCartStore = create<CartState & CartActions>()(
         deliveryOption: state.deliveryOption,
         scheduledDate: state.scheduledDate,
         scheduledTime: state.scheduledTime,
+        // Không persist availableCoupons để luôn fetch mới
       }),
     }
   )
 );
 
-/** ===== Public hook ===== */
+/** ===== PUBLIC HOOK ===== */
 export function useCart() {
-  const {
-    cartItems,
-    appliedCoupons,
-    // Đã xóa currentUser khỏi destructuring
-    publicCoupons,
-    deliveryOption,
-    scheduledDate,
-    scheduledTime,
-    shippingFee,
-    shippingDistance,
-    selectedAddress,
-    isCalculatingShip,
-    ...actionsAndState
-  } = useCartStore((s) => s);
+  const store = useCartStore();
 
+  // 1. Tính Subtotal
   const subtotal = useMemo(
-    () => cartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
-    [cartItems]
+    () =>
+      store.cartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
+    [store.cartItems]
   );
 
   const cartCount = useMemo(
-    () => cartItems.reduce((sum, i) => sum + i.quantity, 0),
-    [cartItems]
+    () => store.cartItems.reduce((sum, i) => sum + i.quantity, 0),
+    [store.cartItems]
   );
 
-  const publicCouponStatuses = useMemo(() => {
+  // 2. Xử lý danh sách Coupon
+  const processedCoupons = useMemo(() => {
     // @ts-ignore
-    const cartData = { items: cartItems, subtotal };
-    return publicCoupons.map((coupon) => {
-      // @ts-ignore - Truyền null vào chỗ currentUser vì đã xóa khỏi store
-      const status = checkCouponEligibility(coupon, cartData, null);
-      return { coupon, ...status };
-    });
-  }, [publicCoupons, cartItems, subtotal]); // Đã xóa currentUser khỏi dependency array
+    const cartContext = { items: store.cartItems, subtotal };
 
+    return store.availableCoupons.map((coupon) => {
+      // Check điều kiện realtime tại FE
+      // @ts-ignore
+      const check = checkCouponEligibility(coupon, cartContext, null);
+      const isBackendApplicable = (coupon as any).isApplicable !== false;
+
+      return {
+        ...coupon,
+        isEligible: check.isEligible && isBackendApplicable,
+        reason: check.reason || (coupon as any).inapplicableReason,
+        // Helper scope
+        scope:
+          (coupon as any).couponScope ||
+          ((coupon as any).voucherId ? "PERSONAL" : "PUBLIC"),
+      };
+    });
+  }, [store.availableCoupons, store.cartItems, subtotal]);
+
+  const personalCoupons = useMemo(
+    () => processedCoupons.filter((c) => c.scope === "PERSONAL"),
+    [processedCoupons]
+  );
+  const publicCoupons = useMemo(
+    () => processedCoupons.filter((c) => c.scope === "PUBLIC"),
+    [processedCoupons]
+  );
+
+  // 3. Tính toán Discount
   const { itemDiscount, shippingDiscount } = useMemo(() => {
     let totalItemDiscount = 0;
     let totalShippingDiscount = 0;
     let currentSubtotal = subtotal;
 
-    const freeship = appliedCoupons.find((c) => c.type === "freeship");
-    if (freeship) totalShippingDiscount = Math.min(shippingFee, freeship.value);
+    const freeshipCoupon = store.appliedCoupons.find(
+      (c) => c.type === "freeship"
+    );
+    if (freeshipCoupon) {
+      totalShippingDiscount = Math.min(store.shippingFee, freeshipCoupon.value);
+    }
 
-    const discountCoupons = appliedCoupons
-      .filter((c) => c.type === "discount_code")
-      .sort((a, b) => (a.valueType === "percentage" ? -1 : 1));
-
-    for (const coupon of discountCoupons) {
-      if (currentSubtotal <= 0) break;
-      let discount =
-        coupon.valueType === "percentage"
-          ? currentSubtotal * (coupon.value / 100)
-          : coupon.value;
-      if (coupon.maxDiscountAmount)
-        discount = Math.min(discount, coupon.maxDiscountAmount);
-      discount = Math.min(discount, currentSubtotal);
-      totalItemDiscount += discount;
-      currentSubtotal -= discount;
+    const discountCoupon = store.appliedCoupons.find(
+      (c) => c.type === "discount_code"
+    );
+    if (discountCoupon) {
+      let val = 0;
+      if (discountCoupon.valueType === "percentage") {
+        val = currentSubtotal * (discountCoupon.value / 100);
+        if (discountCoupon.maxDiscountAmount) {
+          val = Math.min(val, discountCoupon.maxDiscountAmount);
+        }
+      } else {
+        val = discountCoupon.value;
+      }
+      totalItemDiscount = Math.min(val, currentSubtotal);
     }
 
     return {
       itemDiscount: totalItemDiscount,
       shippingDiscount: totalShippingDiscount,
     };
-  }, [subtotal, appliedCoupons, shippingFee]);
+  }, [subtotal, store.appliedCoupons, store.shippingFee]);
 
-  const finalShippingFee = Math.max(0, shippingFee - shippingDiscount);
+  const finalShippingFee = Math.max(0, store.shippingFee - shippingDiscount);
   const finalTotal = Math.max(0, subtotal - itemDiscount + finalShippingFee);
 
   return {
-    ...actionsAndState,
-    cartItems,
-    appliedCoupons,
-    // Đã xóa currentUser
-    publicCoupons,
+    ...store,
     subtotal,
     cartCount,
-    publicCouponStatuses,
+    personalCoupons,
+    publicCoupons,
     itemDiscount,
     shippingDiscount,
     finalShippingFee,
     finalTotal,
-    deliveryOption,
-    scheduledDate,
-    scheduledTime,
-    originalShippingFee: shippingFee,
-    shippingDistance,
-    selectedAddress,
-    isCalculatingShip,
+    originalShippingFee: store.shippingFee,
+    publicCouponStatuses: processedCoupons,
   };
 }
 
+// Component khởi tạo
 export function CartStoreInitializer() {
-  const fetchPublicCoupons = useCartStore((s) => s.fetchPublicCoupons);
+  const fetchAvailableCoupons = useCartStore((s) => s.fetchAvailableCoupons);
   const ranRef = useRef(false);
 
   useEffect(() => {
     if (ranRef.current) return;
     ranRef.current = true;
-    fetchPublicCoupons();
-  }, [fetchPublicCoupons]);
+    fetchAvailableCoupons();
+  }, [fetchAvailableCoupons]);
 
   return null;
 }

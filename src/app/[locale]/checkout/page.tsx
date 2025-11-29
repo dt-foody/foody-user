@@ -1,20 +1,12 @@
 "use client";
 
 import { useCart } from "@/stores/useCartStore";
-import {
-  Gift,
-  XCircle,
-  CheckCircle,
-  Clock,
-  Loader2,
-  MapPin,
-} from "lucide-react";
+import { CheckCircle, Clock, Loader2, MapPin, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
-import { useAuthStore } from "@/stores/useAuthStore";
 import Image from "next/image";
 import {
   CreateOrderItem_Option,
@@ -30,6 +22,7 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
 
+// --- HELPER RENDERERS (Tái sử dụng logic cũ) ---
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
 }: {
@@ -56,7 +49,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   );
 });
 
-export default function CheckoutRetro() {
+export default function CheckoutPage() {
   const {
     cartItems,
     subtotal,
@@ -64,7 +57,6 @@ export default function CheckoutRetro() {
     shippingDiscount,
     finalTotal,
     appliedCoupons,
-    removeCoupon,
     clearCart,
     deliveryOption,
     setDeliveryOption,
@@ -72,18 +64,14 @@ export default function CheckoutRetro() {
     setScheduledDate,
     scheduledTime,
     setScheduledTime,
-    applyPrivateCoupon,
-    couponStatus,
     originalShippingFee,
     shippingDistance,
     selectedAddress,
     isCalculatingShip,
     recalculateShippingFee,
   } = useCart();
-  const router = useRouter();
-  const { me } = useAuthStore();
 
-  const [voucherInput, setVoucherInput] = useState("");
+  const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
@@ -91,11 +79,10 @@ export default function CheckoutRetro() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      recalculateShippingFee();
-    }, 500);
+    const timer = setTimeout(() => recalculateShippingFee(), 500);
     return () => clearTimeout(timer);
   }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
+
   useEffect(() => {
     if (selectedAddress) {
       setName(selectedAddress.recipientName || "");
@@ -103,22 +90,7 @@ export default function CheckoutRetro() {
     }
   }, [selectedAddress]);
 
-  const formatDiscount = (val: number) =>
-    val > 0 ? `-${val.toLocaleString("vi-VN")}đ` : "0đ";
   const getMinDate = () => new Date().toISOString().split("T")[0];
-  const handleApplyCoupon = async () => {
-    if (!voucherInput.trim()) {
-      toast.error("Vui lòng nhập mã voucher.");
-      return;
-    }
-    const result = await applyPrivateCoupon(voucherInput);
-    if (result.success) {
-      toast.success(result.message);
-      setVoucherInput("");
-    } else {
-      toast.error(result.message);
-    }
-  };
 
   const handleSubmit = async () => {
     if (loading) return;
@@ -128,7 +100,6 @@ export default function CheckoutRetro() {
     }
     if (!selectedAddress) {
       toast.error("Vui lòng chọn địa chỉ giao hàng!");
-      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (!cartItems.length) {
@@ -148,11 +119,13 @@ export default function CheckoutRetro() {
       }
     }
 
+    // Payload chuẩn
     const payload = {
-      items: cartItems.map(({ _image, _categoryIds, ...rest }) => rest),
-      appliedCoupons: appliedCoupons.map((el) => ({
-        id: el.id,
-        code: el.code,
+      items: cartItems.map(({ _image, _categoryIds, cartId, ...rest }) => rest),
+      // Gửi cả Voucher ID (private) và Code (public)
+      appliedCoupons: appliedCoupons.map((c) => ({
+        id: c.id,
+        code: c.code,
       })),
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
@@ -184,232 +157,94 @@ export default function CheckoutRetro() {
     }
   };
 
-  // --- RENDER HELPERS ---
   const renderPriceHeader = (item: CartLine) => {
     if (item.itemType === "Product") {
       const optionsPrice = Object.values(item.options || {})
         .flat()
         .reduce((a, b) => a + b.priceModifier, 0);
-      const displayBaseSale = Math.max(0, item.totalPrice - optionsPrice);
-      const hasDiscount = displayBaseSale < item.item.basePrice;
       return (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-          <p className="text-sm font-medium text-primary-600">
-            {formatPrice(displayBaseSale)}
-          </p>
-          {hasDiscount && (
-            <p className="text-xs text-gray-400 line-through">
-              {formatPrice(item.item.basePrice)}
-            </p>
-          )}
-        </div>
+        <p className="text-sm font-medium text-primary-600">
+          {formatPrice(Math.max(0, item.totalPrice - optionsPrice))}
+        </p>
       );
     }
-
-    const snapshot = item.comboSnapshot;
-    if (!snapshot)
-      return (
-        <p className="text-sm font-medium text-primary-600">
-          {formatPrice(item.totalPrice)}
-        </p>
-      );
-
     return (
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-        <p className="text-sm font-medium text-primary-600">
-          {formatPrice(snapshot.totalFinalPrice)}
-        </p>
-        {snapshot.totalSavings > 0 && (
-          <p className="text-xs text-gray-400 line-through decoration-gray-400">
-            {formatPrice(snapshot.totalMarketPrice)}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  const renderComboItemDetail = (
-    item: CartLine,
-    sel: CreateOrderItem_ComboSelection,
-    idx: number
-  ) => {
-    if (item.itemType !== "Combo" || !item.comboSnapshot) return null;
-    const itemSnapshot = item.comboSnapshot.items.find(
-      (s) => s.productId === sel.product.id
-    );
-    const surcharge = itemSnapshot
-      ? itemSnapshot.surcharge
-      : sel.additionalPrice;
-    const appliedPrice = itemSnapshot ? itemSnapshot.appliedItemPrice : 0;
-
-    return (
-      <div key={idx} className="ml-2 mb-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-xs font-medium text-gray-800">
-            - {sel.product.name}
-          </p>
-          <div className="flex flex-col items-end">
-            {item.comboSnapshot.mode === "SLOT_PRICE" && appliedPrice > 0 && (
-              <span className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded mb-0.5">
-                Slot: {formatPrice(appliedPrice)}
-              </span>
-            )}
-            {surcharge > 0 && (
-              <span className="text-[10px] font-medium text-red-600 bg-red-50 px-1 rounded border border-red-100">
-                +{formatPrice(surcharge)}
-              </span>
-            )}
-          </div>
-        </div>
-        <RenderSelectedOptions options={sel.options} />
-      </div>
+      <p className="text-sm font-medium text-primary-600">
+        {formatPrice(item.totalPrice)}
+      </p>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#fffaf5] text-[#3b2f26] px-6 py-8 flex flex-col items-center font-sans">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* LEFT: Order Items */}
-        <div className="lg:col-span-3 bg-white border border-black/20 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4 border-b border-black/40 pb-2">
-            <h2 className="text-xl font-bold">Chi tiết đơn hàng</h2>
-            <button
-              onClick={() => router.push("/menu")}
-              className="text-sm hover:text-[#b9915f]"
-            >
-              ← Quay lại thực đơn
-            </button>
-          </div>
+    <div className="min-h-screen bg-[#fffaf5] text-[#3b2f26] px-4 py-8 flex justify-center font-sans">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* LEFT: Order Items (8 cols) */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="bg-white border border-black/10 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <CheckCircle size={20} className="text-green-600" /> Chi tiết
+                đơn hàng
+              </h2>
+              <button
+                onClick={() => router.push("/menu")}
+                className="text-sm hover:text-[#b9915f]"
+              >
+                ← Quay lại thực đơn
+              </button>
+            </div>
 
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-black/50">
-                <th className="text-left py-2">Tên món</th>
-                <th className="text-right py-2">Đơn giá</th>
-                <th className="text-center py-2">SL</th>
-                <th className="text-right py-2">Thành tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cartItems.map((it) => {
-                const lineTotal = it.totalPrice * it.quantity;
-                return (
-                  <tr
-                    key={it.cartId}
-                    className="border-b border-black/20 hover:bg-[#f8f3ef]"
-                  >
-                    <td className="p-2 align-top">
-                      <div className="flex items-start gap-2.5">
-                        <Image
-                          src={it._image || PLACEHOLDER_IMAGE}
-                          alt={it.item.name}
-                          onError={handleImageError}
-                          width={48}
-                          height={48}
-                          className="rounded-md flex-shrink-0 object-cover"
-                        />
-                        <div className="flex-1">
-                          <span className="font-semibold">{it.item.name}</span>
-                          {renderPriceHeader(it)}
-
-                          <div className="mt-2 text-gray-600">
-                            {it.itemType === "Product" && (
-                              <RenderSelectedOptions options={it.options} />
-                            )}
-                            {it.itemType === "Combo" &&
-                              (it.comboSelections || []).map((s, i) =>
-                                renderComboItemDetail(it, s, i)
-                              )}
+            <div className="divide-y">
+              {cartItems.map((it) => (
+                <div key={it.cartId} className="py-4 flex gap-4">
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-gray-50 flex-shrink-0">
+                    <Image
+                      src={it._image || PLACEHOLDER_IMAGE}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      onError={handleImageError}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <h3 className="font-semibold text-gray-800">
+                        {it.item.name}
+                      </h3>
+                      <span className="font-bold text-gray-900">
+                        {(it.totalPrice * it.quantity).toLocaleString("vi-VN")}đ
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <span>SL: {it.quantity}</span>
+                      <span>x</span>
+                      {renderPriceHeader(it)}
+                    </div>
+                    <div className="mt-2 text-gray-600">
+                      {it.itemType === "Product" && (
+                        <RenderSelectedOptions options={it.options} />
+                      )}
+                      {it.itemType === "Combo" &&
+                        (it.comboSelections || []).map((s, i) => (
+                          <div key={i} className="ml-3 text-xs text-gray-500">
+                            - {s.product.name}
                           </div>
-
-                          {it.note && (
-                            <div className="mt-1 text-xs bg-blue-50 p-1 text-blue-700 rounded italic">
-                              {it.note}
-                            </div>
-                          )}
-                        </div>
+                        ))}
+                    </div>
+                    {it.note && (
+                      <div className="mt-1 text-xs bg-blue-50 p-1 text-blue-700 rounded italic">
+                        {it.note}
                       </div>
-                    </td>
-                    <td className="p-2 text-right">
-                      {it.totalPrice.toLocaleString("vi-VN")}đ
-                    </td>
-                    <td className="p-2 text-center">{it.quantity}</td>
-                    <td className="p-2 text-right font-medium">
-                      {lineTotal.toLocaleString("vi-VN")}đ
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Coupons & Totals */}
-          {appliedCoupons.length > 0 && (
-            <div className="mt-5 border-t pt-3 space-y-2">
-              <h3 className="font-bold text-sm flex gap-1">
-                <Gift size={15} /> Ưu đãi
-              </h3>
-              {appliedCoupons.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex justify-between bg-[#fdf8f3] border border-[#b9915f]/40 p-2 rounded text-sm"
-                >
-                  <span>
-                    {c.name}{" "}
-                    <span className="text-xs text-gray-500">({c.code})</span>
-                  </span>
-                  <button onClick={() => removeCoupon(c.id)}>
-                    <XCircle size={16} className="text-red-500" />
-                  </button>
+                    )}
+                  </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          <div className="mt-6 border-t pt-3 text-sm space-y-1.5">
-            <div className="flex justify-between">
-              <span>Tạm tính</span>
-              <span>{subtotal.toLocaleString("vi-VN")}đ</span>
-            </div>
-            <div className="flex justify-between text-gray-700">
-              <div className="flex items-center gap-2">
-                <span>Phí vận chuyển</span>
-                {shippingDistance > 0 && (
-                  <span className="text-xs px-1 rounded">
-                    ({shippingDistance} km)
-                  </span>
-                )}
-              </div>
-              {!isCalculatingShip && (
-                <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
-              )}
-              {isCalculatingShip && (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              )}
-            </div>
-            {itemDiscount > 0 && (
-              <div className="flex justify-between text-red-600">
-                <span>Giảm món</span>
-                <span>{formatDiscount(itemDiscount)}</span>
-              </div>
-            )}
-            {shippingDiscount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Giảm ship</span>
-                <span>{formatDiscount(shippingDiscount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between border-t pt-2 mt-1 font-bold text-lg">
-              <span>Tổng cộng</span>
-              <span className="text-[#b9915f]">
-                {finalTotal.toLocaleString("vi-VN")}đ
-              </span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT Sidebar */}
-        <div className="lg:col-span-2 bg-white text-sm border border-black/20 rounded-xl shadow-sm p-6 space-y-4 h-fit">
+        {/* RIGHT: Summary & Action (4 cols) */}
+        <div className="lg:col-span-4 bg-white text-sm border border-black/10 rounded-xl shadow-sm p-6 space-y-5 h-fit">
           {/* ADDRESS */}
           <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
             <div className="flex justify-between items-start mb-2">
@@ -439,26 +274,28 @@ export default function CheckoutRetro() {
             )}
           </div>
 
-          {/* Form */}
-          <div>
-            <label className="block font-semibold mb-1">
-              Tên người nhận <span className="text-red-600">*</span>
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-[#b9915f]"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">
-              Số điện thoại <span className="text-red-600">*</span>
-            </label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-[#b9915f]"
-            />
+          {/* Form Info */}
+          <div className="space-y-3">
+            <div>
+              <label className="block font-semibold mb-1 text-xs text-gray-600 uppercase">
+                Tên người nhận
+              </label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-[#b9915f]"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1 text-xs text-gray-600 uppercase">
+                Số điện thoại
+              </label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-[#b9915f]"
+              />
+            </div>
           </div>
 
           {/* Delivery Time */}
@@ -506,39 +343,9 @@ export default function CheckoutRetro() {
             </div>
           </div>
 
-          {/* Voucher & Note */}
-          <div>
-            <label className="font-semibold mb-1 block">Mã giảm giá</label>
-            <div className="flex gap-2">
-              <input
-                value={voucherInput}
-                onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
-                placeholder="Nhập mã..."
-                className="flex-1 border p-2 rounded"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                className="bg-[#b9915f] text-white px-3 rounded"
-              >
-                Áp dụng
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="font-semibold mb-1 block">Ghi chú đơn hàng</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full border p-2 rounded h-16"
-              placeholder="Lời nhắn cho quán..."
-            />
-          </div>
-
           {/* Payment */}
           <div className="border-t pt-3">
-            <h3 className="font-semibold mb-2 flex gap-1">
-              <CheckCircle size={16} /> Thanh toán
-            </h3>
+            <h3 className="font-semibold mb-2">Thanh toán</h3>
             <div className="space-y-2">
               <label className="flex items-center gap-2">
                 <input
@@ -561,17 +368,73 @@ export default function CheckoutRetro() {
             </div>
           </div>
 
+          {/* Note */}
+          <div>
+            <label className="font-semibold mb-1 block">Ghi chú</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full border p-2 rounded h-16 text-sm"
+              placeholder="Lời nhắn cho quán..."
+            />
+          </div>
+
+          {/* Bill Summary */}
+          <div className="border-t pt-4 space-y-2">
+            <div className="flex justify-between text-gray-600">
+              <span>Tạm tính</span>
+              <span>{subtotal.toLocaleString("vi-VN")}đ</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span className="flex items-center gap-1">
+                Phí vận chuyển{" "}
+                {isCalculatingShip && (
+                  <Loader2 size={12} className="animate-spin" />
+                )}
+              </span>
+              <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
+            </div>
+
+            {/* Coupon Display */}
+            {appliedCoupons.length > 0 && (
+              <div className="py-2 border-y border-dashed bg-orange-50 -mx-6 px-6 space-y-1">
+                {appliedCoupons.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex justify-between text-sm text-orange-700"
+                  >
+                    <span className="flex items-center gap-1">
+                      <Ticket size={12} /> {c.code}
+                    </span>
+                    <span className="font-medium">
+                      {c.type === "freeship"
+                        ? `-${shippingDiscount.toLocaleString("vi-VN")}đ`
+                        : `-${itemDiscount.toLocaleString("vi-VN")}đ`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-between border-t pt-2 mt-1 font-bold text-lg">
+              <span>Tổng cộng</span>
+              <span className="text-[#b9915f]">
+                {finalTotal.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          </div>
+
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className={`w-full py-3 rounded text-white font-bold shadow-md transition ${
+            className={`w-full py-3 rounded-lg text-white font-bold shadow-md transition ${
               loading ? "bg-gray-400" : "bg-[#b9915f] hover:bg-[#9a7e4e]"
             }`}
           >
             {loading ? (
               <Loader2 className="animate-spin mx-auto" />
             ) : (
-              `Thanh toán ${finalTotal.toLocaleString("vi-VN")}đ`
+              `Đặt hàng • ${finalTotal.toLocaleString("vi-VN")}đ`
             )}
           </button>
         </div>
