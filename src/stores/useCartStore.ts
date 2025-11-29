@@ -8,6 +8,7 @@ import { orderService } from "@/services/order.service";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import { CartActions, CartLine, CartState } from "@/types/cart";
 import { Coupon } from "@/types";
+import { useAuthStore } from "@/stores/useAuthStore"; // [FIX] Import Auth Store
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
@@ -83,7 +84,6 @@ interface ExtendedCartStore extends CartState, ExtendedStateData, CartActions {
 }
 
 // --- INITIAL STATE ---
-// Fix lỗi TS: Khai báo đầy đủ type cho initialState
 const initialState: CartState & ExtendedStateData = {
   cartItems: [],
   showCart: false,
@@ -311,7 +311,6 @@ export const useCartStore = create<ExtendedCartStore>()(
       },
 
       fetchPublicCoupons: async () => {
-        // Alias function để tương thích ngược nếu component cũ gọi
         await get().fetchAvailableCoupons();
       },
 
@@ -329,7 +328,6 @@ export const useCartStore = create<ExtendedCartStore>()(
             ),
           });
         } else {
-          // Logic thay thế: Chỉ cho phép 1 coupon mỗi loại (Freeship/Discount)
           const others = appliedCoupons.filter((c) => c.type !== coupon.type);
           set({ appliedCoupons: [...others, coupon] });
         }
@@ -386,7 +384,6 @@ export const useCartStore = create<ExtendedCartStore>()(
         deliveryOption: state.deliveryOption,
         scheduledDate: state.scheduledDate,
         scheduledTime: state.scheduledTime,
-        // Không persist availableCoupons để luôn fetch mới
       }),
     }
   )
@@ -395,6 +392,7 @@ export const useCartStore = create<ExtendedCartStore>()(
 /** ===== PUBLIC HOOK ===== */
 export function useCart() {
   const store = useCartStore();
+  const { me } = useAuthStore(); // [FIX] Lấy 'me' (Customer info) từ store
 
   // 1. Tính Subtotal
   const subtotal = useMemo(
@@ -413,23 +411,76 @@ export function useCart() {
     // @ts-ignore
     const cartContext = { items: store.cartItems, subtotal };
 
+    // [FIX] Tạo UserData context từ 'me'
+    let userData = null;
+    if (me) {
+      let age = null;
+      // Tính tuổi từ birthDate (nếu có)
+      if ((me as any).birthDate) {
+        try {
+          const birth = new Date((me as any).birthDate);
+          const now = new Date();
+          age = now.getFullYear() - birth.getFullYear();
+        } catch (e) {
+          // ignore invalid date
+        }
+      }
+
+      // Map 'totalOrder' từ Backend sang 'orderCount' cho logic coupon
+      // @ts-ignore: Sử dụng field totalOrder từ backend model
+      const orderCount = me.totalOrder ?? 0;
+
+      userData = {
+        isNew: orderCount === 0, // Logic khách hàng mới
+        age: age,
+        orderCount: orderCount,
+      };
+    }
+
     return store.availableCoupons.map((coupon) => {
       // Check điều kiện realtime tại FE
       // @ts-ignore
-      const check = checkCouponEligibility(coupon, cartContext, null);
+      const check = checkCouponEligibility(coupon, cartContext, userData);
+
+      // [FIX] Logic override Backend status
+      const backendReason = (coupon as any).inapplicableReason;
       const isBackendApplicable = (coupon as any).isApplicable !== false;
+
+      // Các lỗi hệ thống "cứng" (FE không thể bỏ qua)
+      const HARD_STOP_REASONS = [
+        "MAX_USES_REACHED",
+        "USAGE_LIMIT_REACHED",
+        "EXPIRED",
+        "COUPON_NOT_FOUND",
+      ];
+
+      let isEligible = check.isEligible;
+      let reason = check.reason;
+
+      // Nếu FE check OK (isEligible = true)
+      if (isEligible) {
+        // Nếu Backend có lỗi cứng -> Chặn lại
+        if (
+          !isBackendApplicable &&
+          backendReason &&
+          HARD_STOP_REASONS.includes(backendReason)
+        ) {
+          isEligible = false;
+          reason = backendReason;
+        }
+        // Nếu Backend lỗi mềm (VD: "LOGIN_REQUIRED" do cache cũ) -> FE cho qua (Override)
+      }
 
       return {
         ...coupon,
-        isEligible: check.isEligible && isBackendApplicable,
-        reason: check.reason || (coupon as any).inapplicableReason,
-        // Helper scope
+        isEligible: isEligible,
+        reason: reason || backendReason, // Ưu tiên lý do từ FE (tiếng Việt & realtime)
         scope:
           (coupon as any).couponScope ||
           ((coupon as any).voucherId ? "PERSONAL" : "PUBLIC"),
       };
     });
-  }, [store.availableCoupons, store.cartItems, subtotal]);
+  }, [store.availableCoupons, store.cartItems, subtotal, me]);
 
   const personalCoupons = useMemo(
     () => processedCoupons.filter((c) => c.scope === "PERSONAL"),
