@@ -8,7 +8,7 @@ import { orderService } from "@/services/order.service";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import { CartActions, CartLine, CartState } from "@/types/cart";
 import { Coupon } from "@/types";
-import { useAuthStore } from "@/stores/useAuthStore"; // [FIX] Import Auth Store
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
@@ -392,7 +392,7 @@ export const useCartStore = create<ExtendedCartStore>()(
 /** ===== PUBLIC HOOK ===== */
 export function useCart() {
   const store = useCartStore();
-  const { me } = useAuthStore(); // [FIX] Lấy 'me' (Customer info) từ store
+  const { me } = useAuthStore();
 
   // 1. Tính Subtotal
   const subtotal = useMemo(
@@ -411,42 +411,37 @@ export function useCart() {
     // @ts-ignore
     const cartContext = { items: store.cartItems, subtotal };
 
-    // [FIX] Tạo UserData context từ 'me'
     let userData = null;
     if (me) {
       let age = null;
-      // Tính tuổi từ birthDate (nếu có)
       if ((me as any).birthDate) {
         try {
           const birth = new Date((me as any).birthDate);
           const now = new Date();
           age = now.getFullYear() - birth.getFullYear();
         } catch (e) {
-          // ignore invalid date
+          // ignore
         }
       }
 
-      // Map 'totalOrder' từ Backend sang 'orderCount' cho logic coupon
-      // @ts-ignore: Sử dụng field totalOrder từ backend model
+      // Map 'totalOrder' từ Backend sang 'orderCount'
+      // @ts-ignore
       const orderCount = me.totalOrder ?? 0;
 
       userData = {
-        isNew: orderCount === 0, // Logic khách hàng mới
+        isNew: orderCount === 0,
         age: age,
         orderCount: orderCount,
       };
     }
 
     return store.availableCoupons.map((coupon) => {
-      // Check điều kiện realtime tại FE
       // @ts-ignore
       const check = checkCouponEligibility(coupon, cartContext, userData);
 
-      // [FIX] Logic override Backend status
       const backendReason = (coupon as any).inapplicableReason;
       const isBackendApplicable = (coupon as any).isApplicable !== false;
 
-      // Các lỗi hệ thống "cứng" (FE không thể bỏ qua)
       const HARD_STOP_REASONS = [
         "MAX_USES_REACHED",
         "USAGE_LIMIT_REACHED",
@@ -457,9 +452,7 @@ export function useCart() {
       let isEligible = check.isEligible;
       let reason = check.reason;
 
-      // Nếu FE check OK (isEligible = true)
       if (isEligible) {
-        // Nếu Backend có lỗi cứng -> Chặn lại
         if (
           !isBackendApplicable &&
           backendReason &&
@@ -468,13 +461,12 @@ export function useCart() {
           isEligible = false;
           reason = backendReason;
         }
-        // Nếu Backend lỗi mềm (VD: "LOGIN_REQUIRED" do cache cũ) -> FE cho qua (Override)
       }
 
       return {
         ...coupon,
         isEligible: isEligible,
-        reason: reason || backendReason, // Ưu tiên lý do từ FE (tiếng Việt & realtime)
+        reason: reason || backendReason,
         scope:
           (coupon as any).couponScope ||
           ((coupon as any).voucherId ? "PERSONAL" : "PUBLIC"),
@@ -482,13 +474,21 @@ export function useCart() {
     });
   }, [store.availableCoupons, store.cartItems, subtotal, me]);
 
+  // [FIX] Lọc Voucher cá nhân
   const personalCoupons = useMemo(
     () => processedCoupons.filter((c) => c.scope === "PERSONAL"),
     [processedCoupons]
   );
+
+  // [FIX] Lọc Voucher công khai & Loại bỏ các mã đã có trong Personal
   const publicCoupons = useMemo(
-    () => processedCoupons.filter((c) => c.scope === "PUBLIC"),
-    [processedCoupons]
+    () =>
+      processedCoupons.filter(
+        (c) =>
+          c.scope === "PUBLIC" &&
+          !personalCoupons.some((p) => p.code && p.code === c.code)
+      ),
+    [processedCoupons, personalCoupons]
   );
 
   // 3. Tính toán Discount
@@ -544,7 +544,6 @@ export function useCart() {
   };
 }
 
-// Component khởi tạo
 export function CartStoreInitializer() {
   const fetchAvailableCoupons = useCartStore((s) => s.fetchAvailableCoupons);
   const ranRef = useRef(false);
