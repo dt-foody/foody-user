@@ -21,7 +21,7 @@ export interface CartComboItemSnapshot {
   appliedItemPrice: number;
 
   // Phụ thu riêng của món này (Additional Price)
-  surcharge: number;
+  additionalPrice: number;
 
   // Tổng tiền options của món này
   optionsTotal: number;

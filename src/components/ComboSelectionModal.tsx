@@ -170,10 +170,10 @@ export default function ComboSelectionModal() {
       const items = selections[slotName];
       items.forEach((item) => {
         const prod = item.productInfo.product as Product;
-        const surcharge = item.productInfo.additionalPrice;
+        const additionalPrice = item.productInfo.additionalPrice;
         const optPrice = item.calculatedOptionsPrice;
 
-        totalSurcharges += surcharge;
+        totalSurcharges += additionalPrice;
         totalOptions += optPrice;
         totalBaseMarket += prod.basePrice; // Giá gốc thực tế
 
@@ -196,7 +196,7 @@ export default function ComboSelectionModal() {
           productName: prod.name,
           originalBasePrice: prod.basePrice,
           appliedItemPrice: appliedItemPrice,
-          surcharge: surcharge,
+          additionalPrice: additionalPrice,
           optionsTotal: optPrice,
         });
       });
