@@ -8,13 +8,18 @@ import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import Image from "next/image";
-import { CreateOrderItem_Option, CartLine } from "@/types/cart";
+import {
+  CreateOrderItem_Option,
+  CartLine,
+} from "@/types/cart";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+
 const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.src = PLACEHOLDER_IMAGE;
 };
+
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
 
@@ -73,11 +78,13 @@ export default function CheckoutPage() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Tự động tính lại phí ship khi đổi địa chỉ hoặc giờ giao
   useEffect(() => {
     const timer = setTimeout(() => recalculateShippingFee(), 500);
     return () => clearTimeout(timer);
   }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
 
+  // Điền thông tin người nhận từ địa chỉ đã chọn
   useEffect(() => {
     if (selectedAddress) {
       setName(selectedAddress.recipientName || "");
@@ -89,6 +96,8 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (loading) return;
+
+    // 1. Validation cơ bản
     if (!name.trim() || !phone.trim()) {
       toast.error("Vui lòng nhập đủ tên và số điện thoại!");
       return;
@@ -102,7 +111,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validate logic thời gian
+    // 2. Validation thời gian giao hàng
     if (deliveryOption === "scheduled") {
       if (!scheduledDate || !scheduledTime) {
         toast.error("Vui lòng chọn thời gian giao hàng!");
@@ -115,7 +124,7 @@ export default function CheckoutPage() {
       }
     }
 
-    // --- 🔥 FIX TẠI ĐÂY: Transform dữ liệu Delivery Time ---
+    // 3. Transform Dữ Liệu: Delivery Time
     const deliveryTimePayload = {
       option: deliveryOption,
       scheduledAt:
@@ -124,15 +133,33 @@ export default function CheckoutPage() {
           : null,
     };
 
-    // Payload chuẩn gửi xuống Backend
+    // 4. Transform Dữ Liệu: Coupons & Vouchers (Tách riêng)
+    const payloadCoupons: { id: string; code: string }[] = [];
+    const payloadVouchers: { voucherId: string; voucherCode: string }[] = [];
+
+    appliedCoupons.forEach((c) => {
+      // Nếu có voucherId và voucherCode -> Là Voucher cá nhân
+      if (c.voucherId && c.voucherCode) {
+        payloadVouchers.push({
+          voucherId: c.voucherId,
+          voucherCode: c.voucherCode,
+        });
+      } else {
+        // Ngược lại là Coupon công khai
+        payloadCoupons.push({
+          id: c.id,
+          code: c.code || "",
+        });
+      }
+    });
+
+    // 5. Tạo Payload chuẩn gửi Backend
     const payload = {
+      // Loại bỏ các trường UI không cần thiết từ item
       items: cartItems.map(({ _image, _categoryIds, cartId, ...rest }) => rest),
 
-      // Mapping lại coupon
-      appliedCoupons: appliedCoupons.map((c) => ({
-        id: c.id,
-        code: c.code,
-      })),
+      coupons: payloadCoupons,
+      vouchers: payloadVouchers,
 
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
@@ -144,16 +171,14 @@ export default function CheckoutPage() {
       },
 
       shipping: { address: selectedAddress },
-
-      // ✅ Gửi object deliveryTime đã transform
       deliveryTime: deliveryTimePayload,
-
       note: note.trim(),
     };
 
     try {
       setLoading(true);
-      const result = await orderService.customerOrder(payload as any);
+      // @ts-ignore - Ignore type check tạm thời nếu type chưa update kịp
+      const result = await orderService.customerOrder(payload);
 
       if (paymentMethod === "bank" && result.qrInfo?.checkoutUrl) {
         toast.success("Đang chuyển đến trang thanh toán...");

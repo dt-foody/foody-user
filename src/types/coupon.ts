@@ -72,6 +72,11 @@ export interface Coupon {
   createdBy?: string | { id: string; name?: string; email?: string } | null;
   createdAt: string;
   updatedAt: string;
+
+  // 🔥 [MỚI] Bổ sung các trường cho Personal Voucher
+  voucherId?: string;     // ID của voucher cụ thể (trong bảng Vouchers)
+  voucherCode?: string;   // Mã code riêng (VD: EVERY_ONE_11-FTUDM1)
+  couponScope?: "PUBLIC" | "PERSONAL";
 }
 
 // ====== Paginated response ======
