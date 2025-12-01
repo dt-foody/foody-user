@@ -8,11 +8,7 @@ import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import Image from "next/image";
-import {
-  CreateOrderItem_Option,
-  CartLine,
-  CreateOrderItem_ComboSelection,
-} from "@/types/cart";
+import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
@@ -22,7 +18,7 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
 
-// --- HELPER RENDERERS (Tái sử dụng logic cũ) ---
+// --- HELPER RENDERERS ---
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
 }: {
@@ -65,7 +61,6 @@ export default function CheckoutPage() {
     scheduledTime,
     setScheduledTime,
     originalShippingFee,
-    shippingDistance,
     selectedAddress,
     isCalculatingShip,
     recalculateShippingFee,
@@ -107,6 +102,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate logic thời gian
     if (deliveryOption === "scheduled") {
       if (!scheduledDate || !scheduledTime) {
         toast.error("Vui lòng chọn thời gian giao hàng!");
@@ -119,28 +115,46 @@ export default function CheckoutPage() {
       }
     }
 
-    // Payload chuẩn
+    // --- 🔥 FIX TẠI ĐÂY: Transform dữ liệu Delivery Time ---
+    const deliveryTimePayload = {
+      option: deliveryOption,
+      scheduledAt:
+        deliveryOption === "scheduled" && scheduledDate && scheduledTime
+          ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
+          : null,
+    };
+
+    // Payload chuẩn gửi xuống Backend
     const payload = {
       items: cartItems.map(({ _image, _categoryIds, cartId, ...rest }) => rest),
-      // Gửi cả Voucher ID (private) và Code (public)
+
+      // Mapping lại coupon
       appliedCoupons: appliedCoupons.map((c) => ({
         id: c.id,
         code: c.code,
       })),
+
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
       shippingFee: originalShippingFee,
       grandTotal: finalTotal,
+
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
+
       shipping: { address: selectedAddress },
+
+      // ✅ Gửi object deliveryTime đã transform
+      deliveryTime: deliveryTimePayload,
+
       note: note.trim(),
     };
 
     try {
       setLoading(true);
       const result = await orderService.customerOrder(payload as any);
+
       if (paymentMethod === "bank" && result.qrInfo?.checkoutUrl) {
         toast.success("Đang chuyển đến trang thanh toán...");
         window.location.href = result.qrInfo.checkoutUrl;
