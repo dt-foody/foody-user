@@ -51,7 +51,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
         <p key={index} className="text-xs text-gray-500">
           + {opt.name}
           {opt.priceModifier > 0 && (
-            <span className="font-medium ml-1 text-gray-600">
+            <span className="ml-1 text-gray-600">
               (+{formatPrice(opt.priceModifier)})
             </span>
           )}
@@ -441,13 +441,14 @@ export default function CartSidebar() {
                             <RenderSelectedOptions options={item.options} />
                           )}
                           {item.itemType === "Combo" && (
-                            <div className="pl-1 space-y-1">
+                            <div className="pl-1 space-y-2">
                               {(item.comboSelections || []).map((sel, idx) => (
-                                <div
-                                  key={idx}
-                                  className="text-xs text-gray-600"
-                                >
-                                  • {sel.product.name}
+                                <div key={idx} className="flex flex-col">
+                                  <div className="text-xs text-gray-600">
+                                    • {sel.product.name}
+                                  </div>
+                                  {/* Hiển thị options cho từng món trong combo */}
+                                  <RenderSelectedOptions options={sel.options} />
                                 </div>
                               ))}
                             </div>
