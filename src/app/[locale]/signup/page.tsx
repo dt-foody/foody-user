@@ -116,20 +116,8 @@ const PageSignUp: FC<PageSignUpProps> = () => {
 
       const response = await authService.register(requestBody);
 
-      console.log("log response", response);
-      
-      const data = await response.json();
-
-      console.log("log response 1", data);
-
-      if (response.ok) {
-        setRegisteredEmail(email);
-        setShowSuccessMessage(true);
-      } else {
-        setErrors({
-          email: data.message || "Đã có lỗi xảy ra. Vui lòng thử lại.",
-        });
-      }
+      setRegisteredEmail(email);
+      setShowSuccessMessage(true);
     } catch (error) {
       console.error("Signup error:", error);
       setErrors({
