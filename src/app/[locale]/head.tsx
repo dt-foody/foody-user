@@ -3,7 +3,7 @@ export default function Head() {
     <>
       <meta
         name="google-site-verification"
-        content="tNXgCsyw3HWELlE_scnMxLvRfx1WQ8dIkjJU4gDrjGE"
+        content="NNl_9gfnaQ2Fb_iVVt32qXyLKuk7bfe30m3IKV67OMk"
       />
     </>
   );

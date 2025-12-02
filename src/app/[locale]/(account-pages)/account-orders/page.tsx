@@ -13,9 +13,9 @@ import {
   Tag,
   ChevronDown,
   ChevronUp,
-  MapPin,
   DollarSign,
-  ShoppingBag, // Thêm icon
+  ShoppingBag,
+  Clock, // 🔥 Import thêm icon Clock
 } from "lucide-react";
 import {
   Order,
@@ -25,7 +25,7 @@ import {
 } from "@/types";
 
 // =================================================================
-// 1. HELPER COMPONENTS (Giữ nguyên)
+// 1. HELPER COMPONENTS
 // =================================================================
 
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
@@ -78,7 +78,7 @@ const RenderComboSelections = memo(function RenderComboSelections({
 });
 
 // =================================================================
-// 2. COMPONENT CARD ĐƠN HÀNG (Đã cải tiến)
+// 2. COMPONENT CARD ĐƠN HÀNG
 // =================================================================
 
 interface OrderCardProps {
@@ -88,7 +88,6 @@ interface OrderCardProps {
 const OrderCard = ({ order }: OrderCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Lấy trạng thái
   const status = order.status;
   const statusText =
     status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
@@ -112,24 +111,46 @@ const OrderCard = ({ order }: OrderCardProps) => {
     }
   }, [status]);
 
-  // --- THÔNG TIN THÊM ĐỂ HIỂN THỊ ---
-  // Tính tổng số lượng món
   const totalItems = useMemo(
     () => order.items.reduce((sum, item) => sum + item.quantity, 0),
     [order.items]
   );
-  // Lấy tên người nhận
+
   const recipientName = order.shipping?.address?.recipientName || "Không rõ";
-  // Format tổng tiền
   const grandTotal = formatPrice(order.grandTotal);
+
+  // 🔥 Logic hiển thị Delivery Time
+  const deliveryInfo = useMemo(() => {
+    // @ts-ignore: Truy cập field deliveryTime (nếu type chưa update kịp)
+    const dt = order.deliveryTime;
+
+    if (!dt) return null;
+
+    if (dt.option === "immediate") {
+      return {
+        label: "Giao ngay",
+        time: "Sớm nhất có thể",
+      };
+    }
+
+    if (dt.option === "scheduled" && dt.scheduledAt) {
+      const date = new Date(dt.scheduledAt);
+      return {
+        label: "Hẹn giờ giao",
+        time: `${date.toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}, ${date.toLocaleDateString("vi-VN")}`,
+      };
+    }
+
+    return null;
+  }, [order]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
-      {/* ===================================
-       * PHẦN 1: HEADER (Mã đơn, Ngày, Trạng thái)
-       * =================================== */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b pb-3">
-        {/* Bên trái: ID & Ngày */}
         <div>
           <h3 className="font-semibold text-lg text-[#3b2f26] flex items-center gap-2">
             <Package size={18} /> Mã đơn #{order.orderId}
@@ -139,7 +160,6 @@ const OrderCard = ({ order }: OrderCardProps) => {
             {new Date(order.createdAt).toLocaleString("vi-VN")}
           </p>
         </div>
-        {/* Bên phải: Trạng thái */}
         <span
           className={`self-start text-xs font-medium px-3 py-1.5 rounded-full ${statusClasses}`}
         >
@@ -147,123 +167,135 @@ const OrderCard = ({ order }: OrderCardProps) => {
         </span>
       </div>
 
-      {/* ===================================
-       * PHẦN 2: SUMMARY (Luôn hiển thị)
-       * =================================== */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
-        {/* Thông tin 1: Giao đến */}
+      {/* SUMMARY GRID (Đã update responsive) */}
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        {/* 1. Giao đến */}
         <div className="flex items-start gap-2">
           <Truck size={16} className="text-amber-600 mt-1 flex-shrink-0" />
           <div>
-            <span className="text-gray-500">Giao đến:</span>
-            <p className="font-medium text-gray-800">{recipientName}</p>
+            <span className="text-gray-500 block text-xs uppercase tracking-wide">
+              Giao đến
+            </span>
+            <p
+              className="font-medium text-gray-800 truncate max-w-[150px]"
+              title={recipientName}
+            >
+              {recipientName}
+            </p>
           </div>
         </div>
 
-        {/* Thông tin 2: Số lượng */}
+        {/* 2. Thời gian giao (MỚI) */}
+        <div className="flex items-start gap-2">
+          <Clock size={16} className="text-amber-600 mt-1 flex-shrink-0" />
+          <div>
+            <span className="text-gray-500 block text-xs uppercase tracking-wide">
+              {deliveryInfo?.label || "Thời gian giao"}
+            </span>
+            <p className="font-medium text-gray-800">
+              {deliveryInfo?.time || "Tiêu chuẩn"}
+            </p>
+          </div>
+        </div>
+
+        {/* 3. Số lượng */}
         <div className="flex items-start gap-2">
           <ShoppingBag
             size={16}
             className="text-amber-600 mt-1 flex-shrink-0"
           />
           <div>
-            <span className="text-gray-500">Số lượng:</span>
+            <span className="text-gray-500 block text-xs uppercase tracking-wide">
+              Số lượng
+            </span>
             <p className="font-medium text-gray-800">{totalItems} món</p>
           </div>
         </div>
 
-        {/* Thông tin 3: Tổng cộng */}
+        {/* 4. Tổng cộng */}
         <div className="flex items-start gap-2">
           <DollarSign size={16} className="text-amber-600 mt-1 flex-shrink-0" />
           <div>
-            <span className="text-gray-500">Tổng cộng:</span>
-            <p className="font-semibold text-base text-[#b9915f]">
-              {grandTotal}
-            </p>
+            <span className="text-gray-500 block text-xs uppercase tracking-wide">
+              Tổng tiền
+            </span>
+            <p className="font-bold text-base text-[#b9915f]">{grandTotal}</p>
           </div>
         </div>
       </div>
 
-      {/* ===================================
-       * PHẦN 3: NÚT BẤM
-       * =================================== */}
-      <div className="mt-4 text-right">
+      {/* TOGGLE BUTTON */}
+      <div className="mt-4 text-right border-t pt-3 border-dashed">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800 ml-auto"
+          className="flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800 ml-auto transition-colors"
         >
-          {isExpanded ? "Thu gọn" : "Xem chi tiết đơn hàng"}
+          {isExpanded ? "Thu gọn" : "Xem chi tiết"}
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
 
-      {/* ===================================
-       * PHẦN 4: NỘI DUNG CHI TIẾT (Ẩn/Hiện)
-       * =================================== */}
+      {/* EXPANDED CONTENT */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t animate-fade-in">
-          {/* Thông tin chi tiết Giao hàng & Thanh toán */}
-          <div className="grid sm:grid-cols-2 gap-y-4 gap-x-3 text-sm text-gray-700">
-            {/* CỘT BÊN TRÁI: GIAO HÀNG (CHI TIẾT) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 font-semibold">
+        <div className="mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="grid sm:grid-cols-2 gap-y-6 gap-x-8 text-sm text-gray-700">
+            {/* LEFT: DELIVERY INFO */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 font-bold text-gray-900 border-b pb-1 mb-2">
                 <Truck size={16} className="text-amber-600" />
-                <span>Thông tin giao hàng chi tiết</span>
+                <span>Địa chỉ nhận hàng</span>
               </div>
-              <p className="pl-6">{order.shipping?.address?.recipientName}</p>
-              <p className="pl-6">
-                {order.shipping?.address?.street},{" "}
-                {order.shipping?.address?.ward}, {order.shipping?.address?.city}
-              </p>
-              <p className="pl-6 text-gray-500">
-                ☎ {order.shipping?.address?.recipientPhone}
-              </p>
-              {order.note && (
-                <div className="pl-6 flex items-start gap-1.5 text-blue-700 mt-1">
-                  <MessageSquare size={14} className="flex-shrink-0 mt-0.5" />
-                  <p className="text-xs italic">
-                    <span className="font-medium">Ghi chú đơn:</span>{" "}
-                    {order.note}
-                  </p>
-                </div>
-              )}
+              <div className="pl-6 space-y-1">
+                <p className="font-medium">
+                  {order.shipping?.address?.recipientName}
+                </p>
+                <p>{order.shipping?.address?.recipientPhone}</p>
+                <p className="text-gray-600 leading-snug">
+                  {order.shipping?.address?.fullAddress ||
+                    `${order.shipping?.address?.street}, ${order.shipping?.address?.ward}, ${order.shipping?.address?.district}, ${order.shipping?.address?.city}`}
+                </p>
+                {order.note && (
+                  <div className="bg-yellow-50 p-2 rounded-md mt-2 border border-yellow-100 flex gap-2">
+                    <MessageSquare
+                      size={14}
+                      className="text-yellow-600 mt-0.5 flex-shrink-0"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-yellow-700">
+                        Ghi chú:
+                      </span>
+                      <p className="text-xs text-gray-700 italic">
+                        {order.note}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* CỘT BÊN PHẢI: THANH TOÁN (CHI TIẾT) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 font-semibold">
+            {/* RIGHT: PAYMENT INFO */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 font-bold text-gray-900 border-b pb-1 mb-2">
                 <CreditCard size={16} className="text-amber-600" />
-                <span>Chi tiết thanh toán</span>
+                <span>Thanh toán</span>
               </div>
-              <div className="pl-6 space-y-1 text-xs text-gray-600">
+              <div className="pl-6 space-y-1.5 text-sm">
                 <div className="flex justify-between">
-                  <span>Phương thức:</span>
-                  <span className="font-medium">
-                    {order.payment?.method?.toUpperCase()}
+                  <span className="text-gray-500">Phương thức:</span>
+                  <span className="font-medium uppercase">
+                    {order.payment?.method}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Trạng thái:</span>
-                  <span className="font-medium">
-                    {order.payment?.status === "paid"
-                      ? "Đã thanh toán"
-                      : "Chưa thanh toán"}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-1 mt-1 border-t">
-                  <span>Tạm tính:</span>
-                  <span className="font-medium">
-                    {order.totalAmount.toLocaleString("vi-VN")}đ
-                  </span>
+                <div className="flex justify-between border-t border-dashed pt-1">
+                  <span className="text-gray-500">Tạm tính:</span>
+                  <span>{order.totalAmount.toLocaleString("vi-VN")}đ</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Phí ship:</span>
-                  <span className="font-medium">
-                    {order.shippingFee.toLocaleString("vi-VN")}đ
-                  </span>
+                  <span className="text-gray-500">Phí vận chuyển:</span>
+                  <span>{order.shippingFee.toLocaleString("vi-VN")}đ</span>
                 </div>
                 {order.discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600 font-medium">
+                  <div className="flex justify-between text-green-600">
                     <span>Giảm giá:</span>
                     <span>
                       -{order.discountAmount.toLocaleString("vi-VN")}đ
@@ -271,62 +303,61 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   </div>
                 )}
                 {order.appliedCoupons && order.appliedCoupons.length > 0 && (
-                  <div className="pt-1 mt-1 border-t">
-                    {order.appliedCoupons.map((c, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1 text-green-700"
+                  <div className="flex flex-wrap gap-1 justify-end mt-1">
+                    {order.appliedCoupons.map((c, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-50 text-green-700 text-xs border border-green-100"
                       >
-                        <Tag size={12} />
-                        <span className="font-medium">{c.code}</span>
-                      </div>
+                        <Tag size={10} /> {c.code}
+                      </span>
                     ))}
                   </div>
                 )}
+                <div className="flex justify-between border-t pt-2 font-bold text-base">
+                  <span>Tổng thanh toán:</span>
+                  <span className="text-[#b9915f]">{grandTotal}</span>
+                </div>
               </div>
-              <p className="pl-6 mt-2 pt-2 border-t">
-                <span className="font-medium text-sm">Tổng cộng:</span>{" "}
-                <span className="text-[#b9915f] font-semibold text-base">
-                  {grandTotal}
-                </span>
-              </p>
             </div>
           </div>
 
-          {/* DANH SÁCH MÓN */}
+          {/* ITEMS LIST */}
           {order.items && order.items.length > 0 && (
-            <div className="mt-4 border-t pt-3">
-              <h4 className="font-semibold mb-2 text-gray-700">
-                Chi tiết món đã đặt:
+            <div className="mt-6">
+              <h4 className="font-bold mb-3 text-gray-900 border-b pb-2">
+                Chi tiết đơn hàng ({totalItems} món)
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {order.items.map((item: OrderItem, idx: number) => (
-                  <div key={idx} className="text-sm">
-                    <div className="flex justify-between">
-                      <span className="font-semibold text-gray-800">
-                        {item.name} (x{item.quantity})
-                      </span>
-                      <span className="font-semibold text-gray-900">
-                        {(item.price * item.quantity).toLocaleString("vi-VN")}đ
-                      </span>
-                    </div>
-                    {item.itemType === "Product" && (
-                      <RenderOrderOptions options={item.options} />
-                    )}
-                    {item.itemType === "Combo" && (
-                      <RenderComboSelections
-                        selections={item.comboSelections}
-                      />
-                    )}
-                    {item.note && (
-                      <div className="pl-4 mt-1 flex items-start gap-1.5 text-blue-700">
-                        <MessageSquare
-                          size={12}
-                          className="flex-shrink-0 mt-0.5"
+                  <div
+                    key={idx}
+                    className="flex justify-between items-start text-sm p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {item.name}{" "}
+                        <span className="text-gray-500 font-normal">
+                          x{item.quantity}
+                        </span>
+                      </p>
+                      {item.itemType === "Product" && (
+                        <RenderOrderOptions options={item.options} />
+                      )}
+                      {item.itemType === "Combo" && (
+                        <RenderComboSelections
+                          selections={item.comboSelections}
                         />
-                        <p className="text-xs italic">{item.note}</p>
-                      </div>
-                    )}
+                      )}
+                      {item.note && (
+                        <p className="text-xs text-blue-600 italic mt-1 pl-4">
+                          Note: {item.note}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-medium text-gray-900 whitespace-nowrap ml-4">
+                      {(item.price * item.quantity).toLocaleString("vi-VN")}đ
+                    </span>
                   </div>
                 ))}
               </div>
@@ -339,7 +370,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
 };
 
 // =================================================================
-// 3. COMPONENT CHÍNH (AccountOrders - Giữ nguyên)
+// 3. COMPONENT CHÍNH (AccountOrders)
 // =================================================================
 
 const AccountOrders = () => {
@@ -387,43 +418,56 @@ const AccountOrders = () => {
 
   return (
     <div className="min-h-screen bg-[#fffaf5] p-4 md:px-10 font-sans">
-      <h1 className="text-xl font-bold mb-6 text-[#3b2f26]">
-        🧾 Lịch sử đơn hàng
+      <h1 className="text-2xl font-bold mb-6 text-[#3b2f26] flex items-center gap-2">
+        <Package className="text-amber-600" /> Lịch sử đơn hàng
       </h1>
 
       {loading && orders.length === 0 && (
-        <div className="flex items-center justify-center gap-2 text-gray-500 py-6">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Đang tải đơn hàng...</span>
+        <div className="flex flex-col items-center justify-center gap-3 text-gray-500 py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+          <span>Đang tải dữ liệu...</span>
         </div>
       )}
 
       {error && (
-        <div className="text-red-600 font-medium text-center py-4">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-4 text-center mb-6">
+          {error}
+          <button
+            onClick={() => fetchOrders(1)}
+            className="block mx-auto mt-2 text-sm font-semibold hover:underline"
+          >
+            Thử lại
+          </button>
+        </div>
       )}
 
       {!loading && !error && orders.length === 0 && (
-        <p className="text-gray-500 italic text-center py-6">
-          Bạn chưa có đơn hàng nào.
-        </p>
+        <div className="text-center py-12 bg-white rounded-xl border border-dashed">
+          <Package size={48} className="mx-auto text-gray-300 mb-3" />
+          <p className="text-gray-500 font-medium">Bạn chưa có đơn hàng nào.</p>
+          <ButtonPrimary href="/menu" className="mt-4 inline-block">
+            Đặt món ngay
+          </ButtonPrimary>
+        </div>
       )}
 
-      {/* SỬA: Dùng OrderCard mới */}
       <div className="space-y-5">
         {orders.map((order) => (
           <OrderCard key={order.id} order={order} />
         ))}
       </div>
 
-      {hasNextPage && !loading && (
-        <div className="text-center mt-6">
-          <ButtonPrimary onClick={handleLoadMore}>Tải thêm</ButtonPrimary>
+      {hasNextPage && !loading && orders.length > 0 && (
+        <div className="text-center mt-8 pb-8">
+          <ButtonPrimary onClick={handleLoadMore} className="px-8 shadow-lg">
+            Xem thêm đơn hàng cũ
+          </ButtonPrimary>
         </div>
       )}
 
       {loading && orders.length > 0 && (
-        <div className="flex justify-center mt-4">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+        <div className="flex justify-center mt-6 pb-6">
+          <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
         </div>
       )}
     </div>
