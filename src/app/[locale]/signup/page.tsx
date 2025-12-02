@@ -115,7 +115,12 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       if (gender) requestBody.gender = gender;
 
       const response = await authService.register(requestBody);
+
+      console.log("log response", response);
+      
       const data = await response.json();
+
+      console.log("log response 1", data);
 
       if (response.ok) {
         setRegisteredEmail(email);
@@ -219,7 +224,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     <div className="nc-PageSignUp">
       <div className="container mb-24 lg:mb-32">
         <h2 className="my-4 flex items-center justify-center text-3xl font-semibold text-neutral-900 dark:text-neutral-100 md:text-3xl">
-          Signup
+          Đăng ký
         </h2>
 
         <div className="max-w-md mx-auto space-y-6">
@@ -248,7 +253,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             {/* Email Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Email address <span className="text-red-500">*</span>
+                Địa chỉ Email <span className="text-red-500">*</span>
               </span>
               <Input
                 type="email"
@@ -269,7 +274,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             {/* Password Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Password <span className="text-red-500">*</span>
+                Mật khẩu <span className="text-red-500">*</span>
               </span>
               <Input
                 type="password"
@@ -285,7 +290,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                 </span>
               )}
               <span className="text-xs text-neutral-500 mt-1 block">
-                Minimum 8 characters
+                Tối thiểu 8 ký tự
               </span>
             </label>
 
@@ -365,14 +370,14 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             </div>
 
             <ButtonPrimary type="submit" disabled={isLoading}>
-              {isLoading ? "Processing..." : "Continue"}
+              {isLoading ? "Đang xử lý..." : "Tiếp tục"}
             </ButtonPrimary>
           </form>
 
           <span className="block text-center text-neutral-700 dark:text-neutral-300">
-            Already have an account?{" "}
+            Bạn đã có tài khoản?{" "}
             <Link href="/login" className="font-semibold underline">
-              Sign in
+              Đăng nhập
             </Link>
           </span>
         </div>
