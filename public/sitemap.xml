@@ -5,47 +5,47 @@
 
   <!-- Home page -->
   <url>
-    <loc>https://foody-user.vercel.app/en/</loc>
+    <loc>https://luuchi.com.vn/en/</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/" />
   </url>
 
   <!-- Blog page -->
   <url>
-    <loc>https://foody-user.vercel.app/en/blog</loc>
+    <loc>https://luuchi.com.vn/en/blog</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/blog" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/blog" />
   </url>
 
   <!-- Membership page -->
   <url>
-    <loc>https://foody-user.vercel.app/en/membership</loc>
+    <loc>https://luuchi.com.vn/en/membership</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/membership" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/membership" />
-  </url>
-
-  <!-- Hot deal page -->
-  <url>
-    <loc>https://foody-user.vercel.app/en/hot-deal</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/hot-deal" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/hot-deal" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/membership" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/membership" />
   </url>
 
   <!-- About page -->
   <url>
-    <loc>https://foody-user.vercel.app/en/about</loc>
+    <loc>https://luuchi.com.vn/en/about</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://foody-user.vercel.app/en/about" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://foody-user.vercel.app/ar/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/about" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/about" />
+  </url>
+
+  <!-- Policy page -->
+  <url>
+    <loc>https://luuchi.com.vn/en/policy</loc>
+    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/policy" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/policy" />
   </url>
 
 </urlset>
