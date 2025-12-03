@@ -21,7 +21,7 @@ export default function VerifyEmailPage({
     async function verify() {
       try {
         const res = await fetch(
-          `http://localhost:3000/v1/auth/verify-email?token=${token}`,
+          `https://luuchi.com.vn/v1/auth/verify-email?token=${token}`,
           { method: "POST" }
         );
 
