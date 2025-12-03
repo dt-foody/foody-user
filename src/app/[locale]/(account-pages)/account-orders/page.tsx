@@ -283,7 +283,11 @@ const OrderCard = ({ order }: OrderCardProps) => {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Phương thức:</span>
                   <span className="font-medium uppercase">
-                    {order.payment?.method}
+                    {order.payment?.method === "cash" && "Tiền mặt"}
+                    {order.payment?.method === "payos" && "PayOS"}
+                    {order.payment?.method === "momo" && "MoMo"}
+                    {order.payment?.method === "vnpay" && "VNPay"}
+                    {order.payment?.method === "bank_transfer" && "Chuyển khoản ngân hàng"}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-dashed pt-1">
