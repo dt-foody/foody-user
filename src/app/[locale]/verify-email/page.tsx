@@ -62,7 +62,7 @@ export default function VerifyEmailPage() {
   }, [token, router]);
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center my-4">
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center transition-all duration-300 border border-gray-100">
         
         {/* TRẠNG THÁI LOADING */}
