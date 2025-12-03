@@ -888,6 +888,21 @@ const AccountPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* SAVE BUTTON */}
+              <div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  className="px-5 py-2 bg-orange-600 text-white rounded-lg"
+                >
+                  {isSaving ? (
+                    <Loader className="w-5 h-5 animate-spin mx-auto" />
+                  ) : (
+                    "Lưu thay đổi"
+                  )}
+                </button>
+              </div>              
             </div>
           )}
         </div>
