@@ -98,7 +98,7 @@ export default function PagePolicy() {
                     hotro@caphechirua.com
                   </a>
                 </li>
-                <li>Địa chỉ: 123 Đường Cà Phê, Quận Sơn Trà, TP. Đà Nẵng</li>
+                <li>Địa chỉ: Số 22 Ngõ 91 Nguyễn Phúc Lai, Ô Chợ Dừa, Đống Đa, Hà Nội</li>
               </ul>
             </div>
           </div>
