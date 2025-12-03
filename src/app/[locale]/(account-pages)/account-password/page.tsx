@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 // Giữ nguyên import icon từ lucide-react
 import { Lock, Eye, EyeOff, Check, AlertCircle, Shield } from "lucide-react";
+import { authService } from "@/services";
 
 interface PasswordStrength {
   score: number;
@@ -29,22 +30,14 @@ const AccountPass = () => {
   });
 
   // Tính toán độ mạnh mật khẩu (đã dịch nhãn)
-  const calculatePasswordStrength = (password: string): PasswordStrength => {
+    const calculatePasswordStrength = (password: string): PasswordStrength => {
     if (!password) return { score: 0, label: "", color: "" };
 
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d]/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password)) score++;
-
-    // Đã dịch các nhãn độ mạnh
-    if (score <= 2) return { score, label: "Yếu", color: "bg-red-500" };
-    if (score <= 3)
-      return { score, label: "Trung bình", color: "bg-yellow-500" };
-    if (score <= 4) return { score, label: "Tốt", color: "bg-blue-500" };
-    return { score, label: "Mạnh", color: "bg-green-500" };
+    if (password.length < 8) return { score: 0, label: "Quá ngắn", color: "bg-red-500" };
+    if (password.length >= 8 && password.length < 12) return { score: 3, label: "Đạt yêu cầu", color: "bg-green-500" };
+    if (password.length >= 12) return { score: 5, label: "Rất tốt", color: "bg-green-600" };
+    
+    return { score: 3, label: "Đạt yêu cầu", color: "bg-green-500" };
   };
 
   const passwordStrength = calculatePasswordStrength(passwords.new);
@@ -101,30 +94,38 @@ const AccountPass = () => {
 
     setIsSaving(true);
 
-    // Mô phỏng API call
-    setTimeout(() => {
-      setIsSaving(false);
-      // Đã dịch thông báo
-      alert("Cập nhật mật khẩu thành công!");
+    try {
+      await authService.changePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      });
 
-      // Reset form
-      setPasswords({ current: "", new: "", confirm: "" });
-      setShowPasswords({ current: false, new: false, confirm: false });
-    }, 1000);
+      setIsSaving(false);
+      alert("Cập nhật mật khẩu thành công!");
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        current:
+          err?.message ||
+          "Đã có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại.",
+      }));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Danh sách yêu cầu (đã dịch)
   const requirements = [
     { met: passwords.new.length >= 8, text: "Ít nhất 8 ký tự" },
-    {
-      met: /[a-z]/.test(passwords.new) && /[A-Z]/.test(passwords.new),
-      text: "Chữ hoa & chữ thường",
-    },
-    { met: /\d/.test(passwords.new), text: "Ít nhất một số" },
-    {
-      met: /[^a-zA-Z0-9]/.test(passwords.new),
-      text: "Ít nhất một ký tự đặc biệt",
-    },
+    // {
+    //   met: /[a-z]/.test(passwords.new) && /[A-Z]/.test(passwords.new),
+    //   text: "Chữ hoa & chữ thường",
+    // },
+    // { met: /\d/.test(passwords.new), text: "Ít nhất một số" },
+    // {
+    //   met: /[^a-zA-Z0-9]/.test(passwords.new),
+    //   text: "Ít nhất một ký tự đặc biệt",
+    // },
   ];
 
   return (
