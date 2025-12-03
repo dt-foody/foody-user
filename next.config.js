@@ -44,15 +44,9 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'placehold.co',
+        hostname: 'luuchi.com.vn',
         port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'backend-1-fljj.onrender.com',
-        port: '',
-        pathname: '/**',
+        pathname: '/storage/**',
       },
     ],
   },

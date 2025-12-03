@@ -116,7 +116,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
     <div className={`nc-PageLogin`}>
       <div className="container mb-24 lg:mb-32">
         {/* === THAY ĐỔI TIÊU ĐỀ === */}
-        <h2 className="my-6 flex items-center text-xl leading-[115%] md:leading-[115%] text-neutral-900 dark:text-neutral-100 justify-center font-bold">
+        <h2 className="my-8 flex items-center text-2xl leading-[115%] md:leading-[115%] text-neutral-900 dark:text-neutral-100 justify-center font-bold">
           Chào mừng bạn trở lại với Lưu Chi
         </h2>
         <div className="max-w-md mx-auto space-y-6">

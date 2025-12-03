@@ -157,7 +157,7 @@ const MainNav2: FC<MainNav2Props> = ({ className = "" }) => {
             )}
           </button>
 
-          <NotifyDropdown user={user} />
+          {/* <NotifyDropdown user={user} /> */}
 
           {user ? <AvatarDropdown user={user} /> : <LoginButton />}
         </div>
