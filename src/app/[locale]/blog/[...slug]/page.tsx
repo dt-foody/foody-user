@@ -3,6 +3,7 @@ import Avatar from "@/shared/Avatar";
 import Badge from "@/shared/Badge";
 import SocialsList from "@/shared/SocialsList";
 import { blogPostService } from "@/services";
+import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
 interface PageProps {
   params: { slug: string };
@@ -98,8 +99,9 @@ const Page = async ({ params }: PageProps) => {
       <div className="container max-w-screen-md my-10 sm:my-12 w-full relative">
         {post.coverImage ? (
           <Image
-            src={post.coverImage}
+            src={getImageUrl(post.coverImage)}
             alt={post.coverImageAlt || post.title}
+            onError={handleImageError}
             width={1200} // chỉ cần width chuẩn desktop
             height={800} // tạm lấy ratio gần đúng
             className="w-full h-auto rounded-xl object-cover"

@@ -28,6 +28,6 @@ const avatarColors = [
 ];
 
 const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+  "https://orderus.au/images/food_image_default.jpg";
 
 export { avatarColors, DEFAULT_IMAGE };

@@ -12,13 +12,7 @@ import {
   CreateOrderItem_Option,
   CartLine,
 } from "@/types/cart";
-
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
-
-const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.src = PLACEHOLDER_IMAGE;
-};
+import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -238,7 +232,7 @@ export default function CheckoutPage() {
                 <div key={it.cartId} className="py-4 flex gap-4">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-gray-50 flex-shrink-0">
                     <Image
-                      src={it._image || PLACEHOLDER_IMAGE}
+                      src={getImageUrl(it._image)}
                       alt=""
                       fill
                       className="object-cover"

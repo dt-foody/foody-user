@@ -6,10 +6,7 @@ import { Plus } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import type { Product, PricePromotion } from "@/types";
 import { CreateOrderItem_ItemSnapshot } from "@/types/cart";
-
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
-
+import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
@@ -79,10 +76,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   };
   // ---------------------------------------------------
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
-
   // Nút decrease chỉ được kích hoạt khi:
   // 1. Số lượng > 0
   // 2. VÀ đó LÀ sản phẩm đơn giản
@@ -95,7 +88,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       {/* Hình sản phẩm */}
       <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-md">
         <Image
-          src={product.image || PLACEHOLDER_IMAGE}
+          src={getImageUrl(product.image)}
           alt={product.name}
           fill
           sizes="100px"

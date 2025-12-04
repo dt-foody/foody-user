@@ -6,9 +6,7 @@ import { Plus, Package, Tag } from "lucide-react";
 import type { Combo } from "@/types";
 import { ComboPricingMode, DiscountType } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
-
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
 interface ComboCardProps {
   combo: Combo;
@@ -27,10 +25,6 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
 
     setQuantity(totalQuantity);
   }, [cartItems, combo.id]);
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
 
   // --- HELPER: Tính giá sàn (Min Price) ---
   const calculateMinBasePrice = (): number => {
@@ -106,7 +100,7 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
       {/* Hình ảnh - Cố định kích thước vuông nhỏ bên trái */}
       <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
         <Image
-          src={combo.image || PLACEHOLDER_IMAGE}
+          src={getImageUrl(combo.image)}
           alt={combo.name}
           fill
           sizes="(max-width: 768px) 100px, 150px"
