@@ -5,6 +5,8 @@ import SocialsList from "@/shared/SocialsList";
 import { blogPostService } from "@/services";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
+export const revalidate = 30;
+
 interface PageProps {
   params: { slug: string };
 }

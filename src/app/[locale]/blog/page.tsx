@@ -4,7 +4,7 @@ import { blogPostService } from "@/services";
 import { GroupedBlog } from "@/types";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
-// export const revalidate = 120;
+export const revalidate = 30;
 
 export default async function BlogPage() {
   let data: GroupedBlog[] = [];
