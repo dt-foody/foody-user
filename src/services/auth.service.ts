@@ -78,6 +78,13 @@ const resetPassword = async (data: any /* TResetPasswordSchema */): Promise<GetM
   }
 };
 
+const changePassword = async (data: any /* TChangePasswordSchema */): Promise<any> => {
+  return await apiFetch("/users/change-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 // Export tất cả hàm dưới dạng một object
 export const authService = {
   login,
@@ -85,7 +92,8 @@ export const authService = {
   register,
   getMe,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  changePassword
 };
 
 export default authService;
