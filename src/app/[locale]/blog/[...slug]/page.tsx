@@ -101,7 +101,6 @@ const Page = async ({ params }: PageProps) => {
           <Image
             src={getImageUrl(post.coverImage)}
             alt={post.coverImageAlt || post.title}
-            onError={handleImageError}
             width={1200} // chỉ cần width chuẩn desktop
             height={800} // tạm lấy ratio gần đúng
             className="w-full h-auto rounded-xl object-cover"
