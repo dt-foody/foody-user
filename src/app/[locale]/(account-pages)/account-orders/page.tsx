@@ -40,7 +40,7 @@ const RenderOrderOptions = memo(function RenderOrderOptions({
     <div className="pl-4 mt-1 space-y-0.5">
       {options.map((opt, index) => (
         <p key={index} className="text-xs text-gray-500">
-          + {opt.optionName}
+          + {opt.groupName}: {opt.optionName}
           {opt.priceModifier > 0 && (
             <span className="font-medium ml-1 text-gray-600">
               (+{formatPrice(opt.priceModifier)})
