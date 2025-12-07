@@ -61,7 +61,9 @@ const getPrimaryPhone = (phones: CustomerPhone[]) =>
 //
 
 // Backend: coordinates: [lng, lat]
-const DEFAULT_COORDINATES: [number, number] = [108.1352594423287, 16.073932414484002]; // [lng, lat] mặc định
+const DEFAULT_COORDINATES: [number, number] = [
+  105.82773355762369, 21.01951647163857,
+]; // [lng, lat] mặc định
 
 // Kiểu dữ liệu local cho form address (giống CustomerAddress nhưng đảm bảo location tồn tại)
 type NewAddressState = Omit<
@@ -876,7 +878,7 @@ const AccountPage = () => {
                       onClick={handleAddAddress}
                       className="flex-1 bg-orange-600 text-white py-2 rounded-lg"
                     >
-                      {editingAddressIndex !== null ? "Cập nhật" : "Lưu"}
+                      Lưu thay đổi
                     </button>
 
                     <button
@@ -902,7 +904,7 @@ const AccountPage = () => {
                     "Lưu thay đổi"
                   )}
                 </button>
-              </div>              
+              </div>
             </div>
           )}
         </div>

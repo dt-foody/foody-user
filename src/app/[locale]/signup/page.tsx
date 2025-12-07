@@ -55,14 +55,16 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       newErrors.email = "Vui lòng nhập địa chỉ email hợp lệ";
     }
 
+    if (!phone) {
+      newErrors.phone = "Vui lòng nhập số điện thoại";
+    } else if (!validatePhone(phone)) {
+      newErrors.phone = "Vui lòng nhập số điện thoại hợp lệ";
+    }
+
     if (!password) {
       newErrors.password = "Vui lòng nhập mật khẩu";
     } else if (password.length < 8) {
       newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
-    }
-
-    if (phone && !validatePhone(phone)) {
-      newErrors.phone = "Số điện thoại không hợp lệ";
     }
 
     if (birthDate) {

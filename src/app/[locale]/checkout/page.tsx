@@ -68,7 +68,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("bank");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -380,7 +380,7 @@ export default function CheckoutPage() {
           <div className="border-t pt-3">
             <h3 className="font-semibold mb-2">Thanh toán</h3>
             <div className="space-y-2">
-              <label className="flex items-center gap-2">
+              {/* <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="pay"
@@ -388,7 +388,7 @@ export default function CheckoutPage() {
                   onChange={() => setPaymentMethod("cod")}
                 />{" "}
                 Tiền mặt (COD)
-              </label>
+              </label> */}
               <label className="flex items-center gap-2">
                 <input
                   type="radio"

@@ -92,10 +92,10 @@ export default function PagePolicy() {
                 <li>
                   Email:{" "}
                   <a
-                    href="mailto:hotro@caphechirua.com"
+                    href="mailto:customerservice@luuchi.com.vn"
                     className="text-[#b9915f] hover:underline"
                   >
-                    hotro@caphechirua.com
+                    customerservice@luuchi.com.vn
                   </a>
                 </li>
                 <li>Địa chỉ: Số 22 Ngõ 91 Nguyễn Phúc Lai, Ô Chợ Dừa, Đống Đa, Hà Nội</li>
