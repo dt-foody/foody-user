@@ -287,7 +287,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             {/* Phone Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Số điện thoại
+                Số điện thoại <span className="text-red-500">*</span>
               </span>
               <Input
                 type="tel"
