@@ -789,14 +789,31 @@ const AccountPage = () => {
                       : "Thêm địa chỉ mới"}
                   </h3>
 
-                  <input
-                    type="text"
-                    name="label"
-                    placeholder="Tên địa chỉ (ví dụ: Nhà riêng, Văn phòng)"
-                    value={newAddress.label}
-                    onChange={handleAddressInput}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      name="label"
+                      placeholder="Tên địa chỉ (ví dụ: Nhà riêng, Văn phòng)"
+                      value={newAddress.label}
+                      onChange={handleAddressInput}
+                      className="w-full px-3 py-2 border rounded-lg"
+                    />
+                    {/* Gợi ý điền nhanh */}
+                    <div className="flex gap-2 mt-2">
+                      {["Nhà riêng", "Văn phòng", "Công ty"].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() =>
+                            setNewAddress((prev) => ({ ...prev, label: tag }))
+                          }
+                          className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full border border-gray-200 transition-colors"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <input
                     type="text"
