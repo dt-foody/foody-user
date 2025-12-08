@@ -276,7 +276,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               <Input
                 type="password"
                 name="password"
-                placeholder="Tạo mật khẩu an toàn cho tài khoản của bạn"
+                placeholder="Tạo mật khẩu"
                 className="mt-1"
                 ref={passwordRef}
                 disabled={isLoading}
@@ -318,10 +318,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
 
             {/* Optional Fields Section Header */}
             <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 italic mb-4">
-                “Những thông tin dưới đây là tuỳ chọn, hãy chia sẻ khi cảm thấy thoải mái. Ở mức bạn thấy phù hợp nhất, Lưu Chi sẽ đồng hành với sự tôn trọng trọn vẹn.”
-              </p>
-
               <div className="grid grid-cols-2 gap-4">
                 {/* Gender Field */}
                 <label className="block">
