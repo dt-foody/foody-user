@@ -4,9 +4,10 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
-import type { Product, PricePromotion } from "@/types";
+import type { Product } from "@/types";
 import { CreateOrderItem_ItemSnapshot } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
+
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
@@ -27,11 +28,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
   /** 🔹 Cập nhật quantity dựa trên giỏ hàng */
   useEffect(() => {
-    // ID tiền tố để tìm kiếm
     const productIdPrefix = `${product.id}::`;
-
-    // Lọc tất cả các line item trong giỏ hàng có cùng ID sản phẩm
-    // và cộng gộp số lượng của chúng
     const totalQuantity = cartItems
       .filter((item) => item.cartId.startsWith(productIdPrefix))
       .reduce((sum, currentItem) => sum + currentItem.quantity, 0);
@@ -42,7 +39,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   // --- HANDLERS ---
   const increase = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Logic này CHỈ DÀNH CHO SẢN PHẨM ĐƠN GIẢN
     const itemSnapshot: CreateOrderItem_ItemSnapshot = {
       id: product.id,
       name: product.name,
@@ -57,7 +53,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       item: itemSnapshot,
       options: {},
       comboSelections: null,
-      totalPrice: finalPrice, // Giá này đã là giá sale (nếu có)
+      totalPrice: finalPrice,
       note: "",
       _image: product.image,
       _categoryIds: product.category ? [product.category.toString()] : [],
@@ -68,17 +64,11 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
   const decrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Logic này CHỈ hoạt động cho SP đơn giản
-    // Lưu ý: key phải khớp logic buildVariantKey trong store (thường là id + "::")
     const simpleCartId = `${product.id}::`;
     const cartLine = cartItems.find((i) => i.cartId === simpleCartId);
     if (cartLine) updateQuantity(cartLine.cartId, -1);
   };
-  // ---------------------------------------------------
 
-  // Nút decrease chỉ được kích hoạt khi:
-  // 1. Số lượng > 0
-  // 2. VÀ đó LÀ sản phẩm đơn giản
   const canDecrease = quantity > 0 && isSimpleProduct;
 
   return (
@@ -86,7 +76,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       className={`flex items-start gap-4 bg-white p-3 rounded-xl border border-[rgba(0,0,0,0.08)] shadow-sm hover:shadow-md transition-all duration-200 cursor-default`}
     >
       {/* Hình sản phẩm */}
-      <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden rounded-md">
+      <div className="relative w-28 h-30 flex-shrink-0 overflow-hidden rounded-md">
         <Image
           src={getImageUrl(product.image)}
           alt={product.name}
@@ -104,13 +94,20 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       </div>
 
       {/* Thông tin */}
-      <div className="flex flex-col justify-between flex-grow h-28">
-        {/* Tên và giá */}
+      <div className="flex flex-col justify-between flex-grow h-30">
+        {/* Tên, Mô tả và Giá */}
         <div>
-          <h3 className="text-base font-bold text-neutral-900 mb-1 leading-tight line-clamp-2">
+          <h3 className="text-base font-bold text-neutral-900 mb-0.5 leading-tight line-clamp-2">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2 mb-2">
+
+          {product.description && (
+            <p className="text-xs text-gray-500 mb-1 line-clamp-2">
+              {product.description}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2 mb-1">
             <span className="text-[1rem] font-bold text-primary-600">
               {Math.round(finalPrice).toLocaleString("vi-VN")}₫
             </span>
@@ -123,12 +120,12 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         </div>
 
         {/* --- NÚT BẤM --- */}
-        <div className="flex items-center justify-end mt-2">
+        <div className="flex items-center justify-end mt-1">
           <div className="flex border border-gray-300 rounded-md overflow-hidden">
             <button
               onClick={decrease}
               disabled={!canDecrease}
-              className={`w-9 h-9 flex items-center justify-center text-lg font-bold transition-colors ${
+              className={`w-8 h-8 flex items-center justify-center text-lg font-bold transition-colors ${
                 canDecrease
                   ? "text-gray-700 hover:bg-gray-100"
                   : "text-gray-300 cursor-not-allowed"
@@ -140,13 +137,13 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               type="number"
               value={quantity}
               readOnly
-              className="w-16 h-9 text-center border-x border-gray-300 focus:outline-none"
+              className="w-10 h-8 text-center border-x border-gray-300 focus:outline-none text-sm"
             />
             <button
               onClick={isSimpleProduct ? increase : onClick}
-              className="w-9 h-9 flex items-center justify-center text-lg font-bold bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-lg font-bold bg-primary-500 text-white hover:bg-primary-600 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
         </div>

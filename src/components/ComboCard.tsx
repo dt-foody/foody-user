@@ -122,6 +122,12 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
             {combo.name}
           </h3>
 
+          {combo.description && (
+            <p className="text-xs text-gray-500 mb-1 line-clamp-2">
+              {combo.description}
+            </p>
+          )}
+
           {/* Giá hiển thị ngay dưới tên */}
           <div className="flex flex-col items-start">
             <div className="flex items-baseline gap-1.5 flex-wrap">
