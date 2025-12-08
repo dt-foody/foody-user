@@ -98,9 +98,9 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       </div>
 
       {/* Thông tin */}
-      <div className="flex flex-col justify-between flex-grow h-30">
+      <div className="flex flex-col justify-between flex-grow">
         {/* Tên và giá */}
-        <div>
+        <div className="h-[82px]">
           <h3 className="text-base font-bold text-neutral-900 mb-1 leading-tight line-clamp-2">
             {product.name}
           </h3>

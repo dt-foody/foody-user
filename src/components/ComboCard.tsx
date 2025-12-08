@@ -117,7 +117,7 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
       {/* Thông tin chi tiết - Nằm bên phải */}
       <div className="flex flex-col justify-between flex-grow w-full min-h-[6rem] sm:min-h-[7rem]">
         {/* HÀNG 1: Tên + Giá */}
-        <div>
+        <div className="h-[82px]">
           <h3 className="text-sm font-bold text-gray-800 mb-2 leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">
             {combo.name}
           </h3>
