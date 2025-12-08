@@ -45,13 +45,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'luuchi.com.vn',
-        port: '',
         pathname: '/storage/**',
       },
       {
         protocol: 'https',
         hostname: 'placehold.co',
-        port: '',
         pathname: '/*',
       },
     ],
