@@ -12,12 +12,11 @@ export default function PaymentSuccessPage() {
   const router = useRouter();
   const { clearCart } = useCart();
 
-  const statusParam = searchParams.get("status");
   const orderCode = searchParams.get("orderCode");
 
   const [status, setStatus] = useState<
     "success" | "pending" | "failed" | "notfound"
-  >(statusParam === "failed" ? "failed" : "pending");
+  >("pending");
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
