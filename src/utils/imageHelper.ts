@@ -3,12 +3,12 @@
 // Lấy URL backend từ biến môi trường.
 // Lưu ý: Trong Next.js, biến public phải bắt đầu bằng NEXT_PUBLIC_
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const DEFAULT_IMAGE = "https://placehold.co/200x200?text=No+Image";
+const DEFAULT_IMAGE = "/images/no-image.webp";
 
 export const getImageUrl = (imagePath?: string) => {
   // 1. Nếu không có path, trả về ảnh mặc định trong folder public
   if (!imagePath) {
-    return "https://placehold.co/200x200?text=No+Image"; // Đảm bảo bạn có file này trong public/images/
+    return "/images/no-image.webp"; // Đảm bảo bạn có file này trong public/images/
   }
 
   // 2. Nếu path đã là full URL (ví dụ ảnh Google, Facebook, hoặc link S3)
