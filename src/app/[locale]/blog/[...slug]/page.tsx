@@ -4,6 +4,7 @@ import Badge from "@/shared/Badge";
 import SocialsList from "@/shared/SocialsList";
 import { blogPostService } from "@/services";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
+import PostContent from "@/components/PostContent";
 
 export const revalidate = 30;
 
@@ -114,9 +115,10 @@ const Page = async ({ params }: PageProps) => {
       <div className="nc-SingleContent container space-y-10">
         <div
           id="single-entry-content"
-          className="prose dark:prose-invert prose-sm !max-w-screen-md sm:prose lg:prose-lg mx-auto dark:prose-dark"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+          className="!max-w-screen-md mx-auto"
+        >
+          <PostContent content={post.content} />
+        </div>
 
         {/* Tags */}
         {post.tags.length > 0 && (
