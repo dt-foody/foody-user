@@ -44,7 +44,7 @@ export default function FoodyMenuClient({
   // Tạo danh sách tab cho thanh MenuCategory
   const categoryTabs = useMemo(() => {
     return initialThucDon
-      .filter((c) => c.id !== "flash_sale_category") // Ẩn category flash sale khỏi thanh tab thường (nếu muốn)
+      .filter((c) => c.id !== "flashsale") // Ẩn category flash sale khỏi thanh tab thường (nếu muốn)
       .map((c) => ({ id: c.id, name: c.name, priority: c.priority }));
   }, [initialThucDon]);
 
@@ -73,11 +73,18 @@ export default function FoodyMenuClient({
     const element = document.getElementById(elementId);
 
     if (element) {
+      // Trường hợp tìm thấy phần tử -> Scroll đến phần tử đó
       const yOffset = -170; // Offset cho header
       const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
 
       window.scrollTo({
         top: y,
+        behavior: "smooth",
+      });
+    } else if (type === "flashsale") {
+      // ✅ CẬP NHẬT: Trường hợp Flashsale tìm không ra ID -> Scroll lên đầu trang
+      window.scrollTo({
+        top: 0,
         behavior: "smooth",
       });
     }
@@ -214,16 +221,16 @@ export default function FoodyMenuClient({
               id={`category-${group.id}`}
               className="my-6"
               data-scroll-spy-type={
-                group.id === "flash_sale_category" ? "flashsale" : "category"
+                group.id === "flashsale" ? "flashsale" : "category"
               }
               data-scroll-spy-id={group.id}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                {group.id === "flash_sale_category" && (
+                {group.id === "flashsale" && (
                   <Gift className="w-6 h-6 text-primary-500 mr-2" />
                 )}
                 {group.name}
-                {group.id === "flash_sale_category" && " 🔥"}
+                {group.id === "flashsale" && " 🔥"}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {group.products.map((product: any) => (
