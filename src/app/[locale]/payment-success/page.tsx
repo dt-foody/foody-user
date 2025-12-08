@@ -91,7 +91,7 @@ export default function PaymentSuccessPage() {
       : "Mã đơn hàng không hợp lệ.";
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fffaf5] text-[#3b2f26] px-6 py-8">
+    <div className="mt-20 flex flex-col items-center justify-center bg-[#fffaf5] text-[#3b2f26] px-6 py-8">
       <div className="bg-white border border-black/10 rounded-xl shadow-sm p-8 max-w-lg w-full text-center">
         <div className="flex flex-col items-center gap-3">
           {renderIcon()}
