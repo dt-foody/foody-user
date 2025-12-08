@@ -205,7 +205,7 @@ const PageLogin: FC<PageLoginProps> = ({}) => {
           <span className="block text-center text-neutral-700 dark:text-neutral-300">
             Bạn là người dùng mới? {` `}
             <Link href="/signup" className="font-semibold underline">
-              Tạo tài khoản
+              Đăng ký thành viên
             </Link>
           </span>
         </div>

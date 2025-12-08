@@ -351,11 +351,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             {/* Promotion Notice */}
             <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-sm">
               <p className="text-purple-700 dark:text-purple-300">
-                🎁{" "}
-                <span className="font-medium">
-                  Cung cấp giới tính và ngày sinh
-                </span>{" "}
-                để nhận ưu đãi và khuyến mãi phù hợp với bạn!
+                🎁 Chia sẻ ngày sinh và giới tính giúp chúng mình chuẩn bị những món quà dành riêng cho bạn một cách chu đáo nhất.
               </p>
             </div>
 
