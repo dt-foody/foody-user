@@ -213,26 +213,29 @@ const PageSignUp: FC<PageSignUpProps> = () => {
   return (
     <div className="nc-PageSignUp">
       <div className="container mb-24 lg:mb-32">
-        <h2 className="my-4 flex items-center justify-center text-3xl font-semibold text-neutral-900 dark:text-neutral-100 md:text-3xl">
-          Đăng ký
+        <h2 className="my-4 flex items-center justify-center text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+          Đăng ký thành viên
         </h2>
 
         <div className="max-w-md mx-auto space-y-6">
-          <form className="grid grid-cols-1 gap-6" onSubmit={handleSubmit}>
+          <form className="grid grid-cols-1 gap-4" onSubmit={handleSubmit}>
             {/* Name Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Họ và tên <span className="text-red-500">*</span>
+                Họ tên <span className="text-red-500">*</span>
               </span>
               <Input
                 type="text"
                 name="name"
-                placeholder="Nguyễn Văn A"
+                placeholder="Chúng mình có thể gọi bạn là gì nhỉ?"
                 className="mt-1"
                 ref={nameRef}
                 disabled={isLoading}
                 onFocus={() => handleInputFocus("name")}
               />
+              <span className="text-xs text-neutral-500 mt-1 block">
+                Để xưng hô với bạn một cách tự nhiên và tôn trọng nhất.
+              </span>
               {errors.name && (
                 <span className="text-sm text-red-500 mt-1 block">
                   {errors.name}
@@ -243,17 +246,21 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             {/* Email Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Địa chỉ Email <span className="text-red-500">*</span>
+                Email <span className="text-red-500">*</span>
               </span>
               <Input
                 type="email"
                 name="email"
-                placeholder="example@example.com"
+                placeholder="example@gmail.com"
                 className="mt-1"
                 ref={emailRef}
                 disabled={isLoading}
                 onFocus={() => handleInputFocus("email")}
               />
+              <span className="text-xs text-neutral-500 mt-1 block">
+                Chúng mình trân trọng thời gian của bạn, nên chỉ gửi những thông
+                tin thật sự cần thiết và có giá trị.
+              </span>
               {errors.email && (
                 <span className="text-sm text-red-500 mt-1 block">
                   {errors.email}
@@ -269,19 +276,20 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               <Input
                 type="password"
                 name="password"
+                placeholder="Tạo mật khẩu an toàn cho tài khoản của bạn"
                 className="mt-1"
                 ref={passwordRef}
                 disabled={isLoading}
                 onFocus={() => handleInputFocus("password")}
               />
+              <span className="text-xs text-neutral-500 mt-1 block">
+                Tối thiểu 8 ký tự.
+              </span>
               {errors.password && (
                 <span className="text-sm text-red-500 mt-1 block">
                   {errors.password}
                 </span>
               )}
-              <span className="text-xs text-neutral-500 mt-1 block">
-                Tối thiểu 8 ký tự
-              </span>
             </label>
 
             {/* Phone Field */}
@@ -292,66 +300,75 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               <Input
                 type="tel"
                 name="phone"
-                placeholder="0912345678"
+                placeholder="0889058678"
                 className="mt-1"
                 ref={phoneRef}
                 disabled={isLoading}
                 onFocus={() => handleInputFocus("phone")}
               />
+              <span className="text-xs text-amber-600 dark:text-amber-400 mt-1 block">
+                💡Thông tin cần thiết để giao hàng đến bạn.
+              </span>
               {errors.phone && (
                 <span className="text-sm text-red-500 mt-1 block">
                   {errors.phone}
                 </span>
               )}
-              <span className="text-xs text-amber-600 dark:text-amber-400 mt-1 block">
-                💡 Bắt buộc khi đặt hàng
-              </span>
             </label>
 
-            {/* Gender and Birth Date Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="text-neutral-800 dark:text-neutral-200">
-                  Giới tính
-                </span>
-                <select
-                  name="gender"
-                  className="mt-1 block w-full border-neutral-200 focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50 bg-white dark:border-neutral-700 dark:focus:ring-primary-6000 dark:focus:ring-opacity-25 dark:bg-neutral-900 disabled:bg-neutral-200 dark:disabled:bg-neutral-800 rounded-2xl text-sm font-normal h-11 px-4 py-3"
-                  ref={genderRef}
-                  disabled={isLoading}
-                >
-                  <option value="">Chọn</option>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
-                </select>
-              </label>
+            {/* Optional Fields Section Header */}
+            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 italic mb-4">
+                “Những thông tin dưới đây là tuỳ chọn, hãy chia sẻ khi cảm thấy thoải mái. Ở mức bạn thấy phù hợp nhất, Lưu Chi sẽ đồng hành với sự tôn trọng trọn vẹn.”
+              </p>
 
-              <label className="block">
-                <span className="text-neutral-800 dark:text-neutral-200">
-                  Ngày sinh
-                </span>
-                <Input
-                  type="date"
-                  name="birthDate"
-                  className="mt-1"
-                  ref={birthDateRef}
-                  disabled={isLoading}
-                  onFocus={() => handleInputFocus("birthDate")}
-                  max={new Date().toISOString().split("T")[0]}
-                />
-                {errors.birthDate && (
-                  <span className="text-sm text-red-500 mt-1 block">
-                    {errors.birthDate}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Gender Field */}
+                <label className="block">
+                  <span className="text-neutral-800 dark:text-neutral-200">
+                    Giới tính
                   </span>
-                )}
-              </label>
+                  <select
+                    name="gender"
+                    className="mt-1 block w-full border-neutral-200 focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50 bg-white dark:border-neutral-700 dark:focus:ring-primary-6000 dark:focus:ring-opacity-25 dark:bg-neutral-900 disabled:bg-neutral-200 dark:disabled:bg-neutral-800 rounded-2xl text-sm font-normal h-11 px-4 py-3"
+                    ref={genderRef}
+                    disabled={isLoading}
+                  >
+                    <option value="">Chọn</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
+                  </select>
+                </label>
+
+                {/* Birth Date Field */}
+                <label className="block">
+                  <span className="text-neutral-800 dark:text-neutral-200">
+                    Ngày sinh
+                  </span>
+                  <Input
+                    type="date"
+                    name="birthDate"
+                    className="mt-1"
+                    ref={birthDateRef}
+                    disabled={isLoading}
+                    onFocus={() => handleInputFocus("birthDate")}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                  {errors.birthDate && (
+                    <span className="text-sm text-red-500 mt-1 block">
+                      {errors.birthDate}
+                    </span>
+                  )}
+                </label>
+              </div>
             </div>
 
             {/* Promotion Notice */}
             <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-sm">
               <p className="text-purple-700 dark:text-purple-300">
-                🎁 Chia sẻ ngày sinh và giới tính giúp chúng mình chuẩn bị những món quà dành riêng cho bạn một cách chu đáo nhất.
+                🎁 Chia sẻ ngày sinh và giới tính giúp chúng mình chuẩn bị những
+                món quà dành riêng cho bạn một cách chu đáo nhất.
               </p>
             </div>
 
