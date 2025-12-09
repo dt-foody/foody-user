@@ -3,6 +3,7 @@ import Link from "next/link";
 import { blogPostService } from "@/services";
 import { notFound } from "next/navigation";
 import { BlogPost } from "@/types";
+import { getImageUrl } from "@/utils/imageHelper";
 
 interface Props {
   params: { slug: string };
@@ -64,10 +65,7 @@ export default async function BlogCategoryPage({
                 {/* IMAGE */}
                 <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
                   <Image
-                    src={
-                      post.coverImage ||
-                      "https://placehold.co/400x300?text=No+Image"
-                    }
+                    src={getImageUrl(post.coverImage)}
                     alt={post.coverImageAlt || post.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
