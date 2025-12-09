@@ -4,6 +4,7 @@ import Input from "@/shared/Input";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import Link from "next/link";
 import { authService } from "@/services";
+import NcModal from "@/shared/NcModal"; // Import Modal
 
 export interface PageSignUpProps {}
 
@@ -24,7 +25,12 @@ const PageSignUp: FC<PageSignUpProps> = () => {
   const genderRef = useRef<HTMLSelectElement>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // State cũ
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  // State mới cho Popup
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
   const [registeredEmail, setRegisteredEmail] = useState("");
 
   // Validate email
@@ -116,14 +122,17 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       if (birthDate) requestBody.birthDate = birthDate; // Format: YYYY-MM-DD
       if (gender) requestBody.gender = gender;
 
-      const response = await authService.register(requestBody);
+      await authService.register(requestBody);
 
       setRegisteredEmail(email);
+      // Bật cả 2 màn hình: Màn hình nền thành công và Popup
       setShowSuccessMessage(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setShowWelcomeModal(true);
     } catch (error) {
       console.error("Signup error:", error);
       setErrors({
-        email: "Đã có lỗi xảy ra. Vui lòng thử lại.",
+        email: "Đã có lỗi xảy ra hoặc email đã tồn tại. Vui lòng thử lại.",
       });
     } finally {
       setIsLoading(false);
@@ -132,6 +141,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
 
   const resetForm = () => {
     setShowSuccessMessage(false);
+    setShowWelcomeModal(false);
     setRegisteredEmail("");
     if (nameRef.current) nameRef.current.value = "";
     if (emailRef.current) emailRef.current.value = "";
@@ -141,7 +151,54 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     if (genderRef.current) genderRef.current.value = "";
   };
 
-  // Success message screen
+  // --- Nội dung cho Popup "Tâm thư" ---
+  const renderWelcomeModalContent = () => {
+    return (
+      <div className="flex flex-col items-center text-center space-y-5 px-1">
+        <div className="text-neutral-600 dark:text-neutral-300 text-sm leading-relaxed text-justify space-y-3 font-medium">
+          <p>
+            &quot;Cảm ơn bạn đã đặt niềm tin và chọn bắt đầu hành trình này cùng
+            chúng mình.
+          </p>
+          <p>
+            <strong>
+              Mỗi người trẻ đều mang trong mình một khát vọng riêng{" "}
+            </strong>
+            - và chúng mình tin rằng bạn xứng đáng bước đi với{" "}
+            <strong>
+              một tâm trí vững vàng, một cuộc sống hài hòa và sự tự do kiến tạo
+              con đường sự nghiệp theo cách của riêng mình.
+            </strong>
+          </p>
+          <p>
+            Từ tách cà phê mỗi ngày đến những giá trị mà chúng mình chọn lọc gửi
+            gắm, mong rằng nơi đây sẽ là một điểm tựa nhỏ — giúp bạn giữ được sự
+            tỉnh táo, cân bằng và nuôi dưỡng nguồn năng lượng bền bỉ cho hành
+            trình xây dựng sự nghiệp, cũng như một cuộc đời thịnh vượng.
+          </p>
+          <p>
+            <strong>
+              Chặng đường phía trước còn dài và nhiều điều để khám phá.
+            </strong>
+            <br />
+            Rất hân hạnh được đồng hành cùng bạn.&quot;
+          </p>
+        </div>
+
+        <div className="w-full pt-4">
+          <ButtonPrimary
+            className="w-full"
+            onClick={() => setShowWelcomeModal(false)}
+          >
+            💛
+          </ButtonPrimary>
+        </div>
+      </div>
+    );
+  };
+
+  // --- MÀN HÌNH THÀNH CÔNG (CŨ) ---
+  // Vẫn giữ nguyên layout, nhưng chèn thêm NcModal vào bên trong
   if (showSuccessMessage) {
     return (
       <div className="nc-PageSignUp">
@@ -209,9 +266,19 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     );
   }
 
-  // Signup form screen
+  // --- MÀN HÌNH ĐĂNG KÝ (FORM) ---
   return (
     <div className="nc-PageSignUp">
+      <NcModal
+        isOpenProp={showWelcomeModal}
+        onCloseModal={() => setShowWelcomeModal(false)}
+        contentExtraClass="max-w-xl"
+        renderContent={renderWelcomeModalContent}
+        triggerText=""
+        modalTitle="Đôi lời gửi gắm"
+        renderTrigger={() => null} // Ẩn nút trigger
+      />
+
       <div className="container mb-24 lg:mb-32">
         <h2 className="my-4 flex items-center justify-center text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
           Đăng ký thành viên
