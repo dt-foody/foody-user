@@ -40,10 +40,10 @@ export async function generateMetadata({
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
       locale: params.locale === "ar" ? "ar_AR" : "en_US",
-      url: `https://foody-user.vercel.app/${params.locale}`,
+      url: `https://luuchi.com.vn/${params.locale}`,
       images: [
         {
-          url: "https://foody-user.vercel.app/images/logo.png",
+          url: "https://luuchi.com.vn/images/logo.png",
           width: 1200,
           height: 630,
           alt: messages.metadata.siteTitle,
@@ -55,7 +55,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
-      images: ["https://foody-user.vercel.app/images/logo.png"],
+      images: ["https://luuchi.com.vn/images/logo.png"],
     },
     verification: {
       google: "NNl_9gfnaQ2Fb_iVVt32qXyLKuk7bfe30m3IKV67OMk",

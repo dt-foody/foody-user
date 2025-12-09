@@ -23,6 +23,7 @@
     "eslint-config-next": "^13.4.3",
     "framer-motion": "^10.12.16",
     "google-map-react": "^2.2.1",
+    "handlebars": "^4.7.8",
     "html-react-parser": "^5.2.10",
     "lodash": "^4.17.21",
     "lucide-react": "^0.544.0",
@@ -45,6 +46,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@types/handlebars": "^4.0.40",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
     "@types/react-slick": "^0.23.13",
