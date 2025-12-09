@@ -30,13 +30,16 @@ const AccountPass = () => {
   });
 
   // Tính toán độ mạnh mật khẩu (đã dịch nhãn)
-    const calculatePasswordStrength = (password: string): PasswordStrength => {
+  const calculatePasswordStrength = (password: string): PasswordStrength => {
     if (!password) return { score: 0, label: "", color: "" };
 
-    if (password.length < 8) return { score: 0, label: "Quá ngắn", color: "bg-red-500" };
-    if (password.length >= 8 && password.length < 12) return { score: 3, label: "Đạt yêu cầu", color: "bg-green-500" };
-    if (password.length >= 12) return { score: 5, label: "Rất tốt", color: "bg-green-600" };
-    
+    if (password.length < 8)
+      return { score: 0, label: "Quá ngắn", color: "bg-red-500" };
+    if (password.length >= 8 && password.length < 12)
+      return { score: 3, label: "Đạt yêu cầu", color: "bg-green-500" };
+    if (password.length >= 12)
+      return { score: 5, label: "Rất tốt", color: "bg-green-600" };
+
     return { score: 3, label: "Đạt yêu cầu", color: "bg-green-500" };
   };
 
@@ -343,7 +346,7 @@ const AccountPass = () => {
               type="button"
               onClick={handleSubmit}
               disabled={isSaving}
-              className="px-5 py-2 text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-md hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2 text-sm text-white font-medium rounded-md hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 bg-primary-500 hover:bg-primary-600"
             >
               {isSaving ? (
                 <>
