@@ -6,17 +6,27 @@
   <!-- Home page -->
   <url>
     <loc>https://luuchi.com.vn/</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/" />
     <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/" />
   </url>
 
+  <!-- Menu page -->
+  <url>
+    <loc>https://luuchi.com.vn/vi/menu</loc>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/menu" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/menu" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/menu" />
+  </url>
+
   <!-- Blog page -->
   <url>
     <loc>https://luuchi.com.vn/vi/blog</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/blog" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/blog" />
@@ -26,7 +36,7 @@
   <!-- About page -->
   <url>
     <loc>https://luuchi.com.vn/vi/about</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/about" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/about" />
@@ -36,7 +46,7 @@
   <!-- Policy page -->
   <url>
     <loc>https://luuchi.com.vn/vi/policy</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/policy" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/policy" />
