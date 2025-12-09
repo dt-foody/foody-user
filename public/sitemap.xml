@@ -5,11 +5,12 @@
 
   <!-- Home page -->
   <url>
-    <loc>https://luuchi.com.vn/en/</loc>
+    <loc>https://luuchi.com.vn/</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/" />
   </url>
 
   <!-- Blog page -->
@@ -19,15 +20,7 @@
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/blog" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/blog" />
-  </url>
-
-  <!-- Membership page -->
-  <url>
-    <loc>https://luuchi.com.vn/en/membership</loc>
-    <lastmod>2025-09-10T15:02:41+00:00</lastmod>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/membership" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/membership" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/blog" />
   </url>
 
   <!-- About page -->
@@ -37,6 +30,7 @@
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/about" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/about" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/about" />
   </url>
 
   <!-- Policy page -->
@@ -46,6 +40,7 @@
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/policy" />
     <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/policy" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/policy" />
   </url>
 
 </urlset>
