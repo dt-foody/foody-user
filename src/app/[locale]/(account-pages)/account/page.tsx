@@ -412,7 +412,7 @@ const AccountPage = () => {
             Quản lý thông tin cá nhân và sổ địa chỉ.
           </p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xl uppercase">
+        <div className="w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold text-xl uppercase">
           {customerData.name?.[0] || <User />}
         </div>
       </div>
@@ -799,7 +799,7 @@ const AccountPage = () => {
                   </div>
 
                   {/* GHI CHÚ TỰ ĐỘNG ĐIỀN */}
-                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 p-3 rounded-lg text-sm text-blue-700">
+                  <div className="mt-3 flex items-start gap-2 bg-[#fff9e9] border border-blue-100 p-3 rounded-lg text-sm text-black">
                     <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <p>
                       Thông tin{" "}

@@ -5,7 +5,7 @@ import Script from "next/script";
 import Input from "@/shared/Input";
 import Label from "@/components/Label";
 import { toast } from "sonner";
-import { Search, X, Loader2, MapPin } from "lucide-react";
+import { Search, X, Loader2, MapPin, Info } from "lucide-react";
 
 // Types
 interface MapSelectionData {
@@ -403,6 +403,18 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
               )}
             </button>
           </div>
+        </div>
+
+        <div className="mt-3 flex items-start gap-2 bg-[#fff9e9] border border-blue-100 p-3 rounded-lg text-sm text-black">
+          <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>
+            Hiện tại, Lưu Chi phục vụ nhanh nhất trong khu vực nội thành Hà Nội.
+            Với các đơn hàng từ tỉnh thành khác, quý khách vui lòng liên hệ
+            hotline{" "}
+            <span className="font-bold text-black">088 905 8678</span> ngay
+            sau khi hoàn tất đặt hàng để được hỗ trợ nhanh và thuận tiện nhất.
+            Xin trân trọng cảm ơn quý khách!
+          </p>
         </div>
 
         {/* SUGGESTIONS DROPDOWN */}
