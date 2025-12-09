@@ -11,7 +11,6 @@ export default getRequestConfig(async ({requestLocale}) => {
 
   const locale = routing.defaultLocale;
 
-  console.log("hhaha", locale);
 
   return {
     locale,

@@ -7,7 +7,7 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 const Select: FC<SelectProps> = ({
   className = "",
-  sizeClass = "h-11",
+  sizeClass = "h-11 px-4 py-3",
   children,
   ...args
 }) => {

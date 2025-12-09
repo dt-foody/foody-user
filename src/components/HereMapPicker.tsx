@@ -330,7 +330,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
   }, [initialLat, initialLng, initialAddress]);
 
   return (
-    <div className={`w-full flex flex-col gap-3 ${className}`}>
+    <div className={`w-full flex flex-col gap-3 p-4 ${className}`}>
       {/* Scripts */}
       {!isMapLoaded && (
         <>
@@ -379,7 +379,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
             placeholder="Nhập địa chỉ..."
             className="pr-20"
           />
-          <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
+          <div className="absolute right-3 top-1 bottom-1 flex items-center gap-1">
             {searchQuery && (
               <button
                 onClick={() => {
@@ -394,12 +394,12 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
             <button
               onClick={handleSearch}
               disabled={isSearching}
-              className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md"
+              className="p-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md"
             >
               {isSearching ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <Search size={18} />
+                <Search size={16} />
               )}
             </button>
           </div>

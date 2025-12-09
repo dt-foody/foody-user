@@ -153,9 +153,7 @@ export default function AddressDropdown() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                // Chuyển hướng đến trang quản lý địa chỉ (giả sử route này đúng)
-                router.push("/account" as any);
-                // Nếu route của bạn là /account hoặc /account/addresses, hãy sửa lại ở đây
+                router.push("/account?tab=addresses" as any);
               }}
               className="w-full py-2 flex items-center justify-center gap-2 text-sm font-semibold text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
             >
