@@ -15,7 +15,7 @@
 
   <!-- Blog page -->
   <url>
-    <loc>https://luuchi.com.vn/en/blog</loc>
+    <loc>https://luuchi.com.vn/vi/blog</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/blog" />
@@ -25,7 +25,7 @@
 
   <!-- About page -->
   <url>
-    <loc>https://luuchi.com.vn/en/about</loc>
+    <loc>https://luuchi.com.vn/vi/about</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/about" />
@@ -35,7 +35,7 @@
 
   <!-- Policy page -->
   <url>
-    <loc>https://luuchi.com.vn/en/policy</loc>
+    <loc>https://luuchi.com.vn/vi/policy</loc>
     <lastmod>2025-09-10T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/policy" />
