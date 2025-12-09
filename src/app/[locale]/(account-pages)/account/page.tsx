@@ -76,6 +76,8 @@ const AccountPage = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  const redirectUri = searchParams.get("redirect_uri");
+
   const tabParam = searchParams.get("tab");
   const activeTab = tabParam === "addresses" ? "addresses" : "profile";
 
@@ -376,6 +378,12 @@ const AccountPage = () => {
       await customerService.updateProfile(payload);
       await fetchUser();
       toast.success("Cập nhật hồ sơ thành công!");
+      
+      if (redirectUri) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        router.push(redirectUri);
+      }
+
     } catch (err) {
       console.error(err);
       toast.error("Cập nhật thất bại, vui lòng thử lại.");

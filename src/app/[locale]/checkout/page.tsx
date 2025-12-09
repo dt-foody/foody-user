@@ -8,10 +8,7 @@ import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
 import { PaymentMethod } from "@/types";
 import Image from "next/image";
-import {
-  CreateOrderItem_Option,
-  CartLine,
-} from "@/types/cart";
+import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 
 const formatPrice = (price: number) =>
@@ -285,7 +282,9 @@ export default function CheckoutPage() {
                 <MapPin size={16} /> Địa chỉ giao hàng
               </h3>
               <button
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                onClick={() =>
+                  router.push("/account?tab=addresses&redirect_uri=/checkout")
+                }
                 className="text-xs text-blue-600 hover:underline"
               >
                 Thay đổi
