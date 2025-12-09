@@ -4,7 +4,7 @@ import Input from "@/shared/Input";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import Link from "next/link";
 import { authService } from "@/services";
-import NcModal from "@/shared/NcModal"; // Import Modal
+import NcModal from "@/shared/NcModal";
 
 export interface PageSignUpProps {}
 
@@ -26,22 +26,17 @@ const PageSignUp: FC<PageSignUpProps> = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // State cũ
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  // State mới cho Popup
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-
   const [registeredEmail, setRegisteredEmail] = useState("");
 
-  // Validate email
+  // ... (Giữ nguyên các hàm validateEmail, validatePhone, validateForm, handleInputFocus như cũ) ...
   const validateEmail = (email: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  // Validate phone (basic Vietnamese phone number)
   const validatePhone = (phone: string): boolean =>
     /^(0|\+84)[0-9]{9,10}$/.test(phone);
 
-  // Validate form
   const validateForm = (
     name: string,
     email: string,
@@ -50,52 +45,33 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     birthDate: string
   ): boolean => {
     const newErrors: FormErrors = {};
-
-    if (!name.trim()) {
-      newErrors.name = "Vui lòng nhập họ và tên";
-    }
-
-    if (!email) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!validateEmail(email)) {
+    if (!name.trim()) newErrors.name = "Vui lòng nhập họ và tên";
+    if (!email) newErrors.email = "Vui lòng nhập email";
+    else if (!validateEmail(email))
       newErrors.email = "Vui lòng nhập địa chỉ email hợp lệ";
-    }
-
-    if (!phone) {
-      newErrors.phone = "Vui lòng nhập số điện thoại";
-    } else if (!validatePhone(phone)) {
+    if (!phone) newErrors.phone = "Vui lòng nhập số điện thoại";
+    else if (!validatePhone(phone))
       newErrors.phone = "Vui lòng nhập số điện thoại hợp lệ";
-    }
-
-    if (!password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (password.length < 8) {
+    if (!password) newErrors.password = "Vui lòng nhập mật khẩu";
+    else if (password.length < 8)
       newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
-    }
-
     if (birthDate) {
       const selectedDate = new Date(birthDate);
       const today = new Date();
       const minDate = new Date();
       minDate.setFullYear(today.getFullYear() - 120);
-
-      if (selectedDate > today) {
+      if (selectedDate > today)
         newErrors.birthDate = "Ngày sinh không được là ngày trong tương lai";
-      } else if (selectedDate < minDate) {
+      else if (selectedDate < minDate)
         newErrors.birthDate = "Ngày sinh không hợp lệ";
-      }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleInputFocus = (field: keyof FormErrors) => {
     if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -112,22 +88,18 @@ const PageSignUp: FC<PageSignUpProps> = () => {
 
     setIsLoading(true);
     try {
-      const requestBody: any = {
-        name: name.trim(),
-        email,
-        password,
-      };
-
+      const requestBody: any = { name: name.trim(), email, password };
       if (phone) requestBody.phone = phone;
-      if (birthDate) requestBody.birthDate = birthDate; // Format: YYYY-MM-DD
+      if (birthDate) requestBody.birthDate = birthDate;
       if (gender) requestBody.gender = gender;
 
       await authService.register(requestBody);
 
       setRegisteredEmail(email);
-      // Bật cả 2 màn hình: Màn hình nền thành công và Popup
+      // Bật màn hình thành công trước
       setShowSuccessMessage(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Đợi 0.5s rồi bật Popup đè lên màn hình thành công
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setShowWelcomeModal(true);
     } catch (error) {
       console.error("Signup error:", error);
@@ -151,7 +123,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     if (genderRef.current) genderRef.current.value = "";
   };
 
-  // --- Nội dung cho Popup "Tâm thư" ---
+  // --- Nội dung Popup ---
   const renderWelcomeModalContent = () => {
     return (
       <div className="flex flex-col items-center text-center space-y-5 px-1">
@@ -184,7 +156,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             Rất hân hạnh được đồng hành cùng bạn.&quot;
           </p>
         </div>
-
         <div className="w-full pt-4">
           <ButtonPrimary
             className="w-full"
@@ -197,14 +168,23 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     );
   };
 
-  // --- MÀN HÌNH THÀNH CÔNG (CŨ) ---
-  // Vẫn giữ nguyên layout, nhưng chèn thêm NcModal vào bên trong
+  // --- MÀN HÌNH THÀNH CÔNG ---
   if (showSuccessMessage) {
     return (
       <div className="nc-PageSignUp">
+        {/* 🌟 ĐÃ CHUYỂN MODAL VÀO ĐÂY ĐỂ HIỂN THỊ KHI SUCCESS 🌟 */}
+        <NcModal
+          isOpenProp={showWelcomeModal}
+          onCloseModal={() => setShowWelcomeModal(false)}
+          contentExtraClass="max-w-xl"
+          renderContent={renderWelcomeModalContent}
+          triggerText=""
+          modalTitle="Đôi lời gửi gắm"
+          renderTrigger={() => null}
+        />
+
         <div className="container mb-24 lg:mb-32">
           <div className="max-w-md mx-auto text-center space-y-6 py-8">
-            {/* Success Icon */}
             <div className="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <svg
                 className="w-10 h-10 text-green-600 dark:text-green-400"
@@ -220,12 +200,9 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                 />
               </svg>
             </div>
-
-            {/* Success Message */}
             <h2 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
               Kiểm tra email của bạn
             </h2>
-
             <div className="space-y-3 text-neutral-600 dark:text-neutral-400">
               <p>Chúng tôi đã gửi email xác thực đến</p>
               <p className="font-semibold text-neutral-900 dark:text-neutral-100">
@@ -236,8 +213,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                 liên kết xác thực để hoàn tất đăng ký.
               </p>
             </div>
-
-            {/* Additional Info */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-neutral-700 dark:text-neutral-300">
               <p className="font-medium mb-2">Không nhận được email?</p>
               <ul className="text-left space-y-1 list-disc list-inside">
@@ -246,13 +221,10 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                 <li>Chờ vài phút và kiểm tra lại</li>
               </ul>
             </div>
-
-            {/* Actions */}
             <div className="space-y-3 pt-4">
               <ButtonPrimary onClick={resetForm}>
                 Đăng ký với email khác
               </ButtonPrimary>
-
               <Link
                 href="/login"
                 className="block text-neutral-700 dark:text-neutral-300 hover:underline"
@@ -266,19 +238,9 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     );
   }
 
-  // --- MÀN HÌNH ĐĂNG KÝ (FORM) ---
+  // --- MÀN HÌNH FORM ĐĂNG KÝ (Đã bỏ NcModal ở đây) ---
   return (
     <div className="nc-PageSignUp">
-      <NcModal
-        isOpenProp={showWelcomeModal}
-        onCloseModal={() => setShowWelcomeModal(false)}
-        contentExtraClass="max-w-xl"
-        renderContent={renderWelcomeModalContent}
-        triggerText=""
-        modalTitle="Đôi lời gửi gắm"
-        renderTrigger={() => null} // Ẩn nút trigger
-      />
-
       <div className="container mb-24 lg:mb-32">
         <h2 className="my-4 flex items-center justify-center text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
           Đăng ký thành viên
@@ -286,7 +248,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
 
         <div className="max-w-md mx-auto space-y-6">
           <form className="grid grid-cols-1 gap-4" onSubmit={handleSubmit}>
-            {/* Name Field */}
+            {/* ... Giữ nguyên các trường input Name, Email, Pass, Phone, Gender, BirthDate ... */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Họ tên <span className="text-red-500">*</span>
@@ -310,7 +272,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               )}
             </label>
 
-            {/* Email Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Email <span className="text-red-500">*</span>
@@ -335,7 +296,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               )}
             </label>
 
-            {/* Password Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Mật khẩu <span className="text-red-500">*</span>
@@ -359,7 +319,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               )}
             </label>
 
-            {/* Phone Field */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Số điện thoại <span className="text-red-500">*</span>
@@ -383,10 +342,8 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               )}
             </label>
 
-            {/* Optional Fields Section Header */}
             <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
               <div className="grid grid-cols-2 gap-4">
-                {/* Gender Field */}
                 <label className="block">
                   <span className="text-neutral-800 dark:text-neutral-200">
                     Giới tính
@@ -404,7 +361,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                   </select>
                 </label>
 
-                {/* Birth Date Field */}
                 <label className="block">
                   <span className="text-neutral-800 dark:text-neutral-200">
                     Ngày sinh
@@ -427,7 +383,6 @@ const PageSignUp: FC<PageSignUpProps> = () => {
               </div>
             </div>
 
-            {/* Promotion Notice */}
             <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-sm">
               <p className="text-purple-700 dark:text-purple-300">
                 🎁 Chia sẻ ngày sinh và giới tính giúp chúng mình chuẩn bị những
