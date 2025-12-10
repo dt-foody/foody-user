@@ -6,6 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const DEFAULT_IMAGE = "/images/no-image.webp";
 
 export const getImageUrl = (imagePath?: string) => {
+  console.log("imagePath", imagePath);
   // 1. Nếu không có path, trả về ảnh mặc định trong folder public
   if (!imagePath) {
     return "/images/no-image.webp"; // Đảm bảo bạn có file này trong public/images/

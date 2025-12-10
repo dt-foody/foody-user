@@ -10,6 +10,8 @@ interface Props {
   searchParams: { page?: string };
 }
 
+export const revalidate = 30;
+
 export default async function BlogCategoryPage({
   params,
   searchParams,
@@ -27,6 +29,8 @@ export default async function BlogCategoryPage({
       limit: 6,
       page,
     });
+
+    console.log("data blog by category", data);
 
     posts = data.results;
     totalPages = data.totalPages;
