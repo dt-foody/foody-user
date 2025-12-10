@@ -5,6 +5,7 @@ import SocialsList from "@/shared/SocialsList";
 import { blogPostService } from "@/services";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 import PostContent from "@/components/PostContent";
+import Link from "next/link";
 
 export const revalidate = 30;
 
@@ -17,7 +18,7 @@ const formatDate = (dateString: string | undefined) => {
     return "";
   }
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -28,24 +29,50 @@ const calculateReadTime = (content: string) => {
   const wordsPerMinute = 200;
   const words = content.split(/\s+/).length;
   const minutes = Math.ceil(words / wordsPerMinute);
-  return `${minutes} min read`;
+  return `${minutes} phút đọc`;
 };
 
 const Page = async ({ params }: PageProps) => {
   const post = await blogPostService.getBySlug(params.slug, {
     populate: "createdBy;categories;tags",
   });
+  
   if (!post) {
     return (
-      <div className="nc-PageSingle pt-8 lg:pt-16">
-        <div className="container text-center py-16">
-          <p className="text-red-500">Post not found</p>
+      <div className="nc-PageSingle pt-8 lg:pt-16 min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-12 h-12 text-neutral-400"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            />
+          </svg>
         </div>
+        <h2 className="text-2xl md:text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+          Không tìm thấy bài viết
+        </h2>
+        <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto mb-8">
+          Có vẻ như bài viết bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn không chính xác.
+        </p>
+        <Link
+          href="/blog"
+          className="px-6 py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
+        >
+          Quay lại trang Blog
+        </Link>
       </div>
     );
   }
-
-  const authorName = post.createdBy ? `${post.createdBy.name}` : "Anonymous";
+  
+  const authorName = post.createdBy ? `${post.createdBy.name}` : "Ẩn danh";
 
   return (
     <div className="nc-PageSingle pt-8 lg:pt-16">
