@@ -216,9 +216,10 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-neutral-700 dark:text-neutral-300">
               <p className="font-medium mb-2">Không nhận được email?</p>
               <ul className="text-left space-y-1 list-disc list-inside">
-                <li>Kiểm tra thư mục spam hoặc junk mail</li>
+                <li>Vui lòng kiểm tra hộp thư đến (hoặc thư mục spam) và nhấp vào liên kết xác thực để hoàn tất đăng ký</li>
                 <li>Đảm bảo địa chỉ email chính xác</li>
                 <li>Chờ vài phút và kiểm tra lại</li>
+                <li>Đường link có hiệu lực tối đa 10 phút</li>
               </ul>
             </div>
             <div className="space-y-3 pt-4">
