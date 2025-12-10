@@ -146,19 +146,13 @@ const Page = async ({ params }: PageProps) => {
               />
               <div className="flex flex-col ml-3 max-w-lg sm:ml-5 space-y-1">
                 <span className="text-xs text-neutral-400 uppercase tracking-wider">
-                  WRITTEN BY
+                  Được viết bởi
                 </span>
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-200">
                   <a href={`/author/${post.createdBy.id}`}>{authorName}</a>
                 </h2>
                 <span className="text-sm text-neutral-500 sm:text-base dark:text-neutral-300">
-                  {post.createdBy.bio || "No bio available"}
-                  <a
-                    className="text-primary-6000 font-medium ml-1"
-                    href={`/author/${post.createdBy.id}`}
-                  >
-                    Read more
-                  </a>
+                  {post.createdBy.bio || "Đội ngũ Lưu Chi"}
                 </span>
               </div>
             </div>
