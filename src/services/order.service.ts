@@ -68,6 +68,21 @@ export const orderService = {
       body: JSON.stringify(data),
     });
   },
+  async anonymousOrder(data: CreateOrderInput): Promise<{
+    message: string;
+    order: Order;
+    qrInfo?: {
+      transactionId?: string;
+      qrCode?: string;
+      checkoutUrl?: string;
+    };
+  }> {
+    return apiFetch("/orders/anonymous", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
 
   /** 🚚 Tính phí vận chuyển từ toạ độ */
   async getShippingFee(

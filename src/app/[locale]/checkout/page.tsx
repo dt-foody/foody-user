@@ -14,6 +14,18 @@ import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
 
+const TIME_SLOTS = [
+  { value: "07:30-09:00", label: "07:30-09:00" },
+  { value: "09:00-10:30", label: "09:00-10:30" },
+  { value: "10:30-12:00", label: "10:30-12:00" },
+  { value: "12:00-13:30", label: "12:00-13:30" },
+  { value: "13:30-15:00", label: "13:30-15:00" },
+  { value: "15:00-16:30", label: "15:00-16:30" },
+  { value: "16:30-18:00", label: "16:30-18:00" },
+  { value: "18:00-19:30", label: "18:00-19:30" },
+  { value: "19:30-21:00", label: "19:30-21:00" },
+];
+
 // --- HELPER RENDERERS ---
 const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
   options,
@@ -68,6 +80,18 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("bank");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // 🔥 Local state cho khung giờ (UI only)
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+
+  useEffect(() => {
+    if (selectedTimeSlot) {
+      const [startTime] = selectedTimeSlot.split("-");
+      setScheduledTime(startTime); // Lưu "07:30" vào store
+    } else {
+      setScheduledTime("");
+    }
+  }, [selectedTimeSlot, setScheduledTime]);
 
   // Tự động tính lại phí ship khi đổi địa chỉ hoặc giờ giao
   useEffect(() => {
@@ -105,9 +129,10 @@ export default function CheckoutPage() {
     // 2. Validation thời gian giao hàng
     if (deliveryOption === "scheduled") {
       if (!scheduledDate || !scheduledTime) {
-        toast.error("Vui lòng chọn thời gian giao hàng!");
+        toast.error("Vui lòng chọn ngày và khung giờ giao hàng!");
         return;
       }
+      
       const selectedDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
       if (selectedDateTime < new Date()) {
         toast.warning("Thời gian hẹn phải ở tương lai!");
@@ -122,6 +147,10 @@ export default function CheckoutPage() {
         deliveryOption === "scheduled" && scheduledDate && scheduledTime
           ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
           : null,
+      timeSlot:
+        deliveryOption === "scheduled" && selectedTimeSlot
+          ? selectedTimeSlot
+          : null,
     };
 
     // 4. Transform Dữ Liệu: Coupons & Vouchers (Tách riêng)
@@ -129,14 +158,12 @@ export default function CheckoutPage() {
     const payloadVouchers: { voucherId: string; voucherCode: string }[] = [];
 
     appliedCoupons.forEach((c) => {
-      // Nếu có voucherId và voucherCode -> Là Voucher cá nhân
       if (c.voucherId && c.voucherCode) {
         payloadVouchers.push({
           voucherId: c.voucherId,
           voucherCode: c.voucherCode,
         });
       } else {
-        // Ngược lại là Coupon công khai
         payloadCoupons.push({
           id: c.id,
           code: c.code || "",
@@ -146,21 +173,16 @@ export default function CheckoutPage() {
 
     // 5. Tạo Payload chuẩn gửi Backend
     const payload = {
-      // Loại bỏ các trường UI không cần thiết từ item
       items: cartItems.map(({ _image, _categoryIds, cartId, ...rest }) => rest),
-
       coupons: payloadCoupons,
       vouchers: payloadVouchers,
-
       totalAmount: subtotal,
       discountAmount: itemDiscount + shippingDiscount,
       shippingFee: originalShippingFee,
       grandTotal: finalTotal,
-
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
-
       shipping: { address: selectedAddress },
       deliveryTime: deliveryTimePayload,
       note: note.trim(),
@@ -168,7 +190,7 @@ export default function CheckoutPage() {
 
     try {
       setLoading(true);
-      // @ts-ignore - Ignore type check tạm thời nếu type chưa update kịp
+      // @ts-ignore
       const result = await orderService.customerOrder(payload);
 
       if (paymentMethod === "bank" && result.qrInfo?.checkoutUrl) {
@@ -351,27 +373,43 @@ export default function CheckoutPage() {
                   onChange={() => setDeliveryOption("scheduled")}
                   className="mt-1"
                 />
-                <div className="flex-1">
-                  <span>Hẹn giờ</span>
+                <span>Hẹn giờ</span>
+              </label>
+                <div>
                   {deliveryOption === "scheduled" && (
-                    <div className="flex gap-2 mt-1">
-                      <input
-                        type="date"
-                        value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
-                        min={getMinDate()}
-                        className="border rounded px-1 text-xs"
-                      />
-                      <input
-                        type="time"
-                        value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
-                        className="border rounded px-1 text-xs"
-                      />
+                    <div className="space-y-2 mt-2">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Chọn ngày
+                        </label>
+                        <input
+                          type="date"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          min={getMinDate()}
+                          className="w-full border rounded px-2 py-1.5 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Chọn khung giờ
+                        </label>
+                        <select
+                          value={selectedTimeSlot}
+                          onChange={(e) => setSelectedTimeSlot(e.target.value)}
+                          className="w-full border rounded px-2 py-1.5 text-sm"
+                        >
+                          <option value="">-- Chọn khung giờ --</option>
+                          {TIME_SLOTS.map((slot) => (
+                            <option key={slot.value} value={slot.value}>
+                              {slot.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                 </div>
-              </label>
             </div>
           </div>
 
