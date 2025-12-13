@@ -82,6 +82,8 @@ export interface Customer {
   // --- Meta ---
   isActive: boolean;
   lastOrderDate?: string;
+  orderCount: number;
+  totalSpent: number;
 
   // --- Audit / Soft Delete ---
   createdBy?: string | User;

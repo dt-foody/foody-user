@@ -28,6 +28,9 @@ export interface Employee {
 
   // Meta
   isActive: boolean;
+  lastOrderDate?: string;
+  orderCount: number;
+  totalSpent: number;
 
   // Audit / soft delete
   createdBy?: string | User;
