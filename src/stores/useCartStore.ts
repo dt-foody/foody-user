@@ -417,34 +417,10 @@ export function useCart() {
     // @ts-ignore
     const cartContext = { items: store.cartItems, subtotal };
 
-    let userData = null;
-    if (me) {
-      let age = null;
-      if ((me as any).birthDate) {
-        try {
-          const birth = new Date((me as any).birthDate);
-          const now = new Date();
-          age = now.getFullYear() - birth.getFullYear();
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // Map 'totalOrder' từ Backend sang 'orderCount'
-      // @ts-ignore
-      const orderCount = me.totalOrder ?? 0;
-
-      userData = {
-        isNew: orderCount === 0,
-        age: age,
-        orderCount: orderCount,
-      };
-    }
-
     return store.availableCoupons.map((coupon) => {
       // Check lại điều kiện tại Frontend (Realtime theo giỏ hàng)
       // @ts-ignore
-      const check = checkCouponEligibility(coupon, cartContext, userData);
+      const check = checkCouponEligibility(coupon, cartContext, me);
 
       const backendReason = (coupon as any).inapplicableReason;
       const isBackendApplicable = (coupon as any).isApplicable !== false;

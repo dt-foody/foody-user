@@ -258,6 +258,8 @@ function evaluateNode(node: ConditionNode, ctx: EvaluationContext): boolean {
     return false;
   }
 
+  console.log(`[CouponLogic] Resolving fieldId: ${fieldId}`, ctx  );
+
   // Get Value
   let actualValue;
   try {
@@ -280,6 +282,8 @@ function evaluateNode(node: ConditionNode, ctx: EvaluationContext): boolean {
     console.warn(`[CouponLogic] Unknown operator: ${operator}`);
     return false;
   }
+
+  console.log("actualValue", actualValue, "value", value, "operator", operator);
 
   return compareFn(actualValue, value);
 }
