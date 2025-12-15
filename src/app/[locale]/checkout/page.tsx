@@ -10,6 +10,7 @@ import { PaymentMethod } from "@/types";
 import Image from "next/image";
 import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
+import SmartImage from "@/components/SmartImage";
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -228,12 +229,9 @@ export default function CheckoutPage() {
               {cartItems.map((it) => (
                 <div key={it.cartId} className="py-4 flex gap-4">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-gray-50 flex-shrink-0">
-                    <Image
-                      src={getImageUrl(it._image)}
-                      alt=""
-                      fill
+                    <SmartImage
+                      src={it._image}
                       className="object-cover"
-                      onError={handleImageError}
                     />
                   </div>
                   <div className="flex-1">

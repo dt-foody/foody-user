@@ -147,6 +147,10 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
 
   // Trả về mảng category của các item trong giỏ
   order_category_ids: (ctx) => ctx.order.categoryIds,
+
+  current_day_of_week: (ctx) => {
+    return new Date().getDay(); // 0 (Chủ nhật) đến 6 (Thứ bảy)
+  }
 };
 
 // =============================================================================
@@ -177,19 +181,19 @@ const OPERATORS: Record<string, (a: any, b: any) => boolean> = {
 
   // --- Array / List ---
   IN: (a, b) => {
-    // a: Giá trị cần check (vd: categoryId của món hàng)
-    // b: Danh sách cho phép (vd: ["cat1", "cat2"] hoặc "cat1, cat2")
     const list = Array.isArray(b)
-      ? b
+      ? b.map(String)
       : String(b)
-          .split(",")
+          .split(',')
           .map((i) => i.trim());
+
     return list.includes(String(a));
   },
 
+
   NOT_IN: (a, b) => {
     const list = Array.isArray(b)
-      ? b
+      ? b.map(String)
       : String(b)
           .split(",")
           .map((i) => i.trim());

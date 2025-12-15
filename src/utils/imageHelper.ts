@@ -3,7 +3,7 @@
 // Lấy URL backend từ biến môi trường.
 // Lưu ý: Trong Next.js, biến public phải bắt đầu bằng NEXT_PUBLIC_
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const DEFAULT_IMAGE = "/images/no-image.webp";
+export const DEFAULT_IMAGE = "/images/no-image.webp";
 
 export const getImageUrl = (imagePath?: string) => {
   console.log("imagePath", imagePath);
