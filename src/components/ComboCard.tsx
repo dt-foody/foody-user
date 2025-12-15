@@ -26,6 +26,26 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
     setQuantity(totalQuantity);
   }, [cartItems, combo.id]);
 
+  // Helper để sort tìm món rẻ nhất
+  const getEffectivePriceForSorting = (
+    item: ComboSelectableProduct,
+    mode: ComboPricingMode
+  ) => {
+    // Chúng ta muốn tìm món làm cho TỔNG GIÁ CUỐI CÙNG thấp nhất
+    // Tổng = (Giá tham chiếu * hệ số giảm) + Phụ thu
+
+    if (mode === ComboPricingMode.SLOT_PRICE) {
+      return item.slotPrice + item.additionalPrice;
+    }
+    if (mode === ComboPricingMode.DISCOUNT) {
+      // Vì basePrice sẽ được giảm giá, nên trọng số của nó thấp hơn phụ thu (phụ thu ko được giảm)
+      // Tuy nhiên để đơn giản, ta cứ sort theo tổng
+      return item.product.basePrice + item.additionalPrice;
+    }
+    // FIXED: Chỉ quan tâm phụ thu vì giá base cố định
+    return item.additionalPrice;
+  };
+
   // --- LOGIC TÍNH GIÁ ĐỒNG NHẤT VỚI MODAL ---
   const { displayPrice, originalPrice, hasDiscount } = useMemo(() => {
     // 1. Tính toán chi phí cơ bản thấp nhất (Min Base Calc) & Phụ thu thấp nhất
@@ -121,26 +141,6 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
       hasDiscount: finalPrice < calculatedOriginal,
     };
   }, [combo]);
-
-  // Helper để sort tìm món rẻ nhất
-  const getEffectivePriceForSorting = (
-    item: ComboSelectableProduct,
-    mode: ComboPricingMode
-  ) => {
-    // Chúng ta muốn tìm món làm cho TỔNG GIÁ CUỐI CÙNG thấp nhất
-    // Tổng = (Giá tham chiếu * hệ số giảm) + Phụ thu
-
-    if (mode === ComboPricingMode.SLOT_PRICE) {
-      return item.slotPrice + item.additionalPrice;
-    }
-    if (mode === ComboPricingMode.DISCOUNT) {
-      // Vì basePrice sẽ được giảm giá, nên trọng số của nó thấp hơn phụ thu (phụ thu ko được giảm)
-      // Tuy nhiên để đơn giản, ta cứ sort theo tổng
-      return item.product.basePrice + item.additionalPrice;
-    }
-    // FIXED: Chỉ quan tâm phụ thu vì giá base cố định
-    return item.additionalPrice;
-  };
 
   const fmt = (n: number) => Math.round(n).toLocaleString("vi-VN") + "đ";
   const isFixed = combo.pricingMode === ComboPricingMode.FIXED;
