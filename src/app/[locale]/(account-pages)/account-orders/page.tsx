@@ -89,8 +89,22 @@ const OrderCard = ({ order }: OrderCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const status = order.status;
-  const statusText =
-    status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+
+  const statusText = useMemo(() => {
+    const map: Record<string, string> = {
+      pending: "Chờ xác nhận",
+      confirmed: "Đã xác nhận",
+      preparing: "Đang chuẩn bị",
+      ready: "Sẵn sàng",
+      waiting_for_driver: "Đang tìm tài xế",
+      delivering: "Đang giao hàng",
+      completed: "Hoàn thành",
+      canceled: "Đã hủy",
+      refunded: "Đã hoàn tiền",
+    };
+    // Fallback nếu không có trong map thì format text gốc
+    return map[status] || status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
+  }, [status]);
 
   const statusClasses = useMemo(() => {
     switch (status) {
@@ -101,6 +115,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
       case "ready":
       case "delivering":
         return "bg-green-100 text-green-700";
+      case "waiting_for_driver":
+        return "bg-orange-100 text-orange-700";
       case "pending":
         return "bg-yellow-100 text-yellow-700";
       case "canceled":
