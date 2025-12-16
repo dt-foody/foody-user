@@ -63,7 +63,7 @@ export default async function BlogCategoryPage({
             {posts.map((post) => (
               <Link
                 key={post.id}
-                href={`/blog/${post.slug}`}
+                href={`/sharing/${post.slug}`}
                 className="group block bg-white/90 border border-orange-100 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden"
               >
                 {/* IMAGE */}
@@ -102,7 +102,7 @@ export default async function BlogCategoryPage({
               return (
                 <Link
                   key={i}
-                  href={`/blog/category/${slug}?page=${pageNum}`}
+                  href={`/sharing/category/${slug}?page=${pageNum}`}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
                     pageNum === page
                       ? "bg-[#b9915f] text-white border-[#b9915f]"

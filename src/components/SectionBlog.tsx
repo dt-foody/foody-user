@@ -51,7 +51,7 @@ const SectionBlog: FC = async () => {
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
             Blog & Bài Viết
           </h2>
-          <ButtonSecondary href="/blog" className="!leading-none">
+          <ButtonSecondary href="/sharing" className="!leading-none">
             <div className="flex items-center justify-center">
               <span>Tất cả</span>
               <ArrowRightIcon className="w-5 h-5 ml-3" />
@@ -63,7 +63,7 @@ const SectionBlog: FC = async () => {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Bài viết lớn */}
           <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition">
-            <a href={`/blog/${featuredPost.slug}`}>
+            <a href={`/sharing/${featuredPost.slug}`}>
               <div className="relative w-full h-80">
                 <Image
                   src={featuredPost.coverImage || ""}
@@ -104,7 +104,7 @@ const SectionBlog: FC = async () => {
             {otherPosts.map((post) => (
               <a
                 key={post.id}
-                href={`/blog/${post.slug}`}
+                href={`/sharing/${post.slug}`}
                 className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition"
               >
                 <div className="relative w-full h-40">

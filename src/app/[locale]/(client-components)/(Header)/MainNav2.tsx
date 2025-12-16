@@ -31,8 +31,18 @@ const NAV_ITEMS = [
     href: "/",
   },
   { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
-  { id: "blog", label: "1001 đêm", sizeLabel: "1rem", href: "/blog" },
-  { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
+  {
+    id: "sharing",
+    // Sử dụng JSX Fragment để bọc chuỗi và span gạch ngang
+    label: (
+      <>
+        Chúng <span className="line-through px-1">tôi</span> ta
+      </>
+    ),
+    sizeLabel: "1rem",
+    href: "/sharing",
+  },
+  // { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
   { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
 ];
 

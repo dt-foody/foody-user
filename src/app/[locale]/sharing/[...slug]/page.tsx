@@ -63,7 +63,7 @@ const Page = async ({ params }: PageProps) => {
           Có vẻ như bài viết bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn không chính xác.
         </p>
         <Link
-          href="/blog"
+          href="/sharing"
           className="px-6 py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
         >
           Quay lại trang Blog

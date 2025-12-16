@@ -31,7 +31,7 @@ const NAV: NavItem[] = [
   },
   {
     name: "1001 đêm",
-    link: "/blog",
+    link: "/sharing",
     icon: UserCircleIcon,
   },
   {

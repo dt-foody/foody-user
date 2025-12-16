@@ -15,12 +15,31 @@ const bahianita = Bahianita({
 });
 
 const NAV_ITEMS = [
-  { id: "homepage", label: "Trang chủ", href: "/" },
-  { id: "menu", label: "Thực đơn", href: "/menu" },
-  { id: "blog", label: "1001 đêm", href: "/blog" },
-  { id: "about", label: "Ấn tượng", href: "/about" },
-  { id: "policy", label: "Chính sách", href: "/policy" },
+  {
+    id: "homepage",
+    label: "Lưu Chi",
+    sizeLabel: "2.5rem",
+    classLabel: "font-bahianita",
+    sublabel: "Cà phê chi rứa?",
+    classSublabel: "font-alexbrush",
+    href: "/",
+  },
+  { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
+  {
+    id: "sharing",
+    // Sử dụng JSX Fragment để bọc chuỗi và span gạch ngang
+    label: (
+      <>
+        Chúng <span className="line-through px-1">tôi</span> ta
+      </>
+    ),
+    sizeLabel: "1rem",
+    href: "/sharing",
+  },
+  // { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
+  { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
 ];
+
 
 const NavMobile: React.FC<NavMobileProps> = ({ onClickClose }) => {
   return (
