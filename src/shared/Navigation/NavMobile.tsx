@@ -36,6 +36,7 @@ const NAV_ITEMS = [
     sizeLabel: "1rem",
     href: "/sharing",
   },
+  { id: "community", label: "Ở đây.", sizeLabel: "1rem", href: "/community" },
   // { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
   { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
 ];

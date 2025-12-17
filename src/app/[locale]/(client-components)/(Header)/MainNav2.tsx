@@ -36,12 +36,26 @@ const NAV_ITEMS = [
     // Sử dụng JSX Fragment để bọc chuỗi và span gạch ngang
     label: (
       <>
-        Chúng <span className="line-through px-1">tôi</span> ta
+        Chúng{" "}
+        <span
+          className="relative inline-block px-1
+      after:content-['']
+      after:absolute
+      after:left-0 after:right-0
+      after:top-1/2
+      after:h-[1.5px]
+      after:bg-current
+    "
+        >
+          tôi
+        </span>{" "}
+        ta
       </>
     ),
     sizeLabel: "1rem",
     href: "/sharing",
   },
+  { id: "community", label: "Ở đây.", sizeLabel: "1rem", href: "/community" },
   // { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
   { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
 ];

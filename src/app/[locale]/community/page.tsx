@@ -9,7 +9,7 @@ export const revalidate = 30;
 export default async function BlogPage() {
   let data: GroupedBlog[] = [];
   try {
-    data = await blogPostService.groupByCategory({ limit: 2, displayPage: 'sharing' });
+    data = await blogPostService.groupByCategory({ limit: 2, displayPage: 'community' });
   } catch (err) {
     console.error("❌ Failed to fetch blogs 1:", err);
   }
@@ -67,7 +67,7 @@ export default async function BlogPage() {
                   </h2>
                 </div>
                 <Link
-                  href={`/sharing/category/${group.slug}`}
+                  href={`/community/category/${group.slug}`}
                   className="group flex items-center gap-2 text-sm font-medium text-[#b9915f] hover:text-[#8b6f47] transition-colors"
                   aria-label={`Xem tất cả bài viết về ${group.category}`}
                 >
@@ -93,7 +93,7 @@ export default async function BlogPage() {
                 {group.posts.map((post) => (
                   <Link
                     key={post.id}
-                    href={`/sharing/${post.slug}`}
+                    href={`/community/${post.slug}`}
                     className="group flex gap-4 bg-gradient-to-br from-white to-orange-50/30 rounded-xl overflow-hidden p-4 border border-orange-100/50"
                     aria-label={`Đọc bài viết: ${post.title}`}
                   >
