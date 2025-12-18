@@ -57,16 +57,13 @@ const createConfiguredItem = (
   const initialOptions: Record<string, OptionItem[]> = {};
   const hasOptions = product.optionGroups && product.optionGroups.length > 0;
 
-  // Tự động chọn option bắt buộc (nếu có)
   if (hasOptions) {
     product.optionGroups?.forEach((group) => {
       const sorted = [...group.options].sort((a, b) => a.priority - b.priority);
       if (group.maxOptions === 1) {
-        // Radio: Chọn cái đầu tiên nếu bắt buộc
         initialOptions[group.name] =
           group.minOptions > 0 && sorted.length > 0 ? [sorted[0]] : [];
       } else {
-        // Checkbox: Chọn đủ số lượng tối thiểu
         initialOptions[group.name] = sorted.slice(
           0,
           Math.min(group.minOptions, sorted.length)
@@ -94,7 +91,6 @@ export default function ComboSelectionModal() {
   const [selections, setSelections] = useState<ComboSelections>({});
   const [note, setNote] = useState("");
 
-  // Init selections khi mở modal
   useEffect(() => {
     if (!comboForSelection) return;
 
@@ -104,13 +100,11 @@ export default function ComboSelectionModal() {
     comboForSelection.items.forEach((slot) => {
       let preselected: ConfiguredComboItem[] = [];
 
-      // Nếu slot có yêu cầu tối thiểu, tự động chọn các món rẻ nhất/ưu tiên nhất
       if (slot.minSelection > 0) {
-        // Xác định tiêu chí giá để sort món rẻ nhất
         const priceKey =
           comboMode === ComboPricingMode.SLOT_PRICE
             ? "slotPrice"
-            : "snapshotPrice"; // snapshotPrice ~ basePrice
+            : "snapshotPrice";
 
         const sortedProducts = [...slot.selectableProducts].sort(
           (a, b) =>
@@ -118,7 +112,6 @@ export default function ComboSelectionModal() {
         );
 
         const itemsToSelect = sortedProducts.slice(0, slot.minSelection);
-
         preselected = itemsToSelect.map((prodInfo) =>
           createConfiguredItem(prodInfo)
         );
@@ -130,7 +123,7 @@ export default function ComboSelectionModal() {
     setNote("");
   }, [comboForSelection]);
 
-  // --- LOGIC TÍNH GIÁ & TẠO SNAPSHOT (CORE LOGIC) ---
+  // --- LOGIC TÍNH GIÁ & TẠO SNAPSHOT (CORE LOGIC ĐÃ SỬA) ---
   const {
     finalPrice,
     marketPrice,
@@ -139,7 +132,6 @@ export default function ComboSelectionModal() {
     comboSnapshot,
   } = useMemo(() => {
     const errors: Record<string, string> = {};
-
     const defaultRes = {
       finalPrice: 0,
       marketPrice: 0,
@@ -149,15 +141,13 @@ export default function ComboSelectionModal() {
     };
 
     if (!comboForSelection) return defaultRes;
-
     const combo = comboForSelection as Combo;
 
-    // Mapping Mode string sang Type Cart
     let mode: CartComboPricingMode = "FIXED";
     if (combo.pricingMode === ComboPricingMode.SLOT_PRICE) mode = "SLOT_PRICE";
     if (combo.pricingMode === ComboPricingMode.DISCOUNT) mode = "DISCOUNT";
 
-    // 1. Validation (Kiểm tra số lượng món chọn)
+    // 1. Validation
     combo.items.forEach((slot) => {
       const count = (selections[slot.slotName] || []).length;
       if (count < slot.minSelection) {
@@ -168,11 +158,11 @@ export default function ComboSelectionModal() {
     });
     const isValid = Object.keys(errors).length === 0;
 
-    // 2. Tính toán chi tiết
-    let totalSurcharges = 0; // Tổng phụ thu (Additional Price)
-    let totalOptions = 0; // Tổng tiền Topping
-    let totalBaseMarket = 0; // Tổng giá gốc thị trường (để hiển thị giá gạch ngang)
-    let comboBaseCalc = 0; // Giá nền tảng để tính giảm giá Combo
+    // 2. Tính toán chi phí cơ bản
+    let totalSurcharges = 0;
+    let totalOptions = 0;
+    let totalBaseMarket = 0; // Tổng giá lẻ của các món (dùng so sánh tag)
+    let comboBaseCalc = 0; // Giá nền dùng để tính giảm giá nội bộ
 
     const itemSnapshots: CartComboItemSnapshot[] = [];
 
@@ -183,24 +173,18 @@ export default function ComboSelectionModal() {
         const additionalPrice = item.productInfo.additionalPrice;
         const optPrice = item.calculatedOptionsPrice;
 
-        // Cộng dồn các khoản KHÔNG được giảm giá
         totalSurcharges += additionalPrice;
         totalOptions += optPrice;
-
-        // Cộng dồn giá thị trường (để tham khảo)
         totalBaseMarket += prod.basePrice;
 
         let appliedItemPrice = 0;
-
         if (mode === "SLOT_PRICE") {
           appliedItemPrice = item.productInfo.slotPrice;
           comboBaseCalc += appliedItemPrice;
         } else if (mode === "DISCOUNT") {
-          // Với mode DISCOUNT, giá nền tảng là tổng giá gốc của các món
           appliedItemPrice = prod.basePrice;
           comboBaseCalc += appliedItemPrice;
         } else {
-          // FIXED: Giá item = 0 vì giá gói nằm ở comboPrice
           appliedItemPrice = 0;
         }
 
@@ -215,10 +199,8 @@ export default function ComboSelectionModal() {
       });
     });
 
-    // 3. Tính Giá sau Giảm giá Nội bộ (Internal Discount)
-    // Lưu ý: Chỉ giảm giá trên comboBaseCalc, KHÔNG giảm trên Surcharges/Options
+    // 3. Giảm giá nội bộ (Internal Discount) - Chỉ áp dụng lên phần nền (comboBaseCalc)
     let priceAfterInternalDiscount = 0;
-
     if (mode === "FIXED") {
       priceAfterInternalDiscount = combo.comboPrice;
     } else if (mode === "SLOT_PRICE") {
@@ -238,9 +220,12 @@ export default function ComboSelectionModal() {
       }
     }
 
-    // 4. External Promotion (Khuyến mãi ngoài - Campaign/Flash Sale)
-    // Áp dụng lên giá đã giảm nội bộ (priceAfterInternalDiscount)
-    let finalBasePrice = priceAfterInternalDiscount;
+    // 4. Tính TỔNG GIÁ HIỆN TẠI (Bao gồm Options + Surcharges) trước khi áp dụng Khuyến mãi ngoài
+    const totalPriceBeforeExternalPromo =
+      priceAfterInternalDiscount + totalSurcharges + totalOptions;
+
+    // 5. Áp dụng External Promotion (Khuyến mãi ngoài) lên TOÀN BỘ TỔNG GIÁ (Gồm cả options)
+    let finalCalculatedPrice = totalPriceBeforeExternalPromo;
 
     if (combo.promotion && combo.promotion.isActive !== false) {
       const { discountType, discountValue, maxDiscountAmount } =
@@ -248,45 +233,39 @@ export default function ComboSelectionModal() {
       let discountAmount = 0;
 
       if (discountType === "percentage") {
-        discountAmount = priceAfterInternalDiscount * (discountValue / 100);
+        // Áp dụng cho toàn bộ: giá combo + phụ thu + topping
+        discountAmount = totalPriceBeforeExternalPromo * (discountValue / 100);
         if (maxDiscountAmount && maxDiscountAmount > 0) {
           discountAmount = Math.min(discountAmount, maxDiscountAmount);
         }
       } else if (discountType === "fixed_amount") {
         discountAmount = discountValue;
       }
-
-      finalBasePrice = Math.max(
+      finalCalculatedPrice = Math.max(
         0,
-        Math.round(priceAfterInternalDiscount - discountAmount)
+        Math.round(totalPriceBeforeExternalPromo - discountAmount)
       );
-    }
-    // Fallback logic cũ nếu dùng salePrice thay vì promotion object
-    else if (
+    } else if (
       mode === "FIXED" &&
       combo.salePrice != null &&
       combo.salePrice < combo.comboPrice
     ) {
-      finalBasePrice = combo.salePrice;
+      finalCalculatedPrice = combo.salePrice + totalSurcharges + totalOptions;
     }
 
-    // 5. TỔNG KẾT
-    // Final Price = (Giá Combo đã giảm) + Tổng Phụ thu + Tổng Topping
-    const finalPrice = finalBasePrice + totalSurcharges + totalOptions;
-
-    // Market Price = Tổng giá món lẻ + Phụ thu + Topping
+    // 6. TỔNG GIÁ LẺ (Market Price) = Tổng giá lẻ từng món + Phụ thu + Topping
     const marketPrice = totalBaseMarket + totalSurcharges + totalOptions;
 
     const snapshot: CartComboSnapshot = {
       mode: mode,
       totalMarketPrice: marketPrice,
-      totalFinalPrice: finalPrice,
-      totalSavings: Math.max(0, marketPrice - finalPrice),
+      totalFinalPrice: finalCalculatedPrice,
+      totalSavings: Math.max(0, marketPrice - finalCalculatedPrice),
       items: itemSnapshots,
     };
 
     return {
-      finalPrice,
+      finalPrice: finalCalculatedPrice,
       marketPrice,
       validationErrors: errors,
       isFormValid: isValid,
@@ -309,12 +288,10 @@ export default function ComboSelectionModal() {
       const isSelected = existingIndex !== -1;
 
       if (slot.maxSelection === 1) {
-        // Single select logic
-        if (isSelected) return prev; // Đã chọn rồi thì thôi
+        if (isSelected) return prev;
         const newItem = createConfiguredItem(productInfo);
-        newState[slot.slotName] = [newItem]; // Thay thế luôn
+        newState[slot.slotName] = [newItem];
       } else {
-        // Multi select logic
         if (isSelected) {
           currentSlotSelections.splice(existingIndex, 1);
           newState[slot.slotName] = currentSlotSelections;
@@ -351,21 +328,19 @@ export default function ComboSelectionModal() {
       let newOptions: OptionItem[] = oldOptions;
 
       if (group.maxOptions === 1) {
-        // Radio logic
         if (isSelected && group.minOptions === 0) {
           newOptions = [];
         } else if (!isSelected) {
           newOptions = [option];
         }
       } else {
-        // Checkbox logic
         if (isSelected) {
           newOptions = oldOptions.filter((o) => o.name !== option.name);
         } else {
           if (oldOptions.length < group.maxOptions) {
             newOptions = [...oldOptions, option];
           } else {
-            return prev; // Max reached
+            return prev;
           }
         }
       }
@@ -390,10 +365,7 @@ export default function ComboSelectionModal() {
         ...slotSelections.slice(itemIndex + 1),
       ];
 
-      return {
-        ...prev,
-        [slotName]: newSlotSelections,
-      };
+      return { ...prev, [slotName]: newSlotSelections };
     });
   };
 
@@ -423,7 +395,7 @@ export default function ComboSelectionModal() {
           },
           additionalPrice: item.productInfo.additionalPrice,
           options: payloadOptions,
-          itemPrice: 0, // Giá item đã được tính gộp trong comboSnapshot
+          itemPrice: 0,
         };
       });
     });
@@ -433,8 +405,8 @@ export default function ComboSelectionModal() {
       item: {
         id: comboForSelection.id,
         name: comboForSelection.name,
-        comboPrice: comboForSelection.comboPrice, // Giá gốc combo
-        basePrice: 0, // Không dùng basePrice cho combo parent item
+        comboPrice: comboForSelection.comboPrice,
+        basePrice: 0,
       },
       totalPrice: finalPrice,
       note: note.trim(),
@@ -442,11 +414,10 @@ export default function ComboSelectionModal() {
       comboSelections: payloadSelections,
       _image: comboForSelection.image,
       _categoryIds: [],
-      // QUAN TRỌNG: Lưu snapshot để hiển thị chi tiết trong giỏ/đơn hàng
       comboSnapshot: comboSnapshot,
     };
 
-    // @ts-ignore - Ignore type check cho itemData vì structure CartItem phức tạp
+    // @ts-ignore
     addItemToCart(itemData);
     handleClose();
   };
@@ -472,19 +443,25 @@ export default function ComboSelectionModal() {
 
   const getDiscountTagText = () => {
     if (!comboForSelection) return null;
+
+    // QUY TẮC MỚI:
+    // 1. Nếu là DISCOUNT: hiện % giảm nội bộ
     if (
       comboForSelection.pricingMode === ComboPricingMode.DISCOUNT &&
       comboForSelection.discountValue > 0
     ) {
-      return comboForSelection.discountType === DiscountType.PERCENT
-        ? `-${comboForSelection.discountValue}%`
-        : `-${comboForSelection.discountValue / 1000}k`;
+      return `-${comboForSelection.discountValue}%`;
     }
+
+    // 2. Nếu FIXED hoặc SLOT_PRICE: hiện tag số tiền giảm (Market - Final)
+    if (comboSnapshot && comboSnapshot.totalSavings > 0) {
+      return `-${Math.round(comboSnapshot.totalSavings / 1000)}k`;
+    }
+
     return null;
   };
 
   if (!comboForSelection) return null;
-
   const discountTagText = getDiscountTagText();
 
   return (
@@ -498,7 +475,6 @@ export default function ComboSelectionModal() {
         className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER */}
         <header className="p-4 border-b relative flex-shrink-0 bg-white z-10">
           <h2 className="text-xl font-bold text-center text-gray-800 pr-8 line-clamp-1">
             {comboForSelection.name}
@@ -512,7 +488,6 @@ export default function ComboSelectionModal() {
           </button>
         </header>
 
-        {/* CONTENT */}
         <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
           {comboForSelection.description && (
             <p className="text-gray-600 pb-4 border-b border-gray-200 text-sm leading-relaxed">
@@ -522,7 +497,6 @@ export default function ComboSelectionModal() {
 
           {comboForSelection.items.map((slot) => {
             const error = validationErrors[slot.slotName];
-
             return (
               <div
                 key={slot.slotName}
@@ -553,29 +527,23 @@ export default function ComboSelectionModal() {
                     const product = prodInfo.product as Product;
                     if (!product) return null;
                     const hasOptions = (product.optionGroups || []).length > 0;
-
                     const selectedItem = (selections[slot.slotName] || []).find(
                       (item) => item.productInfo.product.id === product.id
                     );
                     const isChecked = !!selectedItem;
 
-                    // --- LOGIC HIỂN THỊ GIÁ SẢN PHẨM TRONG LIST ---
-                    // Mục tiêu: Hiển thị giá mà item này đóng góp thêm vào combo
                     let priceDisplay = null;
-                    const comboMode = (comboForSelection as Combo).pricingMode;
+                    const comboMode = comboForSelection.pricingMode;
 
                     if (comboMode === ComboPricingMode.SLOT_PRICE) {
-                      // Hiện giá Slot + Phụ thu
                       priceDisplay = (
                         prodInfo.slotPrice + prodInfo.additionalPrice
                       ).toLocaleString("vi-VN");
                     } else if (comboMode === ComboPricingMode.DISCOUNT) {
-                      // Hiện giá Gốc + Phụ thu (Giảm giá tính tổng sau)
                       priceDisplay = (
                         product.basePrice + prodInfo.additionalPrice
                       ).toLocaleString("vi-VN");
                     } else {
-                      // FIXED: Chỉ hiện Phụ thu nếu có
                       if (prodInfo.additionalPrice > 0) {
                         priceDisplay = `+${prodInfo.additionalPrice.toLocaleString(
                           "vi-VN"
@@ -610,22 +578,17 @@ export default function ComboSelectionModal() {
                               {product.name}
                             </span>
                           </div>
-
                           <div className="flex items-center pl-2">
                             {priceDisplay && (
                               <div className="flex flex-col items-end text-sm">
                                 <span className="font-bold text-gray-900 group-hover:text-primary-700">
-                                  {/* Thêm chữ 'đ' nếu không phải dạng '+...đ' */}
-                                  {priceDisplay.startsWith("+")
-                                    ? `${priceDisplay}đ`
-                                    : `${priceDisplay}đ`}
+                                  {priceDisplay}đ
                                 </span>
                               </div>
                             )}
                           </div>
                         </label>
 
-                        {/* Options Section */}
                         {isChecked && hasOptions && selectedItem && (
                           <div className="p-4 mx-1 bg-gray-50 border-x border-b border-gray-200 rounded-b-lg space-y-4 text-sm animate-in slide-in-from-top-2 duration-200">
                             {(product.optionGroups || [])
@@ -634,7 +597,6 @@ export default function ComboSelectionModal() {
                                 const currentOptions =
                                   selectedItem.selectedOptions[group.name] ||
                                   [];
-
                                 return (
                                   <div key={group.name} className="space-y-2">
                                     <div className="flex justify-between items-center">
@@ -665,7 +627,6 @@ export default function ComboSelectionModal() {
                                               : `+${option.priceModifier.toLocaleString(
                                                   "vi-VN"
                                                 )}đ`;
-
                                           return (
                                             <label
                                               key={option.name}
@@ -687,16 +648,14 @@ export default function ComboSelectionModal() {
                                               <div className="flex items-center gap-2">
                                                 <input
                                                   type={inputType}
-                                                  name={`${selectedItem.instanceId}-${group.name}`}
                                                   checked={isOptChecked}
                                                   readOnly
-                                                  className={`pointer-events-none form-${inputType} h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 bg-gray-50`}
+                                                  className={`pointer-events-none form-${inputType} h-4 w-4 text-primary-600 border-gray-300 bg-gray-50`}
                                                 />
                                                 <span className="font-medium text-gray-700">
                                                   {option.name}
                                                 </span>
                                               </div>
-
                                               {option.priceModifier > 0 && (
                                                 <span className="text-xs text-gray-500 font-medium">
                                                   {priceText}
@@ -737,10 +696,8 @@ export default function ComboSelectionModal() {
           </div>
         </main>
 
-        {/* FOOTER */}
         <footer className="p-4 bg-white border-t flex-shrink-0 shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.05)] z-20">
           <div className="flex flex-col gap-3">
-            {/* Info Row: Savings & Tags */}
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2">
                 {discountTagText && (
@@ -756,7 +713,6 @@ export default function ComboSelectionModal() {
                   </span>
                 )}
               </div>
-
               {comboSnapshot && comboSnapshot.totalMarketPrice > finalPrice && (
                 <div className="text-right">
                   <span className="text-gray-400 line-through text-xs mr-1">
@@ -769,13 +725,13 @@ export default function ComboSelectionModal() {
             <button
               onClick={handleSubmit}
               disabled={!isFormValid}
-              className="group w-full bg-primary-500 text-white py-3.5 rounded-xl font-bold text-base transition-all shadow-md hover:shadow-lg hover:shadow-primary-500/30 hover:bg-primary-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none flex justify-between items-center px-5 active:scale-[0.98]"
+              className="group w-full bg-primary-500 text-white py-3.5 rounded-xl font-bold text-base transition-all shadow-md hover:bg-primary-600 disabled:bg-gray-200 disabled:text-gray-400 flex justify-between items-center px-5"
             >
-              <span className="font-bold">
+              <span>
                 {isFormValid ? "Thêm vào giỏ hàng" : "Vui lòng chọn đủ món"}
               </span>
               {isFormValid && (
-                <span className="bg-white/20 px-2 py-0.5 rounded text-sm group-hover:bg-white/30 transition-colors">
+                <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
                   {finalPrice.toLocaleString("vi-VN")}đ
                 </span>
               )}

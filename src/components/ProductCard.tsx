@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Plus, Tag } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
-import type { Product, PricePromotion } from "@/types";
+import type { Product } from "@/types";
 import { CreateOrderItem_ItemSnapshot } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
+
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
@@ -16,38 +17,69 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { cartItems, addItemToCart, updateQuantity } = useCartStore();
   const [quantity, setQuantity] = useState(0);
 
-  // --- LOGIC GIÁ ---
-  const hasSale = product.salePrice != null && product.promotion != null;
-  const finalPrice = (hasSale ? product.salePrice : product.basePrice) ?? 0;
-  const originalPrice = hasSale ? product.basePrice : undefined;
+  // --- LOGIC GIÁ & TAG GIẢM GIÁ (PHẦN BỔ SUNG) ---
+  const { displayPrice, originalPrice, hasDiscount, discountLabel } =
+    useMemo(() => {
+      const basePrice = product.basePrice || 0;
+      let priceAfterInternal = basePrice;
 
-  // --- LOGIC PHÂN BIỆT SẢN PHẨM ---
+      // 1. Giảm giá nội bộ (salePrice)
+      if (product.salePrice != null && product.salePrice < basePrice) {
+        priceAfterInternal = product.salePrice;
+      }
+
+      // 2. Khuyến mãi ngoài (Promotion) - Áp dụng lên giá sau giảm nội bộ
+      let finalPrice = priceAfterInternal;
+      if (product.promotion && product.promotion.isActive !== false) {
+        const promoValue = product.promotion.discountValue || 0;
+        const promoType = product.promotion.discountType?.toLowerCase();
+
+        if (promoType === "percentage" || promoType === "percent") {
+          finalPrice = priceAfterInternal * (1 - promoValue / 100);
+        } else if (promoType === "fixed_amount" || promoType === "amount") {
+          finalPrice = Math.max(0, priceAfterInternal - promoValue);
+        }
+      }
+
+      // 3. Tính toán nhãn tag giảm giá
+      let label = null;
+      const savings = basePrice - finalPrice;
+      if (savings > 0) {
+        if (savings >= 10000) {
+          label = `-${Math.round(savings / 1000)}k`;
+        } else {
+          const percentOff = Math.round((savings / basePrice) * 100);
+          label = `-${percentOff}%`;
+        }
+      }
+
+      return {
+        displayPrice: finalPrice,
+        originalPrice: basePrice,
+        hasDiscount: finalPrice < basePrice,
+        discountLabel: label,
+      };
+    }, [product]);
+
+  // --- GIỮ NGUYÊN LOGIC CŨ CỦA BẠN ---
   const isSimpleProduct =
     !product.optionGroups || product.optionGroups.length === 0;
 
-  /** 🔹 Cập nhật quantity dựa trên giỏ hàng */
   useEffect(() => {
-    // ID tiền tố để tìm kiếm
     const productIdPrefix = `${product.id}::`;
-
-    // Lọc tất cả các line item trong giỏ hàng có cùng ID sản phẩm
-    // và cộng gộp số lượng của chúng
     const totalQuantity = cartItems
       .filter((item) => item.cartId.startsWith(productIdPrefix))
       .reduce((sum, currentItem) => sum + currentItem.quantity, 0);
-
     setQuantity(totalQuantity);
   }, [cartItems, product.id]);
 
-  // --- HANDLERS ---
   const increase = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Logic này CHỈ DÀNH CHO SẢN PHẨM ĐƠN GIẢN
     const itemSnapshot: CreateOrderItem_ItemSnapshot = {
       id: product.id,
       name: product.name,
       basePrice: product.basePrice,
-      salePrice: hasSale ? product.salePrice : undefined,
+      salePrice: product.salePrice || undefined,
       comboPrice: 0,
       promotion: product.promotion?.id || "",
     };
@@ -57,12 +89,11 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       item: itemSnapshot,
       options: {},
       comboSelections: null,
-      totalPrice: finalPrice, // Giá này đã là giá sale (nếu có)
+      totalPrice: displayPrice, // Dùng displayPrice đã tính toán ở trên
       note: "",
       _image: product.image,
       _categoryIds: product.category ? [product.category.toString()] : [],
     };
-
     addItemToCart(newItemPayload);
   };
 
@@ -76,9 +107,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const canDecrease = quantity > 0 && isSimpleProduct;
 
   return (
-    <div
-      className={`flex items-start gap-4 bg-white p-3 rounded-xl border border-[rgba(0,0,0,0.08)] shadow-sm hover:shadow-md transition-all duration-200 cursor-default`}
-    >
+    <div className="flex items-start gap-4 bg-white p-3 rounded-xl border border-[rgba(0,0,0,0.08)] shadow-sm hover:shadow-md transition-all duration-200 cursor-default relative overflow-hidden h-full">
       {/* Hình sản phẩm */}
       <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
         <Image
@@ -90,16 +119,16 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           className="object-cover rounded-md"
           unoptimized
         />
-        {hasSale && (
-          <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
-            SALE
-          </span>
+        {/* Tag giảm giá hiển thị ở góc ảnh */}
+        {discountLabel && (
+          <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg z-10 shadow-sm">
+            {discountLabel}
+          </div>
         )}
       </div>
 
       {/* Thông tin */}
       <div className="flex flex-col justify-between flex-grow">
-        {/* Tên và giá */}
         <div className="h-[82px]">
           <h3 className="text-base font-bold text-neutral-900 mb-1 leading-tight line-clamp-2">
             {product.name}
@@ -111,14 +140,26 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
             </p>
           )}
 
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[1rem] font-bold text-primary-600">
-              {Math.round(finalPrice).toLocaleString("vi-VN")}₫
-            </span>
-            {originalPrice && (
-              <span className="text-[0.8rem] text-gray-400 line-through">
-                {Math.round(originalPrice).toLocaleString("vi-VN")}₫
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[1rem] font-bold text-primary-600">
+                {Math.round(displayPrice).toLocaleString("vi-VN")}₫
               </span>
+              {hasDiscount && (
+                <span className="text-[0.8rem] text-gray-400 line-through">
+                  {Math.round(originalPrice).toLocaleString("vi-VN")}₫
+                </span>
+              )}
+            </div>
+
+            {/* Hiện tên Promotion nếu có */}
+            {product.promotion && product.promotion.isActive !== false && (
+              <div className="flex items-center gap-1 text-[10px] font-medium text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-md">
+                <Tag className="w-3 h-3 fill-orange-600" />
+                <span className="truncate max-w-[120px]">
+                  {product.promotion.name}
+                </span>
+              </div>
             )}
           </div>
         </div>
