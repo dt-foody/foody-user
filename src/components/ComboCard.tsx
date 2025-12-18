@@ -96,7 +96,7 @@ export default function ComboCard({ combo, onClick }: ComboCardProps) {
       // Fallback salePrice
       else if (
         combo.pricingMode === ComboPricingMode.FIXED &&
-        combo.salePrice != null &&
+        combo.salePrice &&
         combo.salePrice < combo.comboPrice
       ) {
         finalPrice = combo.salePrice + minSurcharges;

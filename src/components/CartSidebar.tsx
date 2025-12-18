@@ -28,9 +28,9 @@ import {
   CreateOrderItem_ComboSelection,
   CreateOrderItem_Option,
 } from "@/types/cart";
+import { getCartItemPrices } from "@/utils/cartHelper";
 
-const PLACEHOLDER_IMAGE =
-  "https://orderus.au/images/food_image_default.jpg";
+const PLACEHOLDER_IMAGE = "https://orderus.au/images/food_image_default.jpg";
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
 
 // --- HELPER COMPONENTS ---
@@ -413,6 +413,9 @@ export default function CartSidebar() {
               {cartItems.map((item) => {
                 const isEditing = editingNoteId === item.cartId;
                 const lineTotal = item.totalPrice * item.quantity;
+
+                const priceDetail = getCartItemPrices(item);
+
                 return (
                   <div
                     key={item.cartId}
@@ -435,6 +438,30 @@ export default function CartSidebar() {
                           <p className="text-sm font-medium text-primary-600 mt-0.5">
                             {formatPrice(item.totalPrice)}
                           </p>
+
+                          {/* --- PHẦN GIÁ CẢI TIẾN --- */}
+                          <div className="flex flex-col mt-1 gap-0.5">
+                            <div className="flex items-center gap-2">
+                              {/* Giá thực của món (đã giảm) */}
+                              <span className="text-sm font-bold text-primary-600">
+                                {formatPrice(
+                                  priceDetail.productPriceAfterPromo
+                                )}
+                              </span>
+
+                              {/* Giá gốc gạch ngang + Tag % (Chỉ hiện nếu có giảm giá) */}
+                              {priceDetail.hasDiscount && (
+                                <>
+                                  <span className="text-xs text-gray-400 line-through decoration-gray-300">
+                                    {formatPrice(priceDetail.basePrice)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded border border-red-100">
+                                    -{priceDetail.discountPercent}%
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
                           {item.itemType === "Product" && (
@@ -448,7 +475,9 @@ export default function CartSidebar() {
                                     • {sel.product.name}
                                   </div>
                                   {/* Hiển thị options cho từng món trong combo */}
-                                  <RenderSelectedOptions options={sel.options} />
+                                  <RenderSelectedOptions
+                                    options={sel.options}
+                                  />
                                 </div>
                               ))}
                             </div>
