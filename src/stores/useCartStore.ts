@@ -12,7 +12,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 15000;
-const CART_STORAGE_KEY = "foody_cart_v14"; // Bump version để reset state cũ tránh lỗi
+const CART_STORAGE_KEY = "foody_cart_v15"; // Bump version để reset state cũ tránh lỗi
 const DATA_TTL_MS = 60_000; // 1 phút cache
 
 export type DeliveryOption = "immediate" | "scheduled";
@@ -27,6 +27,13 @@ const buildVariantKey = (
   itemData: Omit<CartLine, "cartId" | "quantity">
 ): string => {
   const baseId = itemData.item.id;
+  
+  // SỬA TẠI ĐÂY: Dùng totalPrice đã tính toán để làm Key định danh
+  const appliedPrice = Math.round(itemData.totalPrice);
+  
+  const promotionTag = itemData.item.promotion && itemData.item.promotion !== "" 
+    ? itemData.item.promotion 
+    : "normal";
 
   if (itemData.itemType === "Product") {
     const options = itemData.options || {};
@@ -40,7 +47,7 @@ const buildVariantKey = (
         return `${key}:${selectedNames}`;
       })
       .join("|");
-    return `${baseId}::${optionSig}`;
+    return `${baseId}:${promotionTag}:${appliedPrice}::${optionSig}`;
   }
 
   if (itemData.itemType === "Combo") {
@@ -62,10 +69,10 @@ const buildVariantKey = (
       })
       .sort()
       .join("|");
-    return `${baseId}::${selectionSig}`;
+    return `${baseId}:${promotionTag}:${appliedPrice}::${selectionSig}`;
   }
 
-  return baseId;
+  return `${baseId}:${promotionTag}:${appliedPrice}::`;
 };
 
 // --- TYPE DEFINITIONS ---

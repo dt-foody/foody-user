@@ -100,7 +100,6 @@ export type CartLine = (ProductCartLine | ComboCartLine) & {
   totalPrice: number; // Đơn giá cuối cùng của 1 item (đã bao gồm tất cả)
   note: string;
   _image?: string;
-  _categoryIds?: string[];
 };
 
 export interface CartState {

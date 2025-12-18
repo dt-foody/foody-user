@@ -148,7 +148,7 @@ export default function CheckoutPage() {
     // 5. Tạo Payload chuẩn gửi Backend
     const payload = {
       // Loại bỏ các trường UI không cần thiết từ item
-      items: cartItems.map(({ _image, _categoryIds, cartId, ...rest }) => rest),
+      items: cartItems.map(({ _image, cartId, ...rest }) => rest),
 
       coupons: payloadCoupons,
       vouchers: payloadVouchers,

@@ -17,18 +17,16 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { cartItems, addItemToCart, updateQuantity } = useCartStore();
   const [quantity, setQuantity] = useState(0);
 
-  // --- LOGIC GIÁ & TAG GIẢM GIÁ (PHẦN BỔ SUNG) ---
+  // --- 1. LOGIC GIÁ & TAG (GIỮ NGUYÊN 100%) ---
   const { displayPrice, originalPrice, hasDiscount, discountLabel } =
     useMemo(() => {
       const basePrice = product.basePrice || 0;
       let priceAfterInternal = basePrice;
 
-      // 1. Giảm giá nội bộ (salePrice)
       if (product.salePrice != null && product.salePrice < basePrice) {
         priceAfterInternal = product.salePrice;
       }
 
-      // 2. Khuyến mãi ngoài (Promotion) - Áp dụng lên giá sau giảm nội bộ
       let finalPrice = priceAfterInternal;
       if (product.promotion && product.promotion.isActive !== false) {
         const promoValue = product.promotion.discountValue || 0;
@@ -41,7 +39,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         }
       }
 
-      // 3. Tính toán nhãn tag giảm giá
       let label = null;
       const savings = basePrice - finalPrice;
       if (savings > 0) {
@@ -61,18 +58,30 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       };
     }, [product]);
 
-  // --- GIỮ NGUYÊN LOGIC CŨ CỦA BẠN ---
   const isSimpleProduct =
     !product.optionGroups || product.optionGroups.length === 0;
 
-  useEffect(() => {
-    const productIdPrefix = `${product.id}::`;
-    const totalQuantity = cartItems
-      .filter((item) => item.cartId.startsWith(productIdPrefix))
-      .reduce((sum, currentItem) => sum + currentItem.quantity, 0);
-    setQuantity(totalQuantity);
-  }, [cartItems, product.id]);
+  // --- 2. LOGIC TÌM QUANTITY (ĐÃ ĐỒNG BỘ VỚI STORE) ---
+  const promotionId =
+    product.promotion?.id && product.promotion.id !== ""
+      ? product.promotion.id
+      : "normal";
 
+  const currentCartLine = useMemo(() => {
+    return cartItems.find((item) => {
+      // Key chuẩn: ID : PROMO : GIÁ_ĐÃ_ROUND ::
+      const variantPrefix = `${product.id}:${promotionId}:${Math.round(
+        displayPrice
+      )}::`;
+      return item.cartId.startsWith(variantPrefix);
+    });
+  }, [cartItems, product.id, promotionId, displayPrice]);
+
+  useEffect(() => {
+    setQuantity(currentCartLine ? currentCartLine.quantity : 0);
+  }, [currentCartLine]);
+
+  // --- 3. HANDLERS ---
   const increase = (e: React.MouseEvent) => {
     e.stopPropagation();
     const itemSnapshot: CreateOrderItem_ItemSnapshot = {
@@ -84,24 +93,22 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       promotion: product.promotion?.id || "",
     };
 
-    const newItemPayload: any = {
+    addItemToCart({
       itemType: "Product",
       item: itemSnapshot,
       options: {},
       comboSelections: null,
-      totalPrice: displayPrice, // Dùng displayPrice đã tính toán ở trên
+      totalPrice: displayPrice,
       note: "",
       _image: product.image,
-      _categoryIds: product.category ? [product.category.toString()] : [],
-    };
-    addItemToCart(newItemPayload);
+    });
   };
 
   const decrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const simpleCartId = `${product.id}::`;
-    const cartLine = cartItems.find((i) => i.cartId === simpleCartId);
-    if (cartLine) updateQuantity(cartLine.cartId, -1);
+    if (currentCartLine) {
+      updateQuantity(currentCartLine.cartId, -1);
+    }
   };
 
   const canDecrease = quantity > 0 && isSimpleProduct;
@@ -119,7 +126,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           className="object-cover rounded-md"
           unoptimized
         />
-        {/* Tag giảm giá hiển thị ở góc ảnh */}
         {discountLabel && (
           <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg z-10 shadow-sm">
             {discountLabel}
@@ -152,7 +158,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               )}
             </div>
 
-            {/* Hiện tên Promotion nếu có */}
             {product.promotion && product.promotion.isActive !== false && (
               <div className="flex items-center gap-1 text-[10px] font-medium text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-md">
                 <Tag className="w-3 h-3 fill-orange-600" />

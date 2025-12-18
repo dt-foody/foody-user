@@ -413,7 +413,6 @@ export default function ComboSelectionModal() {
       options: null,
       comboSelections: payloadSelections,
       _image: comboForSelection.image,
-      _categoryIds: [],
       comboSnapshot: comboSnapshot,
     };
 

@@ -141,7 +141,6 @@ export default function ProductOptionsModal() {
       comboSelections: null,
       // Metadata
       _image: productForOptions.image,
-      _categoryIds: (productForOptions as any).categoryIds || [],
     };
 
     // 3. Gọi action mới của store
