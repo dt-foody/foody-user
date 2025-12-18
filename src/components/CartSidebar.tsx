@@ -219,6 +219,13 @@ export default function CartSidebar() {
     fetchAvailableCoupons,
   } = useCart();
 
+  const totalSaved = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      const { savedAmountPerItem } = getCartItemPrices(item);
+      return acc + savedAmountPerItem * item.quantity;
+    }, 0);
+  }, [cartItems]);
+
   const router = useRouter();
   const { user } = useAuthStore();
   const [isCouponPanelOpen, setIsCouponPanelOpen] = useState(false);
@@ -435,9 +442,6 @@ export default function CartSidebar() {
                           <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
                             {item.item.name}
                           </h4>
-                          <p className="text-sm font-medium text-primary-600 mt-0.5">
-                            {formatPrice(item.totalPrice)}
-                          </p>
 
                           {/* --- PHẦN GIÁ CẢI TIẾN --- */}
                           <div className="flex flex-col mt-1 gap-0.5">
@@ -576,6 +580,18 @@ export default function CartSidebar() {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {totalSaved > 0 && (
+                <div className="flex justify-between text-xs py-2.5 px-3 bg-green-50 rounded-lg border border-green-200 animate-pulse-slow">
+                  <span className="text-green-700 font-medium flex items-center gap-2">
+                    <Tag size={14} className="text-green-600" />
+                    Ưu đãi giảm giá món:
+                  </span>
+                  <span className="text-green-700 font-bold">
+                    -{formatPrice(totalSaved)}
+                  </span>
                 </div>
               )}
 
