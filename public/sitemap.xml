@@ -23,24 +23,24 @@
     <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/menu" />
   </url>
 
-  <!-- Blog page -->
+  <!-- Sharing page (formerly Blog) -->
   <url>
-    <loc>https://luuchi.com.vn/vi/blog</loc>
+    <loc>https://luuchi.com.vn/vi/sharing</loc>
     <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/blog" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/blog" />
-    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/sharing" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/sharing" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/sharing" />
   </url>
 
-  <!-- About page -->
+  <!-- Community page -->
   <url>
-    <loc>https://luuchi.com.vn/vi/about</loc>
+    <loc>https://luuchi.com.vn/vi/community</loc>
     <lastmod>2025-12-08T15:02:41+00:00</lastmod>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/about" />
-    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/about" />
-    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/community" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/community" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/community" />
   </url>
 
   <!-- Policy page -->
