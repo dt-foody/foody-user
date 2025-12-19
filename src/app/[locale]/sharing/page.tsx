@@ -25,9 +25,6 @@ export default async function BlogPage() {
           <h1 className="text-2xl font-bold text-[#b9915f] mb-2 tracking-wide">
             Nơi hồi sức cho chặng đường dài.
           </h1>
-          <p className="text-sm text-gray-600">
-            Khám phá những câu chuyện về cà phê và cuộc sống
-          </p>
         </div>
 
         {/* ====== EMPTY STATE ====== */}
