@@ -9,7 +9,10 @@ export const revalidate = 30;
 export default async function BlogPage() {
   let data: GroupedBlog[] = [];
   try {
-    data = await blogPostService.groupByCategory({ limit: 2, displayPage: 'community' });
+    data = await blogPostService.groupByCategory({
+      limit: 2,
+      displayPage: "community",
+    });
   } catch (err) {
     console.error("❌ Failed to fetch blogs 1:", err);
   }
@@ -20,11 +23,23 @@ export default async function BlogPage() {
         {/* ====== HEADER ====== */}
         <div className="mb-10">
           <h1 className="text-2xl font-bold text-[#b9915f] mb-2 tracking-wide">
-            Không gian chia sẻ
+            Nơi các chương trình đồng hành được tổ chức và cập nhật.
           </h1>
-          <p className="text-sm text-gray-600">
-            Khám phá những câu chuyện về cà phê và cuộc sống
+          <p className="text-sm text-gray-600 mb-5">
+            Cộng đồng sinh hoạt chính tại Facebook — bạn có thể tham gia tại đây
+            để theo dõi đầy đủ thông tin.
           </p>
+          <div>
+            👉
+            <a
+              href="https://www.facebook.com/groups/1656079602441991"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-neutral-900 text-white px-6 py-2 rounded-full font-bold hover:bg-black transition-all ml-2"
+            >
+              Tham gia cộng đồng Facebook
+            </a>
+          </div>
         </div>
 
         {/* ====== EMPTY STATE ====== */}
@@ -45,7 +60,7 @@ export default async function BlogPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-500 text-lg">Hiện chưa có bài viết nào.</p>
+            <p className="text-gray-500 text-lg">Hiện chưa có chương trình nào.</p>
             <p className="text-gray-400 text-sm mt-2">Hãy quay lại sau nhé!</p>
           </div>
         )}

@@ -9,7 +9,10 @@ export const revalidate = 30;
 export default async function BlogPage() {
   let data: GroupedBlog[] = [];
   try {
-    data = await blogPostService.groupByCategory({ limit: 2, displayPage: 'sharing' });
+    data = await blogPostService.groupByCategory({
+      limit: 2,
+      displayPage: "sharing",
+    });
   } catch (err) {
     console.error("❌ Failed to fetch blogs 1:", err);
   }
@@ -20,7 +23,7 @@ export default async function BlogPage() {
         {/* ====== HEADER ====== */}
         <div className="mb-10">
           <h1 className="text-2xl font-bold text-[#b9915f] mb-2 tracking-wide">
-            Không gian chia sẻ
+            Nơi hồi sức cho chặng đường dài.
           </h1>
           <p className="text-sm text-gray-600">
             Khám phá những câu chuyện về cà phê và cuộc sống
@@ -45,7 +48,7 @@ export default async function BlogPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-500 text-lg">Hiện chưa có bài viết nào.</p>
+            <p className="text-gray-500 text-lg">Hiện chưa có chia sẻ nào.</p>
             <p className="text-gray-400 text-sm mt-2">Hãy quay lại sau nhé!</p>
           </div>
         )}
