@@ -264,7 +264,7 @@ function PageHome() {
       </section>
 
       {/* Mission & CTA */}
-      <section className="container max-w-4xl mx-auto px-6 py-8 text-center md:text-left border-t border-neutral-100">
+      <section className="container max-w-4xl mx-auto px-6 py-8 text-left border-t border-neutral-100">
         <div className="space-y-4">
           <p>Mình không ở đây để truyền động lực sáo rỗng.</p>
           <p>
