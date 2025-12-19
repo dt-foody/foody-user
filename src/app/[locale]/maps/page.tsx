@@ -137,7 +137,7 @@ function PageMaps() {
           <p className="font-bold">Một điểm dừng, cho chặng đường dài.</p>
           <div className="pt-4">
             <a
-              href="https://luuchi.com/vi/menu"
+              href="https://luuchi.com.vn/vi/menu"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-neutral-900 text-white px-6 py-2 rounded-full font-bold hover:bg-black transition-all"
