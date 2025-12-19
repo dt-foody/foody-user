@@ -25,5 +25,6 @@ export interface User {
 export interface GetMeResponse {
   user: User,
   me: Customer | Employee,
-  permissions: []
+  permissions: [],
+  listReferral: any[],
 }
