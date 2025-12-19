@@ -43,6 +43,16 @@
     <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/community" />
   </url>
 
+  <!-- Maps page -->
+  <url>
+    <loc>https://luuchi.com.vn/vi/maps</loc>
+    <lastmod>2025-12-08T15:02:41+00:00</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://luuchi.com.vn/en/maps" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://luuchi.com.vn/ar/maps" />
+    <xhtml:link rel="alternate" hreflang="vi" href="https://luuchi.com.vn/vi/maps" />
+  </url>
+
   <!-- Policy page -->
   <url>
     <loc>https://luuchi.com.vn/vi/policy</loc>
