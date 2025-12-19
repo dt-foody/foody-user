@@ -1,4 +1,5 @@
 "use client";
+import ButtonPrimary from "@/shared/ButtonPrimary";
 import React, { useState } from "react";
 
 function PageHome() {
@@ -16,22 +17,22 @@ function PageHome() {
 
   const faqs = [
     {
-      question: "\"Mình có phù hợp không?\"",
+      question: '"Mình có phù hợp không?"',
       answer:
         "Nếu bạn đang xây dựng sự nghiệp, nhưng cảm thấy mệt vì phải gồng một mình — thì có lẽ bạn đang ở đúng chỗ.",
     },
     {
-      question: "\"Mình chưa sẵn sàng, vào đây có áp lực không?\"",
+      question: '"Mình chưa sẵn sàng, vào đây có áp lực không?"',
       answer:
         "Không. Ở đây không yêu cầu bạn phải ổn, phải mạnh, hay phải tiến nhanh. Bạn được đi với nhịp của mình.",
     },
     {
-      question: "\"Đây có phải một nhóm chữa lành / truyền động lực không?\"",
+      question: '"Đây có phải một nhóm chữa lành / truyền động lực không?"',
       answer:
         "Không. Đây là một không gian đồng hành — nơi bạn vừa đối diện với mình, vừa xây dựng điều gì đó thật.",
     },
     {
-      question: "\"Nếu mình vào rồi mà không hợp?\"",
+      question: '"Nếu mình vào rồi mà không hợp?"',
       answer: "Bạn luôn có quyền rời đi. Không ràng buộc. Không phán xét.",
     },
   ];
@@ -76,7 +77,8 @@ function PageHome() {
           <p className="font-bold text-neutral-900">Đúng vậy.</p>
           <p>Bạn đang ở trong một lồng kính —</p>
           <p>
-            do chính bạn tạo ra, trong những ngày phải <strong>tự đứng vững một mình</strong>.
+            do chính bạn tạo ra, trong những ngày phải{" "}
+            <strong>tự đứng vững một mình</strong>.
           </p>
           <p className="font-bold">Đây không phải bản chất của bạn.</p>
           <p>
@@ -293,14 +295,7 @@ function PageHome() {
           </p>
           <p>Ở đây.</p>
           <div>
-            <a
-              href="https://www.facebook.com/groups/1656079602441991"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-neutral-900 text-white px-6 py-2 rounded-full font-bold hover:bg-black transition-all"
-            >
-              Bước vào
-            </a>
+            <ButtonPrimary>Bước vào</ButtonPrimary>
           </div>
           <p>Ta sẽ cùng bắt đầu từ đó.</p>
         </div>
@@ -337,9 +332,7 @@ function PageHome() {
                 onClick={() => toggleQuestion(index)}
                 className="w-full py-3 text-left flex justify-between items-center group focus:outline-none"
               >
-                <span className="text-sm font-semibold">
-                  {faq.question}
-                </span>
+                <span className="text-sm font-semibold">{faq.question}</span>
                 <span className="text-neutral-400">
                   {openIndexes.includes(index) ? "−" : "+"}
                 </span>

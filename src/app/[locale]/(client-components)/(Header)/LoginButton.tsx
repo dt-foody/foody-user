@@ -13,7 +13,7 @@ const LoginButton = () => {
 
   return (
     <div className="self-center">
-      <ButtonPrimary className="!py-2 !bg-black !rounded-2xl" onClick={handleLogin}>
+      <ButtonPrimary className="!py-2 !rounded-2xl" onClick={handleLogin}>
         Đăng nhập
       </ButtonPrimary>
     </div>
