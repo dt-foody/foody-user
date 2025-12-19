@@ -24,7 +24,6 @@ const NAV_ITEMS = [
     classSublabel: "font-alexbrush",
     href: "/",
   },
-  { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
   {
     id: "sharing",
     // Sử dụng JSX Fragment để bọc chuỗi và span gạch ngang
@@ -38,7 +37,9 @@ const NAV_ITEMS = [
   },
   { id: "community", label: "Ở đây.", sizeLabel: "1rem", href: "/community" },
   // { id: "about", label: "Ấn tượng", sizeLabel: "1rem", href: "/about" },
-  { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
+  // { id: "policy", label: "Chính sách", sizeLabel: "1rem", href: "/policy" },
+  { id: "menu", label: "Thực đơn", sizeLabel: "1rem", href: "/menu" },
+  { id: "maps", label: "Lối đi", sizeLabel: "1rem", href: "/maps" },
 ];
 
 
