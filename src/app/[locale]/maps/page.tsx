@@ -2,47 +2,13 @@
 import React, { useState } from "react";
 
 function PageMaps() {
-  // Khởi tạo state với mảng chứa tất cả index từ 0 đến 3 để mặc định mở hết
-  const [openIndexes, setOpenIndexes] = useState([0, 1, 2, 3]);
-
-  const toggleQuestion = (index: number) => {
-    setOpenIndexes(
-      (prev) =>
-        prev.includes(index)
-          ? prev.filter((i) => i !== index) // Nếu đang mở thì đóng (loại bỏ khỏi mảng)
-          : [...prev, index] // Nếu đang đóng thì mở (thêm vào mảng)
-    );
-  };
-
-  const faqs = [
-    {
-      question: '"Mình có phù hợp không?"',
-      answer:
-        "Nếu bạn đang xây dựng sự nghiệp, nhưng cảm thấy mệt vì phải gồng một mình — thì có lẽ bạn đang ở đúng chỗ.",
-    },
-    {
-      question: '"Mình chưa sẵn sàng, vào đây có áp lực không?"',
-      answer:
-        "Không. Ở đây không yêu cầu bạn phải ổn, phải mạnh, hay phải tiến nhanh. Bạn được đi với nhịp của mình.",
-    },
-    {
-      question: '"Đây có phải một nhóm chữa lành / truyền động lực không?"',
-      answer:
-        "Không. Đây là một không gian đồng hành — nơi bạn vừa đối diện với mình, vừa xây dựng điều gì đó thật.",
-    },
-    {
-      question: '"Nếu mình vào rồi mà không hợp?"',
-      answer: "Bạn luôn có quyền rời đi. Không ràng buộc. Không phán xét.",
-    },
-  ];
-
   return (
     <main
       role="main"
       className="nc-PageMaps relative !bg-neutral-50 text-neutral-800 antialiased pb-20"
     >
       <section className="container max-w-4xl mx-auto px-6 py-6 space-y-4 border-t border-neutral-100">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <p>Ở đây không có một con đường duy nhất.</p>
           <p>Chỉ có những không gian khác nhau —</p>
           <p>
@@ -52,7 +18,7 @@ function PageMaps() {
       </section>
 
       <section className="container max-w-4xl mx-auto px-6 py-6 space-y-6 border-t border-neutral-100">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <h2 className="text-xl font-bold text-neutral-900">
             Chúng{" "}
             <span
@@ -87,7 +53,7 @@ function PageMaps() {
 
         <div className="pt-4 border-t border-neutral-200">
           <h2 className="text-xl font-bold text-neutral-900 mb-3">Ở đây.</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <p>
               Nơi các <strong>chương trình đồng hành</strong> được chia sẻ.
             </p>
@@ -120,12 +86,12 @@ function PageMaps() {
       {/* The Place */}
       <section className="container max-w-4xl mx-auto px-6 py-6 border-t border-neutral-100">
         <h2 className="text-xl font-bold text-neutral-900 mb-4">Menu</h2>
-        <div className="space-y-2">
+        <div className="space-y-4">
           <p className="font-bold">Nguồn năng lượng cùng bạn đi đường dài.</p>
           <p>
             <strong>Cà phê Lưu Chi</strong> vừa đủ:
           </p>
-          <ul className="list-disc pl-10">
+          <ul className="list-disc pl-10 space-y-4">
             <li>nhanh gọn, tiện lợi — bảo quản tủ lạnh, cần là có ngay,</li>
             <li>sảng khoái — không nặng đầu, không gắt,</li>
             <li>
@@ -149,7 +115,7 @@ function PageMaps() {
       </section>
 
       <section className="container max-w-4xl mx-auto px-6 py-6 border-t border-neutral-100">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <p>Bạn không cần ghé tất cả cùng lúc.</p>
           <p>
             Vì chúng ta có thể kết thúc ở trăm ngả,{" "}

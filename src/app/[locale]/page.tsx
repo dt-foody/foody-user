@@ -72,7 +72,7 @@ function PageHome() {
             </React.Fragment>
           ))}
         </div>
-        <div className="mt-6 space-y-3 text-base leading-relaxed">
+        <div className="mt-6 space-y-4">
           <p className="font-bold text-neutral-900">Đúng vậy.</p>
           <p>Bạn đang ở trong một lồng kính —</p>
           <p>
@@ -88,7 +88,7 @@ function PageHome() {
 
       {/* Why & Observation */}
       <section className="container max-w-4xl mx-auto px-6 py-6 space-y-6 border-t border-neutral-100">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <h2 className="text-xl font-bold text-neutral-900">
             Tại sao bạn lại rơi vào đây?
           </h2>
@@ -118,7 +118,7 @@ function PageHome() {
           <h2 className="text-xl font-bold text-neutral-900 mb-3">
             Nếu đứng ở ngôi thứ 3 để quan sát, bạn thấy gì?
           </h2>
-          <div className="space-y-3 text-base">
+          <div className="space-y-4">
             <p>Bạn không yếu. Đúng. </p>
             <p>
               <strong>Bạn chỉ đã phải mạnh một mình quá lâu.</strong>
@@ -159,7 +159,7 @@ function PageHome() {
             Bởi có lẽ, bạn cũng đã đủ lâu trong vùng không thời gian ấy để hiểu
             rằng:
           </p>
-          <ul className="list-disc pl-10">
+          <ul className="list-disc pl-10 space-y-4">
             <li>Chỉ dựa vào gia đình thôi là không đủ,</li>
             <li>
               Học tập là con đường quan trọng, nhưng những gì trường lớp dạy là
@@ -185,7 +185,7 @@ function PageHome() {
           Tại sao là lúc này?
         </h2>
 
-        <div>
+        <div className="space-y-4">
           <p className="font-bold text-md">Vì bạn sắp kiệt sức.</p>
           <p>Nếu cứ tiếp tục như vậy, không chắc bạn còn đủ lực để vực dậy.</p>
           <p>Bạn đã rất cố gắng.</p>
@@ -194,10 +194,10 @@ function PageHome() {
           <p>… đã mòn đi từ lúc nào.</p>
         </div>
 
-        <div>
+        <div className="space-y-4">
           <p className="font-bold text-md">Vì bạn xứng đáng được nhìn thấy.</p>
           <p>Xứng đáng được:</p>
-          <ul className="list-disc pl-10">
+          <ul className="list-disc pl-10 space-y-4">
             <li>Gỡ bỏ những xiềng xích đã mang từ rất lâu,</li>
             <li>Bước đi mà không cần tự nghi ngờ từng bước,</li>
             <li>
@@ -207,7 +207,7 @@ function PageHome() {
           </ul>
         </div>
 
-        <div>
+        <div className="space-y-4">
           <p className="font-bold text-md">
             Và vì bạn không thể trì hoãn thêm nữa.
           </p>
@@ -226,7 +226,7 @@ function PageHome() {
             <h3 className="font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-100">
               1. Lắng nghe
             </h3>
-            <ul className="text-sm space-y-2 leading-relaxed">
+            <ul className="text-sm space-y-4 leading-relaxed">
               <li>Chúng ta không giả vờ ổn,</li>
               <li>KHÔNG ĐEO MẶT NẠ.</li>
               <li>
@@ -242,7 +242,7 @@ function PageHome() {
             <h3 className="font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-100">
               2. Đồng hành
             </h3>
-            <ul className="text-sm space-y-2 leading-relaxed">
+            <ul className="text-sm space-y-4 leading-relaxed">
               <li>Không ai bị bỏ lại phía sau.</li>
               <li>Không ai phải tự khâu vết thương một mình.</li>
               <li>Bạn được là chính mình — trọn vẹn.</li>
@@ -254,7 +254,7 @@ function PageHome() {
             <h3 className="font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-100">
               3. Đặt từng viên gạch
             </h3>
-            <ul className="text-sm space-y-2 leading-relaxed">
+            <ul className="text-sm space-y-4 leading-relaxed">
               <li>Không chờ “đúng thời điểm”.</li>
               <li>Không đợi “đủ nguồn lực”.</li>
               <li>Chúng ta hành động ngay cả trong những ngày tối tăm.</li>
@@ -271,7 +271,7 @@ function PageHome() {
             Mình ở đây để <strong>đi cùng bạn</strong>, chứng kiến khoảnh khắc
             bạn:
           </p>
-          <ul className="list-disc pl-10">
+          <ul className="list-disc pl-10 space-y-4">
             <li>bước qua nỗi sợ,</li>
             <li>tái lập sự tự tin,</li>
             <li>
@@ -330,7 +330,7 @@ function PageHome() {
         <h2 className="text-lg font-bold mb-6 text-neutral-900">
           FAQ — Có thể bạn đang tự hỏi.
         </h2>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {faqs.map((faq, index) => (
             <div key={index} className="border-b border-neutral-200">
               <button
