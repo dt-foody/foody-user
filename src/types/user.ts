@@ -1,3 +1,4 @@
+import { Paginated } from "@/lib";
 import { Customer } from "./customer";
 import { Employee } from "./employee";
 
@@ -26,5 +27,17 @@ export interface GetMeResponse {
   user: User,
   me: Customer | Employee,
   permissions: [],
-  listReferral: any[],
 }
+
+// UserPaginate interface for paginated user responses
+export type USerPaginate = Paginated<User>;
+
+export interface ReferralUser {
+  _id: string;
+  email: string;
+  phone: string;
+  name: string;
+}
+
+export interface ReferralPaginate extends Paginated<ReferralUser> {}
+

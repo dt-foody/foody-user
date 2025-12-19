@@ -87,9 +87,12 @@ const AccountPage = () => {
   const redirectUri = searchParams.get("redirect_uri");
 
   const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "addresses" ? "addresses" : tabParam === "referral" ? "referral" : "profile";
+  const activeTab =
+    tabParam === "addresses"
+      ? "addresses"
+      : "profile";
 
-  const handleSwitchTab = (tab: "profile" | "addresses" | "referral") => {
+  const handleSwitchTab = (tab: "profile" | "addresses") => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -128,21 +131,13 @@ const AccountPage = () => {
     initialNewAddressState
   );
 
-  // --- FIX 3: REF ĐỂ SCROLL ---
   const addressFormRef = useRef<HTMLDivElement>(null);
-
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-  const [listReferral, setListReferral] = useState<ReferralUser[] | null>(null);
 
   useEffect(() => {
     (async () => {
       setIsLoading(true);
       await fetchUser();
-      const {me: profile, user, listReferral} = useAuthStore.getState();
-
-      console.log("useAuthStore.getState()", useAuthStore.getState());
-
-      console.log("list referral", listReferral);
+      const { me: profile } = useAuthStore.getState();
 
       // const profile = useAuthStore.getState().me;
       if (profile) {
@@ -156,15 +151,6 @@ const AccountPage = () => {
           primaryEmail: getPrimaryEmail(profile.emails ?? []),
           primaryPhone: getPrimaryPhone(profile.phones ?? []),
         });
-      }
-
-      if (user && user.referralCode) {
-        setReferralCode(user.referralCode);
-      }
-
-      if (listReferral && listReferral.length) {
-        console.log("check listReferral", listReferral);
-        setListReferral(listReferral);
       }
       setIsLoading(false);
     })();
@@ -403,12 +389,11 @@ const AccountPage = () => {
       await customerService.updateProfile(payload);
       await fetchUser();
       toast.success("Cập nhật hồ sơ thành công!");
-      
+
       if (redirectUri) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         router.push(redirectUri);
       }
-
     } catch (err) {
       console.error(err);
       toast.error("Cập nhật thất bại, vui lòng thử lại.");
@@ -464,16 +449,6 @@ const AccountPage = () => {
             }`}
           >
             Địa chỉ ({customerData.addresses.length})
-          </button>
-          <button
-            onClick={() => handleSwitchTab("referral")}
-            className={`flex-1 px-4 py-3 font-medium transition-colors ${
-              activeTab === "referral"
-                ? "border-b-2 border-primary-500"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Mã giới thiệu
           </button>
         </div>
 
@@ -927,89 +902,6 @@ const AccountPage = () => {
               )}
             </div>
           )}
-
-          {/* REFERRAL TAB */}
-                    {activeTab === "referral" && (
-            <div className="space-y-6">
-              {/* Mã giới thiệu của bạn */}
-              <div className="rounded-xl border border-[#F3E8D8] bg-[#FFFAF2] p-6 shadow-sm">
-                <h3 className="mb-2 text-lg font-semibold text-gray-800">
-                  Mã giới thiệu của bạn
-                </h3>
-                <p className="mb-4 text-sm text-gray-600">
-                  Chia sẻ mã này với bạn bè để nhận ưu đãi đặc biệt
-                </p>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 rounded-lg border border-[#EADFCB] bg-white px-4 py-3 font-mono text-[16px] font-bold tracking-wider text-gray-800">
-                    {referralCode}
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (me?.referralCode) {
-                        navigator.clipboard.writeText(me.referralCode);
-                        toast.success("Đã sao chép mã giới thiệu!");
-                      }
-                    }}
-                    className="rounded-lg bg-[#F3E8D8] px-5 py-3 font-medium text-gray-800 transition-colors hover:bg-[#EADFCB] active:scale-95"
-                  >
-                    Sao chép
-                  </button>
-                </div>
-              </div>
-
-              {/* Danh sách người được giới thiệu */}
-              <div className="rounded-xl border border-[#F3E8D8] bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Người bạn đã giới thiệu
-                  </h3>
-                  <span className="rounded-full bg-[#F3E8D8] px-3 py-1 text-sm font-medium text-gray-700">
-                    {listReferral?.length} người
-                  </span>
-                </div>
-
-                {listReferral?.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFFAF2]">
-                      <Users className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      Chưa có người được giới thiệu
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Chia sẻ mã giới thiệu để bắt đầu nhận ưu đãi
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {listReferral?.map((referral: ReferralUser) => (
-                      <div
-                        key={referral._id}
-                        className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-4 transition-colors hover:bg-gray-100"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3E8D8] font-semibold text-gray-700">
-                            {referral.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">
-                              {referral.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {referral.email}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
     </div>

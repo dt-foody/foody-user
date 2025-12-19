@@ -24,6 +24,7 @@ export const Nav = () => {
     { href: "/account", label: "Thông tin tài khoản" },
     { href: "/account-password", label: "Đổi mật khẩu" },
     { href: "/account-orders", label: "Đơn hàng" },
+    { href: "/account-referral", label: "Mã giới thiệu" }
   ];
 
   return (

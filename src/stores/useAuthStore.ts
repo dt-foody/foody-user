@@ -5,8 +5,6 @@ import { create } from "zustand";
 interface AuthState {
   user: any | null;
   me: any | null;
-  listReferral: any | null;
-  setListReferral: (listReferral: any) => void;
   setUser: (user: any) => void;
   setMe: (me: any) => void;
   clearUser: () => void;
@@ -16,8 +14,6 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   me: null,
-  listReferral: null,
-  setListReferral: (listReferral) => set({ listReferral }),
   setUser: (user) => set({ user }),
   setMe: (me) => set({ me }),
   clearUser: () => set({ user: null }),
@@ -27,7 +23,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (data) {
         set({ user: data.user });
         set({ me: data.me });
-        set({ listReferral: data.listReferral });
       }
     } catch (e) {
       set({ user: null });
