@@ -14,6 +14,7 @@ interface FormErrors {
   password?: string;
   phone?: string;
   birthDate?: string;
+  referralCode?: string;
 }
 
 const PageSignUp: FC<PageSignUpProps> = () => {
@@ -23,6 +24,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
   const phoneRef = useRef<HTMLInputElement>(null);
   const birthDateRef = useRef<HTMLInputElement>(null);
   const genderRef = useRef<HTMLSelectElement>(null);
+  const referralCodeRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,6 +85,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     const phone = phoneRef.current?.value || "";
     const birthDate = birthDateRef.current?.value || "";
     const gender = genderRef.current?.value || "";
+    const referralCode = referralCodeRef.current?.value || "";
 
     if (!validateForm(name, email, password, phone, birthDate)) return;
 
@@ -92,6 +95,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       if (phone) requestBody.phone = phone;
       if (birthDate) requestBody.birthDate = birthDate;
       if (gender) requestBody.gender = gender;
+      if (referralCode.trim()) requestBody.referralCode = referralCode.trim();
 
       await authService.register(requestBody);
 
@@ -121,6 +125,7 @@ const PageSignUp: FC<PageSignUpProps> = () => {
     if (phoneRef.current) phoneRef.current.value = "";
     if (birthDateRef.current) birthDateRef.current.value = "";
     if (genderRef.current) genderRef.current.value = "";
+    if (referralCodeRef.current) referralCodeRef.current.value = "";
   };
 
   // --- Nội dung Popup ---
@@ -383,6 +388,29 @@ const PageSignUp: FC<PageSignUpProps> = () => {
                 </label>
               </div>
             </div>
+
+            <label className="block">
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Mã giới thiệu
+              </span>
+              <Input
+                type="text"
+                name="referralCode"
+                placeholder="Nhập mã giới thiệu (nếu có)"
+                className="mt-1"
+                ref={referralCodeRef}
+                disabled={isLoading}
+                onFocus={() => handleInputFocus("referralCode")}
+              />
+              <span className="text-xs text-neutral-500 mt-1 block">
+                Nhập mã giới thiệu từ bạn bè để nhận ưu đãi đặc biệt.
+              </span>
+              {errors.referralCode && (
+                <span className="text-sm text-red-500 mt-1 block">
+                  {errors.referralCode}
+                </span>
+              )}
+            </label>
 
             <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 text-sm">
               <p className="text-purple-700 dark:text-purple-300">

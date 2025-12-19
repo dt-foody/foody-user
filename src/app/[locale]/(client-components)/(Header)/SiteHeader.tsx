@@ -6,12 +6,15 @@ import Header from "./Header";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
-  const { setUser, fetchUser } = useAuthStore();
+  const { setUser, fetchUser, setListReferral } = useAuthStore();
 
   useEffect(() => {
-    if (ssrUser) setUser(ssrUser);
+    if (ssrUser) {
+      setUser(ssrUser);
+      setListReferral(ssrUser.listReferral);
+    }
     else fetchUser(); // fallback nếu chưa có user
-  }, [ssrUser, , setUser, fetchUser]);
+  }, [ssrUser, setUser, fetchUser]);
 
   const renderHeader = () => {
     return <Header />;
