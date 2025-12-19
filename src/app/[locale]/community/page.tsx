@@ -30,14 +30,13 @@ export default async function BlogPage() {
             để theo dõi đầy đủ thông tin.
           </p>
           <div>
-            👉
             <a
               href="https://www.facebook.com/groups/1656079602441991"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-neutral-900 text-white px-6 py-2 rounded-full font-bold hover:bg-black transition-all ml-2"
             >
-              Tham gia cộng đồng Facebook
+              👉 Tham gia cộng đồng Facebook
             </a>
           </div>
         </div>
