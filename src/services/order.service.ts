@@ -85,4 +85,8 @@ export const orderService = {
       method: "GET",
     });
   },
+
+  async getSurcharges(): Promise<{ results: any[] }> {
+    return apiFetch("/surcharges?limit=1000", { method: "GET" });
+  }
 };

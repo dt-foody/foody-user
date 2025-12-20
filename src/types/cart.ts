@@ -102,6 +102,14 @@ export type CartLine = (ProductCartLine | ComboCartLine) & {
   _image?: string;
 };
 
+export interface Surcharge {
+  id: string;
+  name: string;
+  cost: number;
+  description: string;
+  isActive: boolean;
+}
+
 export interface CartState {
   cartItems: CartLine[];
   showCart: boolean;
@@ -119,6 +127,9 @@ export interface CartState {
   shippingDistance: number;
   selectedAddress: CustomerAddress | null;
   isCalculatingShip: boolean;
+
+  // surcharge
+  surcharges: Surcharge[];
 
   // --- Coupon ---
   publicCoupons: Coupon[];
@@ -162,4 +173,7 @@ export interface CartActions {
 
   // Tính lại ship dựa trên Option (Immediate/Scheduled)
   recalculateShippingFee: () => Promise<void>;
+
+  // fetch surcharges
+  fetchSurcharges: () => Promise<void>;
 }

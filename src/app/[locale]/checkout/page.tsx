@@ -1,7 +1,14 @@
 "use client";
 
 import { useCart } from "@/stores/useCartStore";
-import { CheckCircle, Clock, Loader2, MapPin, Ticket } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  Info,
+  Loader2,
+  MapPin,
+  Ticket,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -46,6 +53,7 @@ export default function CheckoutPage() {
   const {
     cartItems,
     subtotal,
+    surcharges,
     itemDiscount,
     shippingDiscount,
     finalTotal,
@@ -58,6 +66,7 @@ export default function CheckoutPage() {
     scheduledTime,
     setScheduledTime,
     originalShippingFee,
+    totalSurcharge,
     selectedAddress,
     isCalculatingShip,
     recalculateShippingFee,
@@ -162,6 +171,8 @@ export default function CheckoutPage() {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
 
+      surchargeAmount: totalSurcharge,
+
       shipping: { address: selectedAddress },
       deliveryTime: deliveryTimePayload,
       note: note.trim(),
@@ -229,10 +240,7 @@ export default function CheckoutPage() {
               {cartItems.map((it) => (
                 <div key={it.cartId} className="py-4 flex gap-4">
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-gray-50 flex-shrink-0">
-                    <SmartImage
-                      src={it._image}
-                      className="object-cover"
-                    />
+                    <SmartImage src={it._image} className="object-cover" />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between">
@@ -424,6 +432,48 @@ export default function CheckoutPage() {
               </span>
               <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
             </div>
+
+            {totalSurcharge > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-gray-600">
+                  <div className="group relative flex items-center gap-1 cursor-help">
+                    <span className="border-b border-dotted border-gray-400">
+                      Phụ thu dịch vụ
+                    </span>
+                    <Info size={14} className="text-gray-400" />
+
+                    {/* Tooltip khi hover */}
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 p-3 bg-white border border-primary-100 rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[11px] font-bold racking-wider">
+                        Chi tiết phụ thu
+                      </p>
+                      {surcharges.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex justify-between items-start gap-2 py-1 border-b border-primary-50 last:border-0"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800 text-[11px]">
+                              {s.name}
+                            </p>
+                            <p className="text-[11px] text-gray-500 leading-tight">
+                              {s.description}
+                            </p>
+                          </div>
+                          <span className="font-bold text-primary-600 text-[11px]">
+                            +{s.cost.toLocaleString()}đ
+                          </span>
+                        </div>
+                      ))}
+                      <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white"></div>
+                    </div>
+                  </div>
+                  <span className="text-primary-600 font-medium">
+                    +{totalSurcharge.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Coupon Display */}
             {appliedCoupons.length > 0 && (

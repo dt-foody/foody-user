@@ -17,6 +17,7 @@ import {
   Pencil,
   MapPin,
   Ticket,
+  Info,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -196,6 +197,7 @@ export default function CartSidebar() {
   const {
     cartItems,
     cartCount,
+    surcharges,
     showCart,
     setShowCart,
     updateQuantity,
@@ -205,6 +207,7 @@ export default function CartSidebar() {
     subtotal,
     itemDiscount,
     shippingDiscount,
+    totalSurcharge,
     finalTotal,
     appliedCoupons,
     toggleCoupon,
@@ -625,6 +628,48 @@ export default function CartSidebar() {
                     </span>
                   </div>
                 )}
+
+                {totalSurcharge > 0 && (
+                  <div className="group relative flex justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-1 cursor-pointer">
+                      <span>Phụ thu dịch vụ</span>
+                      <Info size={14} />
+
+                      <div className="absolute bottom-full left-0 mb-3 hidden group-hover:block w-72 p-3 bg-white border border-primary-100 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <p className="text-[12px] font-bold tracking-wider mb-2">
+                          Chi tiết phụ thu
+                        </p>
+                        <div className="space-y-1.5">
+                          {surcharges.map((s) => (
+                            <div
+                              key={s.id}
+                              className="flex justify-between items-start gap-4 py-1.5 border-b border-primary-50 last:border-0"
+                            >
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-800 text-[11px]">
+                                  {s.name}
+                                </p>
+                                <p className="text-[11px] text-gray-500 leading-tight">
+                                  {s.description}
+                                </p>
+                              </div>
+                              <span className="font-bold text-primary-600 text-xs">
+                                +{s.cost.toLocaleString("vi-VN")}đ
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white"></div>
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-primary-100 -z-10 translate-y-[1px]"></div>
+                      </div>
+                    </div>
+                    <span className="text-primary-600 font-medium">
+                      +{totalSurcharge.toLocaleString()}đ
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center pt-3 mt-1 border-t border-gray-200">
                   <span className="font-bold text-gray-900">Tổng cộng</span>
                   <span className="text-xl font-bold text-primary-600">

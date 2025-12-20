@@ -27,13 +27,14 @@ const buildVariantKey = (
   itemData: Omit<CartLine, "cartId" | "quantity">
 ): string => {
   const baseId = itemData.item.id;
-  
+
   // SỬA TẠI ĐÂY: Dùng totalPrice đã tính toán để làm Key định danh
   const appliedPrice = Math.round(itemData.totalPrice);
-  
-  const promotionTag = itemData.item.promotion && itemData.item.promotion !== "" 
-    ? itemData.item.promotion 
-    : "normal";
+
+  const promotionTag =
+    itemData.item.promotion && itemData.item.promotion !== ""
+      ? itemData.item.promotion
+      : "normal";
 
   if (itemData.itemType === "Product") {
     const options = itemData.options || {};
@@ -115,6 +116,8 @@ const initialState: CartState & ExtendedStateData = {
   shippingDistance: 0,
   selectedAddress: null,
   isCalculatingShip: false,
+
+  surcharges: [],
 };
 
 export const useCartStore = create<ExtendedCartStore>()(
@@ -384,6 +387,17 @@ export const useCartStore = create<ExtendedCartStore>()(
         set((s) => ({
           appliedCoupons: s.appliedCoupons.filter((c) => c.id !== id),
         })),
+
+      // --- NEW: Fetch surcharges ---
+      fetchSurcharges: async () => {
+        try {
+          const res = await orderService.getSurcharges();
+          console.log("surcharges fetched:", res);
+          set({ surcharges: res.results });
+        } catch (error) {
+          console.error("Failed to fetch surcharges:", error);
+        }
+      },
     }),
     {
       name: CART_STORAGE_KEY,
@@ -397,6 +411,7 @@ export const useCartStore = create<ExtendedCartStore>()(
         deliveryOption: state.deliveryOption,
         scheduledDate: state.scheduledDate,
         scheduledTime: state.scheduledTime,
+        surcharges: state.surcharges,
       }),
     }
   )
@@ -521,8 +536,17 @@ export function useCart() {
     };
   }, [subtotal, store.appliedCoupons, store.shippingFee]);
 
+  // 4. Tính toán surcharges nếu có
+  const totalSurcharge = useMemo(
+    () => store.surcharges.reduce((sum, s) => sum + s.cost, 0),
+    [store.surcharges]
+  );
+
   const finalShippingFee = Math.max(0, store.shippingFee - shippingDiscount);
-  const finalTotal = Math.max(0, subtotal - itemDiscount + finalShippingFee);
+  const finalTotal = Math.max(
+    0,
+    subtotal - itemDiscount + finalShippingFee + totalSurcharge
+  );
 
   return {
     ...store,
@@ -533,6 +557,7 @@ export function useCart() {
     itemDiscount,
     shippingDiscount,
     finalShippingFee,
+    totalSurcharge,
     finalTotal,
     originalShippingFee: store.shippingFee,
     publicCouponStatuses: processedCoupons,
@@ -541,13 +566,15 @@ export function useCart() {
 
 export function CartStoreInitializer() {
   const fetchAvailableCoupons = useCartStore((s) => s.fetchAvailableCoupons);
+  const fetchSurcharges = useCartStore((s) => s.fetchSurcharges);
   const ranRef = useRef(false);
 
   useEffect(() => {
     if (ranRef.current) return;
     ranRef.current = true;
     fetchAvailableCoupons();
-  }, [fetchAvailableCoupons]);
+    fetchSurcharges();
+  }, [fetchAvailableCoupons, fetchSurcharges]);
 
   return null;
 }

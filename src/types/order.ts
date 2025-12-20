@@ -159,6 +159,7 @@ export interface CreateOrderInput {
   totalAmount: number;
   discountAmount?: number;
   shippingFee?: number;
+  surchargeAmount?: number;
   grandTotal: number;
   payment: Pick<PaymentInfo, "method">; // Chỉ gửi method
   shipping?: ShippingInfo | null; // Gửi cả address và status (hoặc null)
