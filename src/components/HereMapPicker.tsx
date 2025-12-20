@@ -5,7 +5,7 @@ import Script from "next/script";
 import Input from "@/shared/Input";
 import Label from "@/components/Label";
 import { toast } from "sonner";
-import { Search, X, Loader2, MapPin, Info } from "lucide-react";
+import { Search, X, Loader2, MapPin, Info, Navigation } from "lucide-react";
 
 // Types
 interface MapSelectionData {
@@ -132,6 +132,40 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
         true
       );
     }
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Trình duyệt của bạn không hỗ trợ định vị.");
+      return;
+    }
+
+    setIsSearching(true); // Dùng chung state loading để hiển thị feedback
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+
+        // Gọi hàm cập nhật Map và Marker đã có sẵn trong code của bạn
+        if (mapInstanceRef.current && markerInstanceRef.current) {
+          updateMapLocation(
+            latitude,
+            longitude,
+            mapInstanceRef.current,
+            markerInstanceRef.current
+          );
+        }
+        setIsSearching(false);
+        toast.success("Đã lấy vị trí hiện tại!");
+      },
+      (error) => {
+        setIsSearching(false);
+        console.error("Geolocation error:", error);
+        toast.error(
+          "Không thể lấy vị trí. Vui lòng bật quyền truy cập vị trí trên trình duyệt."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
   };
 
   // --- MAP LOGIC ---
@@ -392,6 +426,13 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
               </button>
             )}
             <button
+              onClick={handleGetCurrentLocation}
+              className="p-2 text-primary-600 hover:bg-primary-50 rounded-md"
+              title="Sử dụng vị trí hiện tại"
+            >
+              <Navigation size={16} />
+            </button>
+            <button
               onClick={handleSearch}
               disabled={isSearching}
               className="p-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md"
@@ -410,10 +451,9 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
           <p>
             Hiện tại, Lưu Chi phục vụ nhanh nhất trong khu vực nội thành Hà Nội.
             Với các đơn hàng từ tỉnh thành khác, quý khách vui lòng liên hệ
-            hotline{" "}
-            <span className="font-bold text-black">088 905 8678</span> ngay
-            sau khi hoàn tất đặt hàng để được hỗ trợ nhanh và thuận tiện nhất.
-            Xin trân trọng cảm ơn quý khách!
+            hotline <span className="font-bold text-black">088 905 8678</span>{" "}
+            ngay sau khi hoàn tất đặt hàng để được hỗ trợ nhanh và thuận tiện
+            nhất. Xin trân trọng cảm ơn quý khách!
           </p>
         </div>
 
