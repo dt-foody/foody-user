@@ -4,7 +4,7 @@ import type { Paginated } from "@/lib";
 import type { Customer, CustomerAddress } from "./customer";
 import { Product } from "./product";
 import { Employee } from "./employee";
-import { CreateOrderItem_ComboSelection, CreateOrderItem_ItemSnapshot, CreateOrderItem_Option } from "./cart";
+import { CreateOrderItem_ComboSelection, CreateOrderItem_ItemSnapshot, CreateOrderItem_Option, Surcharge } from "./cart";
 
 /** ========================================================================
  * 1. ENUMS (Đồng bộ với Model)
@@ -113,6 +113,8 @@ export interface Order {
   totalAmount: number;
   discountAmount: number;
   shippingFee: number;
+  surchargeAmount: number;
+  surcharges?: Surcharge[];
   grandTotal: number;
   payment: PaymentInfo;
   shipping?: ShippingInfo | null;

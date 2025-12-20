@@ -15,7 +15,8 @@ import {
   ChevronUp,
   DollarSign,
   ShoppingBag,
-  Clock, // 🔥 Import thêm icon Clock
+  Clock,
+  Info, // 🔥 Import thêm icon Clock
 } from "lucide-react";
 import {
   Order,
@@ -103,7 +104,10 @@ const OrderCard = ({ order }: OrderCardProps) => {
       refunded: "Đã hoàn tiền",
     };
     // Fallback nếu không có trong map thì format text gốc
-    return map[status] || status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
+    return (
+      map[status] ||
+      status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
+    );
   }, [status]);
 
   const statusClasses = useMemo(() => {
@@ -303,7 +307,8 @@ const OrderCard = ({ order }: OrderCardProps) => {
                     {order.payment?.method === "payos" && "PayOS"}
                     {order.payment?.method === "momo" && "MoMo"}
                     {order.payment?.method === "vnpay" && "VNPay"}
-                    {order.payment?.method === "bank_transfer" && "Chuyển khoản ngân hàng"}
+                    {order.payment?.method === "bank_transfer" &&
+                      "Chuyển khoản ngân hàng"}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-dashed pt-1">
@@ -314,6 +319,46 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   <span className="text-gray-500">Phí vận chuyển:</span>
                   <span>{order.shippingFee.toLocaleString("vi-VN")}đ</span>
                 </div>
+
+                {/* HIỂN THỊ PHỤ THU TRONG LỊCH SỬ ĐƠN HÀNG */}
+                {order.surchargeAmount && order.surchargeAmount > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <div className="group relative flex items-center gap-1">
+                        <span className="border-b border-dotted border-gray-400">
+                          Phụ thu dịch vụ
+                        </span>
+                        <Info size={14} className="text-gray-400" />
+
+                        {/* Tooltip hiển thị lại chi tiết các loại phí tại thời điểm đặt hàng */}
+                        {order.surcharges && (
+                          <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 p-3 bg-white border border-orange-100 rounded-xl shadow-xl z-50">
+                            <p className="text-[10px] font-bold text-orange-400 uppercase mb-2">
+                              Phí đã áp dụng
+                            </p>
+                            {order.surcharges.map((s, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between py-1 border-b border-orange-50 last:border-0"
+                              >
+                                <span className="text-gray-800 text-[11px]">
+                                  {s.name}
+                                </span>
+                                <span className="font-bold text-orange-600 text-[11px]">
+                                  +{s.cost.toLocaleString()}đ
+                                </span>
+                              </div>
+                            ))}
+                            <div className="absolute top-full left-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white"></div>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-orange-600 font-medium">
+                        +{order.surchargeAmount.toLocaleString("vi-VN")}đ
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {order.discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Giảm giá:</span>
