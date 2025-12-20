@@ -18,6 +18,11 @@ import Image from "next/image";
 import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
 import SmartImage from "@/components/SmartImage";
+import HereMapPicker from "@/components/HereMapPicker";
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { X } from "lucide-react";
+import ButtonPrimary from "@/shared/ButtonPrimary";
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -80,6 +85,7 @@ export default function CheckoutPage() {
     originalShippingFee,
     totalSurcharge,
     selectedAddress,
+    setSelectedAddress,
     isCalculatingShip,
     recalculateShippingFee,
   } = useCart();
@@ -90,9 +96,37 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("bank");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   // 🔥 Local state cho khung giờ (UI only)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  // Thông tin địa chỉ tạm thời khi người dùng thao tác trên bản đồ
+  const [tempAddress, setTempAddress] = useState<any>(null);
+
+  // Xử lý khi chọn vị trí trên HereMap
+  const handleLocationSelect = (data: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
+    setTempAddress({
+      lat: data.lat,
+      lng: data.lng,
+      fullAddress: data.address,
+      label: "Địa chỉ đã chọn", // Có thể cho khách nhập thêm nhãn như 'Nhà riêng'
+    });
+  };
+
+  const confirmAddress = () => {
+    if (tempAddress) {
+      // @ts-ignore - Cập nhật trực tiếp vào giỏ hàng
+      setSelectedAddress(tempAddress);
+      setIsAddressModalOpen(false);
+      toast.success("Đã cập nhật địa chỉ giao hàng");
+    }
+  };
 
   useEffect(() => {
     if (selectedTimeSlot) {
@@ -142,7 +176,7 @@ export default function CheckoutPage() {
         toast.error("Vui lòng chọn ngày và khung giờ giao hàng!");
         return;
       }
-      
+
       const selectedDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
       if (selectedDateTime < new Date()) {
         toast.warning("Thời gian hẹn phải ở tương lai!");
@@ -311,9 +345,10 @@ export default function CheckoutPage() {
                 <MapPin size={16} /> Địa chỉ giao hàng
               </h3>
               <button
-                onClick={() =>
-                  router.push("/account?tab=addresses&redirect_uri=/checkout")
-                }
+                onClick={() => {
+                  // router.push("/account?tab=addresses&redirect_uri=/checkout");
+                  setIsAddressModalOpen(true);
+                }}
                 className="text-xs text-blue-600 hover:underline"
               >
                 Thay đổi
@@ -382,41 +417,41 @@ export default function CheckoutPage() {
                 />
                 <span>Hẹn giờ</span>
               </label>
-                <div>
-                  {deliveryOption === "scheduled" && (
-                    <div className="space-y-2 mt-2">
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Chọn ngày
-                        </label>
-                        <input
-                          type="date"
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          min={getMinDate()}
-                          className="w-full border rounded px-2 py-1.5 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 mb-1">
-                          Chọn khung giờ
-                        </label>
-                        <select
-                          value={selectedTimeSlot}
-                          onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                          className="w-full border rounded px-2 py-1.5 text-sm"
-                        >
-                          <option value="">-- Chọn khung giờ --</option>
-                          {TIME_SLOTS.map((slot) => (
-                            <option key={slot.value} value={slot.value}>
-                              {slot.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+              <div>
+                {deliveryOption === "scheduled" && (
+                  <div className="space-y-2 mt-2">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Chọn ngày
+                      </label>
+                      <input
+                        type="date"
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        min={getMinDate()}
+                        className="w-full border rounded px-2 py-1.5 text-sm"
+                      />
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Chọn khung giờ
+                      </label>
+                      <select
+                        value={selectedTimeSlot}
+                        onChange={(e) => setSelectedTimeSlot(e.target.value)}
+                        className="w-full border rounded px-2 py-1.5 text-sm"
+                      >
+                        <option value="">-- Chọn khung giờ --</option>
+                        {TIME_SLOTS.map((slot) => (
+                          <option key={slot.value} value={slot.value}>
+                            {slot.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -558,6 +593,89 @@ export default function CheckoutPage() {
           </button>
         </div>
       </div>
+
+      {/* DRAWER THIẾT LẬP ĐỊA CHỈ (Kéo từ phải qua) */}
+      <Transition.Root show={isAddressModalOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-[100]"
+          onClose={setIsAddressModalOpen}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-in-out duration-500"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in-out duration-500"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-40 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                <Transition.Child
+                  as={Fragment}
+                  enter="transform transition ease-in-out duration-500 sm:duration-700"
+                  enterFrom="translate-x-full"
+                  enterTo="translate-x-0"
+                  leave="transform transition ease-in-out duration-500 sm:duration-700"
+                  leaveFrom="translate-x-0"
+                  leaveTo="translate-x-full"
+                >
+                  <Dialog.Panel className="pointer-events-auto w-screen max-w-2xl">
+                    <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+                      <div className="px-4 py-6 sm:px-6 border-b">
+                        <div className="flex items-start justify-between">
+                          <Dialog.Title className="text-lg font-bold text-gray-900">
+                            Thiết lập địa chỉ giao hàng
+                          </Dialog.Title>
+                          <div className="ml-3 flex h-7 items-center">
+                            <button
+                              type="button"
+                              className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                              onClick={() => setIsAddressModalOpen(false)}
+                            >
+                              <X size={24} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex-1">
+                        {/* HereMapPicker component đã có sẵn thiết kế của bạn */}
+                        <HereMapPicker
+                          onLocationSelect={handleLocationSelect}
+                          initialAddress={selectedAddress?.fullAddress}
+                        />
+
+                        {tempAddress && (
+                          <div className="px-4 py-4 bg-gray-50 border-t">
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              Địa chỉ đã chọn:
+                            </p>
+                            <p className="text-xs text-gray-600 mb-4">
+                              {tempAddress.fullAddress}
+                            </p>
+                            <ButtonPrimary
+                              className="w-full"
+                              onClick={confirmAddress}
+                            >
+                              Xác nhận địa chỉ này
+                            </ButtonPrimary>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </div>
   );
 }
