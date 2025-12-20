@@ -72,6 +72,17 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     }
   }, [isMapLoaded]);
 
+  useEffect(() => {
+    // Kiểm tra nếu các script của HERE đã tồn tại trong window
+    if (
+      (window as any).H &&
+      (window as any).H.service &&
+      (window as any).H.mapevents
+    ) {
+      setIsMapLoaded(true);
+    }
+  }, []);
+
   // --- SEARCH FUNCTION ---
   const handleSearch = async () => {
     if (!searchQuery.trim() || !platformRef.current) return;
@@ -296,7 +307,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
           });
           marker.setGeometry({ lat: initialLat, lng: initialLng });
         }
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error("Error initializing map:", error);
       toast.error("Có lỗi xảy ra khi tải bản đồ.");

@@ -392,7 +392,6 @@ export const useCartStore = create<ExtendedCartStore>()(
       fetchSurcharges: async () => {
         try {
           const res = await orderService.getSurcharges();
-          console.log("surcharges fetched:", res);
           set({ surcharges: res.results });
         } catch (error) {
           console.error("Failed to fetch surcharges:", error);

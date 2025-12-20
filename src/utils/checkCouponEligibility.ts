@@ -262,8 +262,6 @@ function evaluateNode(node: ConditionNode, ctx: EvaluationContext): boolean {
     return false;
   }
 
-  console.log(`[CouponLogic] Resolving fieldId: ${fieldId}`, ctx  );
-
   // Get Value
   let actualValue;
   try {

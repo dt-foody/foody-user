@@ -111,6 +111,7 @@ export default function CheckoutPage() {
     lng: number;
     address: string;
   }) => {
+    console.log("Selected location data:", data);
     setTempAddress({
       lat: data.lat,
       lng: data.lng,
@@ -459,7 +460,7 @@ export default function CheckoutPage() {
           <div className="border-t pt-3">
             <h3 className="font-semibold mb-2">Thanh toán</h3>
             <div className="space-y-2">
-              {/* <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="pay"
@@ -467,7 +468,7 @@ export default function CheckoutPage() {
                   onChange={() => setPaymentMethod("cod")}
                 />{" "}
                 Tiền mặt (COD)
-              </label> */}
+              </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
@@ -651,22 +652,32 @@ export default function CheckoutPage() {
                           initialAddress={selectedAddress?.fullAddress}
                         />
 
-                        {tempAddress && (
-                          <div className="px-4 py-4 bg-gray-50 border-t">
-                            <p className="text-sm font-medium text-gray-700 mb-2">
-                              Địa chỉ đã chọn:
-                            </p>
-                            <p className="text-xs text-gray-600 mb-4">
-                              {tempAddress.fullAddress}
-                            </p>
-                            <ButtonPrimary
-                              className="w-full"
-                              onClick={confirmAddress}
-                            >
-                              Xác nhận địa chỉ này
-                            </ButtonPrimary>
-                          </div>
-                        )}
+                        <div className="px-4 py-4 bg-gray-50 border-t mt-auto">
+                          <p className="text-sm font-medium text-gray-700 mb-2">
+                            Địa chỉ đã chọn:
+                          </p>
+                          <p
+                            className={`text-xs mb-4 ${
+                              tempAddress
+                                ? "text-gray-900"
+                                : "text-gray-400 italic"
+                            }`}
+                          >
+                            {tempAddress?.fullAddress ||
+                              "Vui lòng chọn một điểm trên bản đồ..."}
+                          </p>
+                          <ButtonPrimary
+                            className={`w-full ${
+                              !tempAddress
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                            onClick={confirmAddress}
+                            disabled={!tempAddress} // Vô hiệu hóa nút nếu chưa có địa chỉ
+                          >
+                            Xác nhận địa chỉ này
+                          </ButtonPrimary>
+                        </div>
                       </div>
                     </div>
                   </Dialog.Panel>

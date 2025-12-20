@@ -41,7 +41,6 @@ const getMe = async (): Promise<GetMeResponse | null> => {
       cache: "no-store",
     });
   } catch (err) {
-    console.error("getMe() service error:", err);
     return null;
   }
 };
