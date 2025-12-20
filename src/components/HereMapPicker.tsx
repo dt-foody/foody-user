@@ -12,6 +12,11 @@ interface MapSelectionData {
   lat: number;
   lng: number;
   address: string;
+  houseNumber?: string;
+  street?: string;
+  ward?: string;
+  district?: string;
+  province?: string;
 }
 
 interface HereMapPickerProps {
@@ -94,6 +99,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     service.geocode(
       { q: searchQuery, limit: 5 },
       (result: any) => {
+        console.log("Received geocode result:", result);
         // Check nếu component đã unmount (map bị dispose) thì không làm gì cả
         if (!mapInstanceRef.current) return;
 
@@ -118,17 +124,34 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
     const { position, address: addrObj } = item;
     const lat = Number(position.lat);
     const lng = Number(position.lng);
+
+    // HERE Maps trả về object address rất chi tiết, chúng ta sẽ trích xuất đúng cấp hành chính VN
     const label = addrObj.label;
+
+    // Chuẩn bị dữ liệu chi tiết để gửi ra component cha (Checkout Page)
+    const locationData = {
+      lat,
+      lng,
+      address: label,
+      // Trích xuất chi tiết để Page Checkout có thể dùng ngay
+      houseNumber: addrObj.houseNumber || "",
+      street: addrObj.street || "",
+      ward: addrObj.district || "", // district của HERE là Phường/Xã
+      district: addrObj.city || "", // city của HERE là Quận/Huyện
+      province: addrObj.county || "", // county của HERE là Tỉnh/Thành Phố
+    };
 
     setSearchQuery("");
     setSuggestions([]);
 
-    // 1. Cập nhật state hiển thị & dữ liệu gửi ra ngoài
+    // 1. Cập nhật state nội bộ
     setAddress(label);
     setCoordinates({ lat, lng });
-    onLocationSelect({ lat, lng, address: label });
 
-    // 2. Cập nhật Map & Marker
+    // 2. Gửi dữ liệu đã phân tách ra ngoài
+    onLocationSelect(locationData);
+
+    // 3. Cập nhật Map & Marker UI
     if (mapInstanceRef.current && markerInstanceRef.current) {
       const map = mapInstanceRef.current;
       const marker = markerInstanceRef.current;
@@ -182,28 +205,36 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
   // --- MAP LOGIC ---
   const reverseGeocode = useCallback(
     (lat: number, lng: number) => {
-      if (!platformRef.current) return;
-      // SAFETY CHECK: Không gọi API nếu map đã bị hủy
-      if (!mapInstanceRef.current) return;
+      if (!platformRef.current || !mapInstanceRef.current) return;
 
       const service = platformRef.current.getSearchService();
       service.reverseGeocode(
         { at: `${lat},${lng}` },
         (result: any) => {
-          // SAFETY CHECK AGAIN
           if (!mapInstanceRef.current) return;
 
-          if (result.items.length > 0) {
-            const addressLabel = result.items[0].address.label;
-            setAddress(addressLabel);
-            onLocationSelect({ lat, lng, address: addressLabel });
-          } else {
-            setAddress("Không tìm thấy địa chỉ chính xác");
+          if (result.items && result.items.length > 0) {
+            const item = result.items[0];
+            const addrObj = item.address;
+            const label = addrObj.label;
+
+            setAddress(label);
+
+            // Gửi dữ liệu chi tiết ra ngoài tương tự như khi Search
             onLocationSelect({
               lat,
               lng,
-              address: "Không tìm thấy địa chỉ chính xác",
+              address: label,
+              houseNumber: addrObj.houseNumber || "",
+              street: addrObj.street || "",
+              ward: addrObj.district || "",
+              district: addrObj.city || "",
+              province: addrObj.county || "",
             });
+          } else {
+            const fallbackMsg = "Không tìm thấy địa chỉ chính xác";
+            setAddress(fallbackMsg);
+            onLocationSelect({ lat, lng, address: fallbackMsg });
           }
         },
         (error: any) => console.error("Error fetching address:", error)

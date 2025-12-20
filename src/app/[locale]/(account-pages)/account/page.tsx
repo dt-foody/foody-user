@@ -87,10 +87,7 @@ const AccountPage = () => {
   const redirectUri = searchParams.get("redirect_uri");
 
   const tabParam = searchParams.get("tab");
-  const activeTab =
-    tabParam === "addresses"
-      ? "addresses"
-      : "profile";
+  const activeTab = tabParam === "addresses" ? "addresses" : "profile";
 
   const handleSwitchTab = (tab: "profile" | "addresses") => {
     const params = new URLSearchParams(searchParams.toString());
@@ -254,26 +251,42 @@ const AccountPage = () => {
     lat: number;
     lng: number;
     address: string;
+    // Nhận thêm các trường đã được HereMapPicker tách sẵn
+    houseNumber?: string;
+    street?: string;
+    ward?: string;
+    district?: string;
+    province?: string;
   }) => {
-    const { lat, lng, address: fullAddress } = data;
+    const {
+      lat,
+      lng,
+      address: fullAddress,
+      houseNumber,
+      street,
+      ward,
+      district,
+      province,
+    } = data;
+
     const coordinates: [number, number] = [lng, lat];
 
-    // --- FIX 2: AN TOÀN HƠN KHI PARSE ĐỊA CHỈ ---
-    const parts = fullAddress
-      .split(",")
-      .map((p) => p.trim())
-      .reverse();
-    // Ví dụ cấu trúc: [Country, City, District, Ward, Street...]
-    // Cần cẩn trọng vì cấu trúc này không cố định
-
+    // --- CẬP NHẬT AN TOÀN: Dùng trực tiếp dữ liệu từ HERE Maps ---
     setNewAddress((prev) => ({
       ...prev,
-      location: { type: "Point", coordinates },
+      location: {
+        type: "Point",
+        coordinates,
+      },
       fullAddressFromMap: fullAddress,
-      city: parts[1] || "", // Có thể sai nếu chuỗi ngắn
-      district: parts[2] || "", // Có thể sai
-      ward: parts[3] || "", // Có thể sai
-      street: parts.slice(4).reverse().join(", ") || "",
+
+      // Gán trực tiếp các trường hành chính, HereMapPicker đã lo phần phân tách
+      city: province || "", // Cấp Tỉnh/Thành phố (Đà Nẵng, Hà Nội...)
+      district: district || "", // Cấp Quận/Huyện (Quận Liên Chiểu, Đống Đa...)
+      ward: ward || "", // Cấp Phường/Xã (Phường Hòa Khánh Bắc...)
+
+      // Tên đường có thể kết hợp thêm số nhà nếu có
+      street: houseNumber ? `${houseNumber} ${street}`.trim() : street || "",
     }));
   };
 
