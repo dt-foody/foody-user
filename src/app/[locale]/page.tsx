@@ -53,7 +53,7 @@ function PageHome() {
       {/* The Loop Section */}
       <section className="container max-w-4xl mx-auto px-6 py-6 border-t border-neutral-100">
         <h2 className="mb-4">Bạn có thấy quen với vòng lặp này không?</h2>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm md:text-base text-neutral-600">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-neutral-600">
           {[
             "Không tự tin",
             "Chần chừ",
@@ -144,7 +144,7 @@ function PageHome() {
         <h2 className="text-xl font-bold text-neutral-900 mb-4">
           Vậy thì ở đây — là một nơi bạn có thể dừng chân.
         </h2>
-        <div className="space-y-4 text-base">
+        <div className="space-y-4">
           <p>Không phải để trốn chạy.</p>
           <p>
             {" "}
@@ -332,13 +332,13 @@ function PageHome() {
                 onClick={() => toggleQuestion(index)}
                 className="w-full py-3 text-left flex justify-between items-center group focus:outline-none"
               >
-                <span className="text-sm font-semibold">{faq.question}</span>
+                <span className="font-semibold">{faq.question}</span>
                 <span className="text-neutral-400">
                   {openIndexes.includes(index) ? "−" : "+"}
                 </span>
               </button>
               {openIndexes.includes(index) && (
-                <div className="pb-4 text-sm text-neutral-600 leading-relaxed transition-all">
+                <div className="pb-4 text-neutral-600 leading-relaxed transition-all">
                   {faq.answer}
                 </div>
               )}
