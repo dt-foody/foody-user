@@ -256,7 +256,7 @@ const AccountPage = () => {
     street?: string;
     ward?: string;
     district?: string;
-    province?: string;
+    city?: string;
   }) => {
     const {
       lat,
@@ -266,7 +266,7 @@ const AccountPage = () => {
       street,
       ward,
       district,
-      province,
+      city,
     } = data;
 
     const coordinates: [number, number] = [lng, lat];
@@ -281,7 +281,7 @@ const AccountPage = () => {
       fullAddressFromMap: fullAddress,
 
       // Gán trực tiếp các trường hành chính, HereMapPicker đã lo phần phân tách
-      city: province || "", // Cấp Tỉnh/Thành phố (Đà Nẵng, Hà Nội...)
+      city: city || "", // Cấp Tỉnh/Thành phố (Đà Nẵng, Hà Nội...)
       district: district || "", // Cấp Quận/Huyện (Quận Liên Chiểu, Đống Đa...)
       ward: ward || "", // Cấp Phường/Xã (Phường Hòa Khánh Bắc...)
 

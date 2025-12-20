@@ -110,22 +110,48 @@ export default function CheckoutPage() {
     lat: number;
     lng: number;
     address: string;
+    houseNumber?: string;
+    street?: string;
+    ward?: string;
+    district?: string;
+    city?: string;
   }) => {
     console.log("Selected location data:", data);
+
     setTempAddress({
-      lat: data.lat,
-      lng: data.lng,
+      location: {
+        type: "Point",
+        coordinates: [data.lng, data.lat],
+      },
       fullAddress: data.address,
-      label: "Địa chỉ đã chọn", // Có thể cho khách nhập thêm nhãn như 'Nhà riêng'
+      label: "Địa chỉ đã chọn",
+      // Mapping chính xác các giá trị hành chính
+      ward: data.ward || "", // Phường/Xã
+      district: data.district || "", // Quận/Huyện
+      city: data.city || "", // Tỉnh/Thành phố
+      street: data.houseNumber
+        ? `${data.houseNumber} ${data.street}`.trim()
+        : data.street || "",
+      // Giữ lại thông tin người nhận hiện tại để không bị mất khi chọn map
+      recipientName: name,
+      recipientPhone: phone,
     });
   };
 
   const confirmAddress = () => {
     if (tempAddress) {
-      // @ts-ignore - Cập nhật trực tiếp vào giỏ hàng
-      setSelectedAddress(tempAddress);
+      // Tạo object địa chỉ hoàn chỉnh
+      const finalAddress = {
+        ...tempAddress,
+        recipientName: name.trim(), // Lấy tên từ ô input hiện tại
+        recipientPhone: phone.trim(), // Lấy phone từ ô input hiện tại
+      };
+
+      // Cập nhật vào Cart Store
+      setSelectedAddress(finalAddress);
+
       setIsAddressModalOpen(false);
-      toast.success("Đã cập nhật địa chỉ giao hàng");
+      toast.success("Đã cập nhật địa chỉ và phí giao hàng");
     }
   };
 
@@ -231,7 +257,28 @@ export default function CheckoutPage() {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
       surchargeAmount: totalSurcharge,
-      shipping: { address: selectedAddress },
+      shipping: {
+        address: {
+          _id: selectedAddress?._id || null,
+          isDefault: selectedAddress?.isDefault ?? true,
+          label: selectedAddress?.label || "Địa chỉ giao hàng",
+
+          // Luôn lấy giá trị mới nhất từ 2 ô Input ở cột phải
+          recipientName: name.trim(),
+          recipientPhone: phone.trim(),
+
+          fullAddress: selectedAddress?.fullAddress || "",
+
+          // Các trường bắt buộc theo Joi Schema
+          street: selectedAddress?.street || "",
+          ward: selectedAddress?.ward || "",
+          district: selectedAddress?.district || "",
+          city: selectedAddress?.city || "", 
+
+          // GeoJSON Point
+          location: selectedAddress?.location,
+        },
+      },
       deliveryTime: deliveryTimePayload,
       note: note.trim(),
     };
@@ -247,7 +294,7 @@ export default function CheckoutPage() {
       } else {
         toast.success("Đơn hàng đã tạo thành công!");
         clearCart();
-        router.push("/account-orders");
+        router.push("/menu");
       }
     } catch (err: any) {
       console.error(err);
@@ -460,7 +507,7 @@ export default function CheckoutPage() {
           <div className="border-t pt-3">
             <h3 className="font-semibold mb-2">Thanh toán</h3>
             <div className="space-y-2">
-              <label className="flex items-center gap-2">
+              {/* <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="pay"
@@ -468,7 +515,7 @@ export default function CheckoutPage() {
                   onChange={() => setPaymentMethod("cod")}
                 />{" "}
                 Tiền mặt (COD)
-              </label>
+              </label> */}
               <label className="flex items-center gap-2">
                 <input
                   type="radio"

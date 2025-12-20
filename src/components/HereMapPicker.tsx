@@ -16,7 +16,7 @@ interface MapSelectionData {
   street?: string;
   ward?: string;
   district?: string;
-  province?: string;
+  city?: string;
 }
 
 interface HereMapPickerProps {
@@ -138,7 +138,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
       street: addrObj.street || "",
       ward: addrObj.district || "", // district của HERE là Phường/Xã
       district: addrObj.city || "", // city của HERE là Quận/Huyện
-      province: addrObj.county || "", // county của HERE là Tỉnh/Thành Phố
+      city: addrObj.county || "", // county của HERE là Tỉnh/Thành Phố
     };
 
     setSearchQuery("");
@@ -229,7 +229,7 @@ const HereMapPicker: React.FC<HereMapPickerProps> = ({
               street: addrObj.street || "",
               ward: addrObj.district || "",
               district: addrObj.city || "",
-              province: addrObj.county || "",
+              city: addrObj.county || "",
             });
           } else {
             const fallbackMsg = "Không tìm thấy địa chỉ chính xác";
