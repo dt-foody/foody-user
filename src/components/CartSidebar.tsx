@@ -689,17 +689,17 @@ export default function CartSidebar() {
         <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
           <button
             onClick={() => {
-              if (user) {
-                setShowCart(false);
-                router.push("/checkout");
-              } else {
-                setShowAnonymousModal(true);
-              }
-            }}
-            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg ${
+              setShowCart(false);
+              router.push("/checkout");
 
-                "bg-primary-500 text-white hover:bg-primary-600"
-            }`}
+              // if (user) {
+              //   setShowCart(false);
+              //   router.push("/checkout");
+              // } else {
+              //   setShowAnonymousModal(true);
+              // }
+            }}
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg ${"bg-primary-500 text-white hover:bg-primary-600"}`}
           >
             {`Thanh toán • ${finalTotal.toLocaleString("vi-VN")}đ`}
           </button>
@@ -707,14 +707,17 @@ export default function CartSidebar() {
       )}
       {!user && (
         <div className="px-4 py-3 border-t bg-yellow-50 gap-2 text-sm text-yellow-800">
-          Đăng ký tài khoản để không bỏ lỡ quà tặng và những đặc quyền chỉ dành riêng cho thành viên.
-          &nbsp;
-          <Link href="/signup" className="font-semibold text-primary-600 underline" onClick={() => setShowCart(false)}>
+          Đăng ký tài khoản để không bỏ lỡ quà tặng và những đặc quyền chỉ dành
+          riêng cho thành viên. &nbsp;
+          <Link
+            href="/signup"
+            className="font-semibold text-primary-600 underline"
+            onClick={() => setShowCart(false)}
+          >
             Đăng ký ngay
           </Link>
         </div>
       )}
-
     </div>
   );
 
