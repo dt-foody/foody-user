@@ -33,7 +33,7 @@ module.exports = {
 
     extend: {
       fontSize: {
-        base: ['15px'],
+        base: ['16px'],
       },
       colors: {
         category: {

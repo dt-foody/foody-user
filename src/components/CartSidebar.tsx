@@ -30,6 +30,8 @@ import {
   CreateOrderItem_Option,
 } from "@/types/cart";
 import { getCartItemPrices } from "@/utils/cartHelper";
+import Link from "next/link";
+import AnonymousCheckoutModal from "./AnonymousCheckoutModal";
 
 const PLACEHOLDER_IMAGE = "https://orderus.au/images/food_image_default.jpg";
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
@@ -236,6 +238,7 @@ export default function CartSidebar() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [showAnonymousModal, setShowAnonymousModal] = useState(false);
 
   // Logic chỉnh sửa Note
   const beginEditNote = (id: string, cur?: string) => {
@@ -686,21 +689,32 @@ export default function CartSidebar() {
         <div className="px-4 py-3 border-t bg-white shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
           <button
             onClick={() => {
-              setShowCart(false);
-              router.push(user ? "/checkout" : "/login?redirect_uri=/checkout");
+              if (user) {
+                setShowCart(false);
+                router.push("/checkout");
+              } else {
+                setShowAnonymousModal(true);
+              }
             }}
             className={`w-full py-3 rounded-xl font-semibold text-sm transition-all shadow-md hover:shadow-lg ${
-              user
-                ? "bg-primary-500 text-white hover:bg-primary-600"
-                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+
+                "bg-primary-500 text-white hover:bg-primary-600"
             }`}
           >
-            {user
-              ? `Thanh toán • ${finalTotal.toLocaleString("vi-VN")}đ`
-              : "Đăng nhập để đặt hàng"}
+            {`Thanh toán • ${finalTotal.toLocaleString("vi-VN")}đ`}
           </button>
         </div>
       )}
+      {!user && (
+        <div className="px-4 py-3 border-t bg-yellow-50 gap-2 text-sm text-yellow-800">
+          Đăng ký tài khoản để không bỏ lỡ quà tặng và những đặc quyền chỉ dành riêng cho thành viên.
+          &nbsp;
+          <Link href="/signup" className="font-semibold text-primary-600 underline" onClick={() => setShowCart(false)}>
+            Đăng ký ngay
+          </Link>
+        </div>
+      )}
+
     </div>
   );
 
@@ -709,7 +723,7 @@ export default function CartSidebar() {
       className={`z-[100] fixed inset-0 bg-black/60 transition-opacity duration-300 ${
         showCart ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
-      onClick={() => setShowCart(false)}
+      onClick={!showAnonymousModal ? () => setShowCart(false) : undefined}
     >
       <div
         className={`absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl transition-transform duration-300 ${
@@ -736,6 +750,14 @@ export default function CartSidebar() {
           </div>
         </div>
       </div>
+      <AnonymousCheckoutModal
+        isOpen={showAnonymousModal}
+        onClose={() => setShowAnonymousModal(false)}
+        cartItems={cartItems}
+        subtotal={subtotal}
+        shippingFee={originalShippingFee}
+        finalTotal={finalTotal}
+      />
     </div>
   );
 }
