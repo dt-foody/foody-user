@@ -33,7 +33,7 @@ export default async function BlogCategoryPage({
 
     posts = data.results;
     totalPages = data.totalPages;
-    categoryName = posts[0]?.categories?.[0]?.name || slug;
+    categoryName = posts[0]?.categories?.find(cat => cat.slug === slug)?.name || slug;
   } catch (err) {
     return notFound();
   }
