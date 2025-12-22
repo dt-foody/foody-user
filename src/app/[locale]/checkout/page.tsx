@@ -412,8 +412,8 @@ export default function CheckoutPage() {
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-red-500 font-medium">
-                Vui lòng chọn địa chỉ giao hàng ở menu trên cùng!
+              <p className="text-sm text-yellow-600">
+                Vui lòng thiết lập địa chỉ để đặt hàng!
               </p>
             )}
           </div>

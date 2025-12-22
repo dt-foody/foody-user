@@ -31,7 +31,7 @@ export default async function BlogPage() {
             để theo dõi đầy đủ thông tin.
           </p>
           <div>
-            <ButtonPrimary>👉 Tham gia cộng đồng Facebook</ButtonPrimary>
+            <ButtonPrimary targetBlank href="https://www.facebook.com/groups/1656079602441991?locale=vi_VN">👉 Tham gia cộng đồng Facebook</ButtonPrimary>
           </div>
         </div>
 

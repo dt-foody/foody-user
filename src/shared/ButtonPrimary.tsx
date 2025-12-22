@@ -1,3 +1,4 @@
+"use client";
 import Button, { ButtonProps } from "./Button";
 import React from "react";
 

@@ -295,7 +295,7 @@ function PageHome() {
           </p>
           <p>Ở đây.</p>
           <div>
-            <ButtonPrimary>Bước vào</ButtonPrimary>
+            <ButtonPrimary targetBlank href="https://www.facebook.com/groups/1656079602441991?locale=vi_VN">Bước vào</ButtonPrimary>
           </div>
           <p>Ta sẽ cùng bắt đầu từ đó.</p>
         </div>

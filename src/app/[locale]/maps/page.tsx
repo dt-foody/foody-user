@@ -1,8 +1,11 @@
 "use client";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 function PageMaps() {
+  const router = useRouter();
+
   return (
     <main
       role="main"
@@ -103,7 +106,12 @@ function PageMaps() {
           <p>Chỉ là một nguồn năng lượng âm thầm, cho hành trình này.</p>
           <p className="font-bold">Một điểm dừng, cho chặng đường dài.</p>
           <div>
-            <ButtonPrimary>👉 Thực đơn ở đây</ButtonPrimary>
+            <ButtonPrimary type="button" onClick={() => {
+              console.log("Go to Menu");
+              router.push("/menu");
+            }}>
+              👉 Thực đơn ở đây
+            </ButtonPrimary>
           </div>
         </div>
       </section>
