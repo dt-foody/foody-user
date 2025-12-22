@@ -1,11 +1,8 @@
-"use client";
 import ButtonPrimary from "@/shared/ButtonPrimary";
+import Link from "next/link";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 
 function PageMaps() {
-  const router = useRouter();
-
   return (
     <main
       role="main"
@@ -106,12 +103,12 @@ function PageMaps() {
           <p>Chỉ là một nguồn năng lượng âm thầm, cho hành trình này.</p>
           <p className="font-bold">Một điểm dừng, cho chặng đường dài.</p>
           <div>
-            <ButtonPrimary type="button" onClick={() => {
-              console.log("Go to Menu");
-              router.push("/menu");
-            }}>
+            <Link
+              className="px-4 py-2 relative h-auto inline-flex items-center justify-center rounded-full transition-colors disabled:bg-opacity-70 bg-primary-6000 hover:bg-primary-700 text-neutral-50"
+              href="/menu"
+            >
               👉 Thực đơn ở đây
-            </ButtonPrimary>
+            </Link>
           </div>
         </div>
       </section>
