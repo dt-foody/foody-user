@@ -28,15 +28,13 @@ export default async function BlogCategoryPage({
       categorySlug: slug,
       limit: 6,
       page,
+      populate: "categories",
     });
-
-    console.log("data blog by category", data);
 
     posts = data.results;
     totalPages = data.totalPages;
     categoryName = posts[0]?.categories?.[0]?.name || slug;
   } catch (err) {
-    console.error("❌ Failed to fetch category posts:", err);
     return notFound();
   }
 
@@ -48,9 +46,6 @@ export default async function BlogCategoryPage({
           <h1 className="text-2xl md:text-3xl font-bold text-[#b9915f] mb-2 capitalize">
             {categoryName}
           </h1>
-          <p className="text-sm text-gray-600">
-            Tất cả bài viết thuộc chủ đề &quot;{categoryName}&quot;
-          </p>
         </div>
 
         {/* === LIST === */}

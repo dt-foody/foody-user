@@ -57,16 +57,16 @@ const Page = async ({ params }: PageProps) => {
           </svg>
         </div>
         <h2 className="text-2xl md:text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
-          Không tìm thấy bài viết
+          Không tìm thấy bài chia sẻ
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto mb-8">
-          Có vẻ như bài viết bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn không chính xác.
+          Có vẻ như bài chia sẻ bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn không chính xác.
         </p>
         <Link
           href="/sharing"
           className="px-6 py-3 rounded-full bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
         >
-          Quay lại trang Blog
+          Quay lại trang chia sẻ
         </Link>
       </div>
     );

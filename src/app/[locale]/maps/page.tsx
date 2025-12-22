@@ -1,6 +1,5 @@
-import ButtonPrimary from "@/shared/ButtonPrimary";
 import Link from "next/link";
-import React, { useState } from "react";
+import React from "react";
 
 function PageMaps() {
   return (
