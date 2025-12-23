@@ -34,9 +34,11 @@ export default async function BlogCategoryPage({
     posts = data.results;
     totalPages = data.totalPages;
 
-    // get category has property slug is equal slug
-    categoryName = posts[0]?.categories?.find(cat => cat.slug === slug)?.name || slug;
+    console.log("data", data);
 
+    // get category has property slug is equal slug
+    categoryName =
+      posts[0]?.categories?.find((cat) => cat.slug === slug)?.name || slug;
   } catch (err) {
     return notFound();
   }
