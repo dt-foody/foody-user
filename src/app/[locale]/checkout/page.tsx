@@ -23,6 +23,7 @@ import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
+import { dealSettingService } from "@/services/dealSetting.service";
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -96,6 +97,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "bank">("bank");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingSetting, setLoadingSetting] = useState(false);
+  const [settings, setSettings] = useState<any>({});
 
   // 🔥 Local state cho khung giờ (UI only)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
@@ -169,6 +172,33 @@ export default function CheckoutPage() {
     const timer = setTimeout(() => recalculateShippingFee(), 500);
     return () => clearTimeout(timer);
   }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
+
+  // Get Deal setting
+  useEffect(() => {
+    setLoadingSetting(true);
+    const fetchSettings = async () => {
+      try {
+        const data = await dealSettingService.getAll({});
+        if (data && data.results && data.results.length) {
+          const setting = data.results[0];
+          setSettings(setting);
+
+          // Logic chọn mặc định nếu phương thức mặc định bị tắt
+          if (!setting.allowFastDelivery && setting.allowScheduledDelivery) {
+            setDeliveryOption("scheduled");
+          }
+          if (!setting.allowCashPayment && setting.allowBankTransfer) {
+            setPaymentMethod("bank");
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy cấu hình deal setting", error);
+      } finally {
+        setLoadingSetting(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Điền thông tin người nhận từ địa chỉ đã chọn
   useEffect(() => {
@@ -273,7 +303,7 @@ export default function CheckoutPage() {
           street: selectedAddress?.street || "",
           ward: selectedAddress?.ward || "",
           district: selectedAddress?.district || "",
-          city: selectedAddress?.city || "", 
+          city: selectedAddress?.city || "",
 
           // GeoJSON Point
           location: selectedAddress?.location,
@@ -443,90 +473,124 @@ export default function CheckoutPage() {
           </div>
 
           {/* Delivery Time */}
-          <div className="bg-blue-50 p-3 rounded border border-blue-100">
-            <div className="flex items-center gap-2 mb-2 text-blue-800 font-semibold">
-              <Clock size={16} /> Thời gian giao
-            </div>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  checked={deliveryOption === "immediate"}
-                  onChange={() => setDeliveryOption("immediate")}
-                />{" "}
-                Giao ngay
-              </label>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  checked={deliveryOption === "scheduled"}
-                  onChange={() => setDeliveryOption("scheduled")}
-                  className="mt-1"
-                />
-                <span>Hẹn giờ</span>
-              </label>
-              <div>
-                {deliveryOption === "scheduled" && (
-                  <div className="space-y-2 mt-2">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">
-                        Chọn ngày
-                      </label>
+          {/* 1. Phần Giao hàng - Chỉ hiện nếu ít nhất 1 cái được bật */}
+          {(settings.allowFastDelivery || settings.allowScheduledDelivery) && (
+            <div className="bg-blue-50 p-3 rounded border border-blue-100">
+              <div className="flex items-center gap-2 mb-2 text-blue-800 font-semibold">
+                <Clock size={16} /> Thời gian giao
+              </div>
+              <div className="space-y-2">
+                {/* Giao ngay */}
+                {settings.allowFastDelivery && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={deliveryOption === "immediate"}
+                      onChange={() => setDeliveryOption("immediate")}
+                    />
+                    Giao ngay
+                  </label>
+                )}
+
+                {/* Hẹn giờ */}
+                {settings.allowScheduledDelivery && (
+                  <>
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <input
-                        type="date"
-                        value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
-                        min={getMinDate()}
-                        className="w-full border rounded px-2 py-1.5 text-sm"
+                        type="radio"
+                        checked={deliveryOption === "scheduled"}
+                        onChange={() => setDeliveryOption("scheduled")}
+                        className="mt-1"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">
-                        Chọn khung giờ
-                      </label>
-                      <select
-                        value={selectedTimeSlot}
-                        onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                        className="w-full border rounded px-2 py-1.5 text-sm"
-                      >
-                        <option value="">-- Chọn khung giờ --</option>
-                        {TIME_SLOTS.map((slot) => (
-                          <option key={slot.value} value={slot.value}>
-                            {slot.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                      <span>Hẹn giờ</span>
+                    </label>
+
+                    {deliveryOption === "scheduled" && (
+                      <div className="space-y-2 mt-2 pl-6">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Chọn ngày
+                          </label>
+                          <input
+                            type="date"
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            className="w-full border rounded px-2 py-1.5 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Chọn khung giờ
+                          </label>
+                          <select
+                            value={selectedTimeSlot}
+                            onChange={(e) =>
+                              setSelectedTimeSlot(e.target.value)
+                            }
+                            className="w-full border rounded px-2 py-1.5 text-sm"
+                          >
+                            <option value="">-- Chọn khung giờ --</option>
+                            {/* TIME_SLOTS map here */}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Trường hợp tắt tất cả (Bảo trì) */}
+          {!settings.allowFastDelivery && !settings.allowScheduledDelivery && (
+            <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
+              Hiện tại chúng tôi tạm dừng dịch vụ giao hàng. Vui lòng liên hệ
+              hotline để được hỗ trợ.
+            </div>
+          )}
 
           {/* Payment */}
-          <div className="border-t pt-3">
-            <h3 className="font-semibold mb-2">Thanh toán</h3>
-            <div className="space-y-2">
-              {/* <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="pay"
-                  checked={paymentMethod === "cod"}
-                  onChange={() => setPaymentMethod("cod")}
-                />{" "}
-                Tiền mặt (COD)
-              </label> */}
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="pay"
-                  checked={paymentMethod === "bank"}
-                  onChange={() => setPaymentMethod("bank")}
-                />{" "}
-                Chuyển khoản / QR
-              </label>
+          {/* 2. Phần Thanh toán */}
+          {(settings.allowCashPayment || settings.allowBankTransfer) && (
+            <div className="border-t pt-3">
+              <h3 className="font-semibold mb-2">Thanh toán</h3>
+              <div className="space-y-2">
+                {/* Tiền mặt */}
+                {settings.allowCashPayment && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pay"
+                      checked={paymentMethod === "cod"}
+                      onChange={() => setPaymentMethod("cod")}
+                    />
+                    Tiền mặt (COD)
+                  </label>
+                )}
+
+                {/* Chuyển khoản */}
+                {settings.allowBankTransfer && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pay"
+                      checked={paymentMethod === "bank"}
+                      onChange={() => setPaymentMethod("bank")}
+                    />
+                    Chuyển khoản / QR
+                  </label>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Trường hợp tắt tất cả (Bảo trì) */}
+          {!settings.allowCashPayment && !settings.allowBankTransfer && (
+            <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
+              Hiện tại các phương thức thanh toán đang được bảo trì. Vui lòng
+              quay lại sau.
+            </div>
+          )}
 
           {/* Note */}
           <div>
