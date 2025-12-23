@@ -17,7 +17,9 @@ export default async function BlogCategoryPage({
   searchParams,
 }: Props) {
   const { slug } = params;
-  const page = Number(searchParams.page || 1);
+  const page = Number(searchParams.page ?? 1);
+
+  const slugPath = Array.isArray(slug) ? slug.join("/") : slug;
 
   let posts: BlogPost[] = [];
   let totalPages = 1;
@@ -25,7 +27,7 @@ export default async function BlogCategoryPage({
 
   try {
     const data = await blogPostService.getAll({
-      categorySlug: slug,
+      categorySlug: slugPath,
       limit: 6,
       page,
       populate: "categories",
@@ -33,7 +35,13 @@ export default async function BlogCategoryPage({
 
     posts = data.results;
     totalPages = data.totalPages;
-    categoryName = posts[0]?.categories?.find(cat => cat.slug === slug)?.name || slug;
+
+    // Lấy category name khớp với slug cuối (quan trọng)
+    const currentSlug = Array.isArray(slug) ? slug[slug.length - 1] : slug;
+
+    categoryName =
+      posts[0]?.categories?.find((cat) => cat.slug === currentSlug)?.name ??
+      currentSlug;
   } catch (err) {
     return notFound();
   }
