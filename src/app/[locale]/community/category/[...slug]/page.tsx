@@ -70,7 +70,7 @@ export default async function BlogCategoryPage({
                 className="group block bg-white/90 border border-orange-100 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden"
               >
                 {/* IMAGE */}
-                <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+                {/* <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
                   <Image
                     src={getImageUrl(post.coverImage)}
                     alt={post.coverImageAlt || post.title}
@@ -78,7 +78,7 @@ export default async function BlogCategoryPage({
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                </div>
+                </div> */}
 
                 {/* CONTENT */}
                 <div className="p-4">
