@@ -2,6 +2,8 @@
 
 import { useCart } from "@/stores/useCartStore";
 import {
+  AlertTriangle,
+  Banknote,
   CheckCircle,
   Clock,
   Info,
@@ -24,6 +26,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import { dealSettingService } from "@/services/dealSetting.service";
+import { DealOptionConfig } from "@/types/dealSetting";
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -179,16 +182,34 @@ export default function CheckoutPage() {
     const fetchSettings = async () => {
       try {
         const data = await dealSettingService.getAll({});
+        console.log("data", data);
         if (data && data.results && data.results.length) {
+          console.log("data", data);
+
           const setting = data.results[0];
           setSettings(setting);
 
-          // Logic chọn mặc định nếu phương thức mặc định bị tắt
-          if (!setting.allowFastDelivery && setting.allowScheduledDelivery) {
+          // --- Logic chọn mặc định dựa trên cấu hình mới ---
+
+          // 1. Kiểm tra Giao hàng: Nếu Giao nhanh bị tắt (.value === false) và Hẹn giờ đang bật
+          if (
+            !setting.fastDelivery?.value &&
+            setting.scheduledDelivery?.value
+          ) {
             setDeliveryOption("scheduled");
           }
-          if (!setting.allowCashPayment && setting.allowBankTransfer) {
+          // Ngược lại, nếu Giao nhanh bật, mặc định chọn immediate (hoặc giữ nguyên state ban đầu)
+          else if (setting.fastDelivery?.value) {
+            setDeliveryOption("immediate");
+          }
+
+          // 2. Kiểm tra Thanh toán: Nếu Tiền mặt bị tắt và Chuyển khoản đang bật
+          if (!setting.cashPayment?.value && setting.bankTransfer?.value) {
             setPaymentMethod("bank");
+          }
+          // Ngược lại, nếu Tiền mặt bật, mặc định chọn cod
+          else if (setting.cashPayment?.value) {
+            setPaymentMethod("cod");
           }
         }
       } catch (error) {
@@ -352,6 +373,16 @@ export default function CheckoutPage() {
     );
   };
 
+  const shouldShowNote = (config: DealOptionConfig) => {
+    if (!config || !config.activeNote || !config.note) return false;
+
+    if (config.showNoteWhen === "always") return true;
+    if (config.showNoteWhen === "on" && config.value === true) return true;
+    if (config.showNoteWhen === "off" && config.value === false) return true;
+
+    return false;
+  };
+
   return (
     <div className="min-h-screen bg-[#fffaf5] text-[#3b2f26] px-4 py-8 flex justify-center font-sans">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -415,7 +446,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* RIGHT: Summary & Action (4 cols) */}
-        <div className="lg:col-span-4 bg-white text-sm border border-black/10 rounded-xl shadow-sm p-6 space-y-5 h-fit">
+        <div className="lg:col-span-4 bg-white text-sm border border-black/10 rounded-xl shadow-sm p-6 space-y-4 h-fit">
           {/* ADDRESS */}
           <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
             <div className="flex justify-between items-start mb-2">
@@ -449,11 +480,9 @@ export default function CheckoutPage() {
           </div>
 
           {/* Form Info */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block font-semibold mb-1 text-xs text-gray-600 uppercase">
-                Tên người nhận
-              </label>
+              <label className="block font-medium mb-1">Tên người nhận</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -461,9 +490,7 @@ export default function CheckoutPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold mb-1 text-xs text-gray-600 uppercase">
-                Số điện thoại
-              </label>
+              <label className="block font-medium">Số điện thoại</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -472,125 +499,229 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Delivery Time */}
-          {/* 1. Phần Giao hàng - Chỉ hiện nếu ít nhất 1 cái được bật */}
-          {(settings.allowFastDelivery || settings.allowScheduledDelivery) && (
-            <div className="bg-blue-50 p-3 rounded border border-blue-100">
-              <div className="flex items-center gap-2 mb-2 text-blue-800 font-semibold">
-                <Clock size={16} /> Thời gian giao
-              </div>
-              <div className="space-y-2">
-                {/* Giao ngay */}
-                {settings.allowFastDelivery && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={deliveryOption === "immediate"}
-                      onChange={() => setDeliveryOption("immediate")}
-                    />
-                    Giao ngay
-                  </label>
-                )}
+          {/* Delivery Time Section */}
+          <div className="space-y-4">
+            {/* ======================= 1. SECTION GIAO HÀNG ======================= */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-gray-600 mb-4 flex item-centers gap-2">
+                <Clock size={18} className="text-blue-600" />
+                Thời gian giao hàng
+              </h4>
 
-                {/* Hẹn giờ */}
-                {settings.allowScheduledDelivery && (
-                  <>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={deliveryOption === "scheduled"}
-                        onChange={() => setDeliveryOption("scheduled")}
-                        className="mt-1"
-                      />
-                      <span>Hẹn giờ</span>
-                    </label>
-
-                    {deliveryOption === "scheduled" && (
-                      <div className="space-y-2 mt-2 pl-6">
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">
-                            Chọn ngày
-                          </label>
+              {/* Trường hợp A: Có ít nhất 1 phương thức được BẬT -> Hiện Box chọn */}
+              {settings?.fastDelivery?.value ||
+              settings?.scheduledDelivery?.value ? (
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm transition-all">
+                  <div className="space-y-4">
+                    {/* --- Option 1: Giao nhanh (Khi BẬT) --- */}
+                    {settings.fastDelivery?.value && (
+                      <div className="flex flex-col gap-1">
+                        <label className="flex items-center gap-3 cursor-pointer group">
                           <input
-                            type="date"
-                            value={scheduledDate}
-                            onChange={(e) => setScheduledDate(e.target.value)}
-                            className="w-full border rounded px-2 py-1.5 text-sm"
+                            type="radio"
+                            name="delivery"
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            checked={deliveryOption === "immediate"}
+                            onChange={() => setDeliveryOption("immediate")}
                           />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">
-                            Chọn khung giờ
-                          </label>
-                          <select
-                            value={selectedTimeSlot}
-                            onChange={(e) =>
-                              setSelectedTimeSlot(e.target.value)
-                            }
-                            className="w-full border rounded px-2 py-1.5 text-sm"
-                          >
-                            <option value="">-- Chọn khung giờ --</option>
-                            {/* TIME_SLOTS map here */}
-                          </select>
-                        </div>
+                          <span className="font-medium text-gray-800 group-hover:text-blue-700 transition-colors">
+                            Giao nhanh ngay
+                          </span>
+                        </label>
+                        {/* Note con của Giao nhanh */}
+                        {shouldShowNote(settings.fastDelivery) && (
+                          <p className="ml-7 text-xs text-blue-600 italic leading-relaxed">
+                            * {settings.fastDelivery.note}
+                          </p>
+                        )}
                       </div>
                     )}
-                  </>
+
+                    {/* --- Option 2: Hẹn giờ (Khi BẬT) --- */}
+                    {settings.scheduledDelivery?.value && (
+                      <div
+                        className={`flex flex-col gap-1 ${
+                          settings.fastDelivery?.value
+                            ? "border-t border-blue-100 pt-3"
+                            : ""
+                        }`}
+                      >
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="radio"
+                            name="delivery"
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            checked={deliveryOption === "scheduled"}
+                            onChange={() => setDeliveryOption("scheduled")}
+                          />
+                          <span className="font-medium text-gray-800 group-hover:text-blue-700 transition-colors">
+                            Hẹn giờ nhận hàng
+                          </span>
+                        </label>
+
+                        {/* Note con của Hẹn giờ */}
+                        {shouldShowNote(settings.scheduledDelivery) && (
+                          <p className="ml-7 text-xs text-blue-600 italic leading-relaxed">
+                            * {settings.scheduledDelivery.note}
+                          </p>
+                        )}
+
+                        {/* Form DatePicker */}
+                        {deliveryOption === "scheduled" && (
+                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in-down">
+                            <div>
+                              <label className="block text-[11px] font-bold text-blue-700 mb-1">
+                                Chọn ngày
+                              </label>
+                              <input
+                                type="date"
+                                value={scheduledDate}
+                                onChange={(e) =>
+                                  setScheduledDate(e.target.value)
+                                }
+                                className="w-full border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-blue-700 mb-1">
+                                Chọn khung giờ
+                              </label>
+                              <select
+                                value={selectedTimeSlot}
+                                onChange={(e) =>
+                                  setSelectedTimeSlot(e.target.value)
+                                }
+                                className="w-full border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="">-- Khung giờ --</option>
+                                {TIME_SLOTS.map((slot) => (
+                                  <option key={slot.value} value={slot.value}>
+                                    {slot.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Trường hợp B: Cả 2 đều TẮT -> Hiện Box báo bảo trì chung */
+                <div className="p-4 bg-orange-50 text-orange-700 text-sm rounded-xl border border-orange-200 flex items-center gap-3">
+                  <p>
+                    Hiện tại dịch vụ giao hàng đang tạm dừng hoạt động. Vui lòng
+                    liên hệ hotline để được hỗ trợ nhanh nhất.
+                  </p>
+                </div>
+              )}
+
+              {/* Trường hợp C: Các Note hiển thị khi Option bị TẮT (Giải thích lý do) */}
+              {!settings?.fastDelivery?.value &&
+                settings?.scheduledDelivery?.value &&
+                shouldShowNote(settings?.fastDelivery) && (
+                  <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-yellow-600 flex gap-2 items-start">
+                    <span>{settings.fastDelivery.note}</span>
+                  </div>
                 )}
+
+              {!settings?.scheduledDelivery?.value &&
+                settings?.fastDelivery?.value &&
+                shouldShowNote(settings?.scheduledDelivery) && (
+                  <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-yellow-600 flex gap-2 items-start">
+                    <span>{settings.scheduledDelivery.note}</span>
+                  </div>
+                )}
+            </div>
+
+            {/* ======================= 2. SECTION THANH TOÁN ======================= */}
+            <div className="pt-6 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-600 mb-4 flex item-centers gap-2">
+                <Banknote size={20} className="text-green-600" />
+                Phương thức thanh toán
+              </h4>
+
+              {/* Trường hợp A: Có ít nhất 1 phương thức BẬT */}
+              {settings?.cashPayment?.value || settings?.bankTransfer?.value ? (
+                <div className="space-y-4">
+                  {/* --- Option 1: Tiền mặt (Khi BẬT) --- */}
+                  {settings.cashPayment?.value && (
+                    <div className="flex flex-col gap-1">
+                      <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                        <input
+                          type="radio"
+                          name="pay"
+                          checked={paymentMethod === "cod"}
+                          onChange={() => setPaymentMethod("cod")}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">
+                          Tiền mặt (COD)
+                        </span>
+                      </label>
+                      {shouldShowNote(settings.cashPayment) && (
+                        <p className="ml-4 text-xs text-gray-500 italic">
+                          * {settings.cashPayment.note}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* --- Option 2: Chuyển khoản (Khi BẬT) --- */}
+                  {settings.bankTransfer?.value && (
+                    <div className="flex flex-col gap-1">
+                      <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                        <input
+                          type="radio"
+                          name="pay"
+                          checked={paymentMethod === "bank"}
+                          onChange={() => setPaymentMethod("bank")}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">
+                          Chuyển khoản Ngân hàng / QR
+                        </span>
+                      </label>
+                      {/* Note dạng STK nổi bật hơn */}
+                      {shouldShowNote(settings.bankTransfer) && (
+                        <div className="ml-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100 text-xs text-yellow-800 leading-relaxed">
+                          {settings.bankTransfer.note}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Trường hợp B: Cả 2 đều TẮT -> Báo bảo trì */
+                <div className="p-4 bg-red-50 text-red-600 text-sm rounded-xl border border-red-100 flex items-center gap-2">
+                  <span>
+                    Hiện tại các phương thức thanh toán đang bảo trì. Vui lòng
+                    liên hệ hotline để được hỗ trợ nhanh nhất.
+                  </span>
+                </div>
+              )}
+
+              {/* Trường hợp C: Các Note hiển thị khi Option bị TẮT */}
+              <div className="space-y-2 mt-3">
+                {!settings?.cashPayment?.value &&
+                  settings?.bankTransfer?.value &&
+                  shouldShowNote(settings?.cashPayment) && (
+                    <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-gray-600 italic">
+                      {settings.cashPayment.note}
+                    </div>
+                  )}
+
+                {!settings?.bankTransfer?.value &&
+                  settings?.cashPayment?.value &&
+                  shouldShowNote(settings?.bankTransfer) && (
+                    <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-gray-600 italic">
+                      {settings.bankTransfer.note}
+                    </div>
+                  )}
               </div>
             </div>
-          )}
-
-          {/* Trường hợp tắt tất cả (Bảo trì) */}
-          {!settings.allowFastDelivery && !settings.allowScheduledDelivery && (
-            <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
-              Hiện tại chúng tôi tạm dừng dịch vụ giao hàng. Vui lòng liên hệ
-              hotline để được hỗ trợ.
-            </div>
-          )}
-
-          {/* Payment */}
-          {/* 2. Phần Thanh toán */}
-          {(settings.allowCashPayment || settings.allowBankTransfer) && (
-            <div className="border-t pt-3">
-              <h3 className="font-semibold mb-2">Thanh toán</h3>
-              <div className="space-y-2">
-                {/* Tiền mặt */}
-                {settings.allowCashPayment && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="pay"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                    />
-                    Tiền mặt (COD)
-                  </label>
-                )}
-
-                {/* Chuyển khoản */}
-                {settings.allowBankTransfer && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="pay"
-                      checked={paymentMethod === "bank"}
-                      onChange={() => setPaymentMethod("bank")}
-                    />
-                    Chuyển khoản / QR
-                  </label>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Trường hợp tắt tất cả (Bảo trì) */}
-          {!settings.allowCashPayment && !settings.allowBankTransfer && (
-            <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
-              Hiện tại các phương thức thanh toán đang được bảo trì. Vui lòng
-              quay lại sau.
-            </div>
-          )}
+          </div>
 
           {/* Note */}
           <div>
