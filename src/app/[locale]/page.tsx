@@ -3,6 +3,8 @@ import ButtonPrimary from "@/shared/ButtonPrimary";
 import React, { useState } from "react";
 
 function PageHome() {
+  const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/claritylab";
+
   // Khởi tạo state với mảng chứa tất cả index từ 0 đến 3 để mặc định mở hết
   const [openIndexes, setOpenIndexes] = useState([0, 1, 2, 3]);
 
@@ -295,7 +297,7 @@ function PageHome() {
           </p>
           <p>Ở đây.</p>
           <div>
-            <ButtonPrimary targetBlank href="https://www.facebook.com/groups/1656079602441991?locale=vi_VN">Bước vào</ButtonPrimary>
+            <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL}>Bước vào</ButtonPrimary>
           </div>
           <p>Ta sẽ cùng bắt đầu từ đó.</p>
         </div>

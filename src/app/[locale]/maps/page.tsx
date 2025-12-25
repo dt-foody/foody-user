@@ -2,6 +2,8 @@ import Link from "next/link";
 import React from "react";
 
 function PageMaps() {
+  const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/claritylab";
+
   return (
     <main
       role="main"
@@ -72,7 +74,7 @@ function PageMaps() {
             <p>
               Cộng đồng sinh hoạt chính tại{" "}
               <a
-                href="https://www.facebook.com/groups/1656079602441991?locale=vi_VN"
+                href={FACEBOOK_GROUP_URL}
                 className="text-blue-600 font-bold mx-1"
               >
                 👉 Facebook
