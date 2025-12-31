@@ -9,6 +9,8 @@ import {
   Info,
   Loader2,
   MapPin,
+  Store, // Icon cửa hàng
+  Bike, // Icon giao hàng
   Ticket,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -103,6 +105,11 @@ export default function CheckoutPage() {
   const [loadingSetting, setLoadingSetting] = useState(false);
   const [settings, setSettings] = useState<any>({});
 
+  // 🔥 State mới: Loại hình nhận hàng
+  const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">(
+    "delivery"
+  );
+
   // 🔥 Local state cho khung giờ (UI only)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
@@ -110,6 +117,30 @@ export default function CheckoutPage() {
 
   // Thông tin địa chỉ tạm thời khi người dùng thao tác trên bản đồ
   const [tempAddress, setTempAddress] = useState<any>(null);
+
+  // --- LOGIC TÍNH TOÁN HIỂN THỊ (Overrides Store Logic) ---
+  // Nếu là Pickup, phí ship = 0. Nếu Delivery, dùng phí ship từ store.
+  const displayShippingFee =
+    fulfillmentType === "pickup" ? 0 : originalShippingFee;
+
+  // Tính lại tổng tiền hiển thị dựa trên phí ship mới
+  // Công thức: Tổng hiển thị = (Subtotal + Surcharge - Discounts) + DisplayShipping
+  // Tuy nhiên, finalTotal trong store = (Subtotal + Surcharge - Discounts) + originalShippingFee
+  // => DisplayTotal = finalTotal - originalShippingFee + displayShippingFee
+  // Lưu ý: Cần xử lý trường hợp mã freeship (shippingDiscount) nếu chuyển sang pickup
+  const displayFinalTotal = React.useMemo(() => {
+    // Lấy phần tiền hàng (chưa ship)
+    const totalWithoutShip =
+      finalTotal - (originalShippingFee - shippingDiscount);
+
+    // Nếu Pickup: Ship = 0, Discount Ship = 0
+    if (fulfillmentType === "pickup") {
+      return Math.max(0, totalWithoutShip + 0);
+    }
+
+    // Nếu Delivery: Giữ nguyên logic store
+    return finalTotal;
+  }, [finalTotal, originalShippingFee, shippingDiscount, fulfillmentType]);
 
   // Xử lý khi chọn vị trí trên HereMap
   const handleLocationSelect = (data: {
@@ -170,11 +201,19 @@ export default function CheckoutPage() {
     }
   }, [selectedTimeSlot, setScheduledTime]);
 
-  // Tự động tính lại phí ship khi đổi địa chỉ hoặc giờ giao
+  // Tự động tính lại phí ship khi đổi địa chỉ hoặc giờ giao (Chỉ khi ở chế độ Delivery)
   useEffect(() => {
-    const timer = setTimeout(() => recalculateShippingFee(), 500);
-    return () => clearTimeout(timer);
-  }, [recalculateShippingFee, deliveryOption, scheduledDate, scheduledTime]);
+    if (fulfillmentType === "delivery") {
+      const timer = setTimeout(() => recalculateShippingFee(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    recalculateShippingFee,
+    deliveryOption,
+    scheduledDate,
+    scheduledTime,
+    fulfillmentType,
+  ]);
 
   // Get Deal setting
   useEffect(() => {
@@ -182,16 +221,23 @@ export default function CheckoutPage() {
     const fetchSettings = async () => {
       try {
         const data = await dealSettingService.getAll({});
-        console.log("data", data);
         if (data && data.results && data.results.length) {
-          console.log("data", data);
-
           const setting = data.results[0];
           setSettings(setting);
 
           // --- Logic chọn mặc định dựa trên cấu hình mới ---
 
-          // 1. Kiểm tra Giao hàng: Nếu Giao nhanh bị tắt (.value === false) và Hẹn giờ đang bật
+          // 1. Logic chọn Fulfilment Default
+          // Nếu HomeDelivery tắt và StorePickup bật -> set Pickup
+          if (!setting.homeDelivery?.value && setting.storePickup?.value) {
+            setFulfillmentType("pickup");
+          }
+          // Ngược lại mặc định là delivery (nếu delivery bật hoặc cả 2 đều bật/tắt)
+          else {
+            setFulfillmentType("delivery");
+          }
+
+          // 2. Kiểm tra Giao hàng: Nếu Giao nhanh bị tắt (.value === false) và Hẹn giờ đang bật
           if (
             !setting.fastDelivery?.value &&
             setting.scheduledDelivery?.value
@@ -203,7 +249,7 @@ export default function CheckoutPage() {
             setDeliveryOption("immediate");
           }
 
-          // 2. Kiểm tra Thanh toán: Nếu Tiền mặt bị tắt và Chuyển khoản đang bật
+          // 3. Kiểm tra Thanh toán: Nếu Tiền mặt bị tắt và Chuyển khoản đang bật
           if (!setting.cashPayment?.value && setting.bankTransfer?.value) {
             setPaymentMethod("bank");
           }
@@ -239,10 +285,13 @@ export default function CheckoutPage() {
       toast.error("Vui lòng nhập đủ tên và số điện thoại!");
       return;
     }
-    if (!selectedAddress) {
+    
+    // Validate Địa chỉ chỉ khi là Giao hàng
+    if (fulfillmentType === "delivery" && !selectedAddress) {
       toast.error("Vui lòng chọn địa chỉ giao hàng!");
       return;
     }
+    
     if (!cartItems.length) {
       toast.error("Giỏ hàng trống!");
       return;
@@ -293,17 +342,28 @@ export default function CheckoutPage() {
       }
     });
 
+    // 🔥 Override Shipping Fee cho Pickup
+    const finalShippingFee =
+      fulfillmentType === "pickup" ? 0 : originalShippingFee;
+
+    const finalOrderType =
+      fulfillmentType === "pickup" ? "TakeAway" : "Delivery";
+
     // 5. Tạo Payload chuẩn gửi Backend
     const payload = {
+      orderType: finalOrderType,
+
       // Loại bỏ các trường UI không cần thiết từ item
       items: cartItems.map(({ _image, cartId, ...rest }) => rest),
 
       coupons: payloadCoupons,
       vouchers: payloadVouchers,
       totalAmount: subtotal,
-      discountAmount: itemDiscount + shippingDiscount,
-      shippingFee: originalShippingFee,
-      grandTotal: finalTotal,
+      // Nếu pickup, giảm giá vận chuyển coi như = 0
+      discountAmount:
+        itemDiscount + (fulfillmentType === "pickup" ? 0 : shippingDiscount),
+      shippingFee: finalShippingFee,
+      grandTotal: displayFinalTotal, // Sử dụng giá trị hiển thị đã tính toán
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
@@ -331,7 +391,7 @@ export default function CheckoutPage() {
         },
       },
       deliveryTime: deliveryTimePayload,
-      note: note.trim(),
+      note: note && note.trim(),
     };
 
     try {
@@ -447,42 +507,88 @@ export default function CheckoutPage() {
 
         {/* RIGHT: Summary & Action (4 cols) */}
         <div className="lg:col-span-4 bg-white text-sm border border-black/10 rounded-xl shadow-sm p-6 space-y-4 h-fit">
-          {/* ADDRESS */}
-          <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-sm flex items-center gap-1.5 text-primary-700">
-                <MapPin size={16} /> Địa chỉ giao hàng
-              </h3>
-              <button
-                onClick={() => {
-                  // router.push("/account?tab=addresses&redirect_uri=/checkout");
-                  setIsAddressModalOpen(true);
-                }}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                Thay đổi
-              </button>
-            </div>
-            {selectedAddress ? (
-              <div>
-                <p className="text-sm font-bold text-gray-900">
-                  {selectedAddress.label}
-                </p>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {selectedAddress.fullAddress}
-                </p>
+          {/* --- FULFILLMENT TABS (SWITCHER) --- */}
+          {/* Chỉ hiện nếu settings đã load và có ít nhất 1 option BẬT */}
+          {!loadingSetting &&
+            (settings.homeDelivery?.value || settings.storePickup?.value) && (
+              <div className="flex p-1 bg-gray-100 rounded-lg mb-2">
+                {settings.homeDelivery?.value && (
+                  <button
+                    onClick={() => setFulfillmentType("delivery")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-semibold transition-all ${
+                      fulfillmentType === "delivery"
+                        ? "bg-white text-primary-600 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <Bike size={16} /> Giao hàng
+                  </button>
+                )}
+
+                {settings.storePickup?.value && (
+                  <button
+                    onClick={() => setFulfillmentType("pickup")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-semibold transition-all ${
+                      fulfillmentType === "pickup"
+                        ? "bg-white text-primary-600 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <Store size={16} /> Mang về
+                  </button>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-yellow-600">
-                Vui lòng thiết lập địa chỉ để đặt hàng!
-              </p>
             )}
-          </div>
+
+          {/* Warning notes cho Tabs */}
+          {fulfillmentType === "delivery" &&
+            shouldShowNote(settings?.homeDelivery) && (
+              <div className="text-xs text-blue-600 italic px-1">
+                {settings?.homeDelivery?.note}
+              </div>
+            )}
+          {fulfillmentType === "pickup" &&
+            shouldShowNote(settings?.storePickup) && (
+              <div className="text-xs text-blue-600 italic px-1">
+                {settings?.storePickup?.note}
+              </div>
+            )}
+
+          {/* --- ADDRESS SECTION (Chỉ hiện khi Delivery) --- */}
+          {fulfillmentType === "delivery" && (
+            <div className="p-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg animate-fade-in">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-sm flex items-center gap-1.5 text-gray-600">
+                  <MapPin size={16} /> Địa chỉ giao hàng
+                </h3>
+                <button
+                  onClick={() => setIsAddressModalOpen(true)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Thay đổi
+                </button>
+              </div>
+              {selectedAddress ? (
+                <div>
+                  <p className="text-sm font-bold text-gray-900">
+                    {selectedAddress.label}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {selectedAddress.fullAddress}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-yellow-600">
+                  Vui lòng thiết lập địa chỉ để đặt hàng!
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Form Info */}
           <div className="space-y-4">
             <div>
-              <label className="block font-medium mb-1">Tên người nhận</label>
+              <label className="block font-medium mb-2">Tên người nhận</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -490,7 +596,7 @@ export default function CheckoutPage() {
               />
             </div>
             <div>
-              <label className="block font-medium">Số điện thoại</label>
+              <label className="block font-medium mb-2">Số điện thoại</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -816,7 +922,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between border-t pt-2 mt-1 font-bold text-lg">
               <span>Tổng cộng</span>
               <span className="text-[#b9915f]">
-                {finalTotal.toLocaleString("vi-VN")}đ
+                {displayFinalTotal.toLocaleString("vi-VN")}đ
               </span>
             </div>
           </div>
@@ -831,7 +937,7 @@ export default function CheckoutPage() {
             {loading ? (
               <Loader2 className="animate-spin mx-auto" />
             ) : (
-              `Đặt hàng • ${finalTotal.toLocaleString("vi-VN")}đ`
+              `Đặt hàng • ${displayFinalTotal.toLocaleString("vi-VN")}đ`
             )}
           </button>
         </div>

@@ -12,7 +12,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 0;
-const CART_STORAGE_KEY = "foody_cart_v15"; // Bump version để reset state cũ tránh lỗi
+const CART_STORAGE_KEY = "foody_cart_v16"; // Bump version để reset state cũ tránh lỗi
 const DATA_TTL_MS = 60_000; // 1 phút cache
 
 export type DeliveryOption = "immediate" | "scheduled";

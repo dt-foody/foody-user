@@ -14,6 +14,10 @@ export interface DealSetting {
   scheduledDelivery: DealOptionConfig;
   cashPayment: DealOptionConfig;
   bankTransfer: DealOptionConfig;
+
+  // --- New Options ---
+  homeDelivery: DealOptionConfig; // Bật/tắt tính năng giao hàng
+  storePickup: DealOptionConfig;  // Bật/tắt tính năng tự đến lấy
 }
 
 export type DealSettingPaginate = Paginated<DealSetting>;

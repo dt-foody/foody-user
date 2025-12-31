@@ -166,4 +166,6 @@ export interface CreateOrderInput {
   payment: Pick<PaymentInfo, "method">; // Chỉ gửi method
   shipping?: ShippingInfo | null; // Gửi cả address và status (hoặc null)
   note?: string;
+
+  orderType?: "TakeAway" | "DineIn" | "Delivery";
 }
