@@ -443,13 +443,17 @@ export default function ComboSelectionModal() {
   const getDiscountTagText = () => {
     if (!comboForSelection) return null;
 
-    // QUY TẮC MỚI:
-    // 1. Nếu là DISCOUNT: hiện % giảm nội bộ
     if (
       comboForSelection.pricingMode === ComboPricingMode.DISCOUNT &&
       comboForSelection.discountValue > 0
     ) {
-      return `-${comboForSelection.discountValue}%`;
+      if (comboForSelection.discountType === DiscountType.PERCENT) {
+        // 1. Nếu là DISCOUNT: hiện % giảm nội bộ
+        return `-${comboForSelection.discountValue}%`;
+      } else {
+        // 2. Nếu là AMOUNT (ví dụ 30000) -> hiển thị -30k
+        return `-${Math.round(comboForSelection.discountValue / 1000)}k`;
+      }
     }
 
     // 2. Nếu FIXED hoặc SLOT_PRICE: hiện tag số tiền giảm (Market - Final)
