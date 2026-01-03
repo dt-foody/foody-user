@@ -1,9 +1,21 @@
 "use client";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import React, { useState } from "react";
+import homepage_1 from "@/images/homepage_1.png";
+import homepage_2 from "@/images/homepage_2.png";
+import homepage_3 from "@/images/homepage_3.png";
+import homepage_4 from "@/images/homepage_4.png";
+import homepage_5 from "@/images/homepage_5.png";
+import homepage_6 from "@/images/homepage_6.png";
+import homepage_7 from "@/images/homepage_7.png";
+import homepage_8 from "@/images/homepage_8.png";
+import homepage_9 from "@/images/homepage_9.png";
+
 
 function PageHome() {
   const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/claritylab";
+
+  const getHomepageImage = (i: number) => `@/images/homepage_${i}.png`;
 
   // Khởi tạo state với mảng chứa tất cả index từ 0 đến 3 để mặc định mở hết
   const [openIndexes, setOpenIndexes] = useState([0, 1, 2, 3]);
@@ -42,43 +54,48 @@ function PageHome() {
   return (
     <main
       role="main"
-      className="nc-PageHome relative !bg-neutral-50 text-neutral-800 antialiased pb-20"
+      className="nc-PageHome relative !bg-neutral-50 text-neutral-800 antialiased pb-20 max-w-[100vw] overflow-x-hidden"
     >
       {/* Hero Section */}
       <section className="container max-w-4xl mx-auto px-6 pt-12 pb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 leading-tight uppercase tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 leading-tight uppercase tracking-tight text-center">
           ĐỦ RỒI! ĐÃ ĐẾN LÚC LẤY LẠI QUYỀN LỰC
         </h1>
-        <p className="mt-2">Có lẽ, bạn đã gồng quá lâu.</p>
+        <p className="mt-2 text-center italic">Có lẽ, bạn đã gồng quá lâu.</p>
       </section>
 
       {/* The Loop Section */}
       <section className="container max-w-4xl mx-auto px-6 py-6 border-t border-neutral-100">
-        <h2 className="mb-4">Bạn có thấy quen với vòng lặp này không?</h2>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-neutral-600">
-          {[
-            "Không tự tin",
-            "Chần chừ",
-            "Không hành động",
-            "Tiếp tục chuẩn bị",
-            "Không có thành quả",
-            "Nghi ngờ",
-            "Đánh giá thấp chính những gì mình đã cố gắng",
-          ].map((item, i, arr) => (
-            <React.Fragment key={i}>
-              <span className="px-3 py-1 bg-white border border-neutral-200 rounded-full">
-                {item}
-              </span>
-              {i < arr.length - 1 && (
-                <span className="text-neutral-400">→</span>
-              )}
-            </React.Fragment>
-          ))}
+        <h2 className="mb-4 font-bold">Bạn có thấy quen với vòng lặp này không?</h2>
+        <div className="w-full h-[200px] md:h-[350px] lg:h-[450px] display-flex justify-center items-center">
+          <img
+            src={homepage_1.src}
+            alt="The Loop"
+            className="w-full h-full object-cover object-center"
+          />
         </div>
         <div className="mt-6 space-y-4">
           <p className="font-bold text-neutral-900">Đúng vậy.</p>
-          <p>Bạn đang ở trong một lồng kính —</p>
-          <p>
+          <p>Bạn đang ở trong
+            <div
+              className="w-[200px] h-[70px] flex items-center justify-center text-white font-bold text-xl"
+              style={{
+                backgroundImage: `url(${homepage_2.src})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                display: 'inline-block',
+                textAlign: 'center',
+                color: 'black',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                lineHeight: '40px',
+              }}
+            >
+
+              <span>một lồng kính</span>
+            </div>
+          </p>
+          <p className="!mt-0">
             do chính bạn tạo ra, trong những ngày phải{" "}
             <strong>tự đứng vững một mình</strong>.
           </p>
@@ -97,16 +114,41 @@ function PageHome() {
             Tại sao bạn lại rơi vào đây?
           </h2>
           <p className="text-sm font-medium">
-            Vì bạn <b>có năng lực</b>.
+            Vì bạn <div
+              className="w-[250px] h-[70px] flex items-center justify-center text-white font-bold text-xl"
+              style={{
+                backgroundImage: `url(${homepage_3.src})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                display: 'inline-block',
+                textAlign: 'center',
+                color: 'black',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                lineHeight: '70px',
+              }}
+            >
+              có năng lực
+            </div>
           </p>
-          <p className="italic text-sm">
+          <p className="italic text-sm !mt-0"  
+          >
             “Nghe mâu thuẫn à? Để mình nói tiếp nhé.”
           </p>
           <p>
             Bạn có mục tiêu lớn. Bạn đã từng đạt được những thành tựu mà không
             phải ai cũng làm được. Và chính vì vậy…
           </p>
-          <p className="font-bold">Bạn sợ.</p>
+          <p className="font-bold relative">
+            Bạn sợ.
+            <div className="w-[250px] h-[40px] display-flex justify-center items-center inline-block absolute left-[-20px]">
+              <img
+                src={homepage_4.src}
+                alt="The Loop"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+          </p>
           <p>Sợ thất bại.</p>
           <p>Sợ bị phán xét.</p>
           <p className="italic">
@@ -114,7 +156,7 @@ function PageHome() {
           </p>
           <p>Thế nên…</p>
           <p>
-            Bạn đã đối xử với bản thân rất khắc nghiệt, từ lúc chưa bắt đầu.
+            Bạn đã đối xử với bản thân rất <span className="font-bold line-through">khắc nghiệt</span>, từ lúc chưa bắt đầu.
           </p>
         </div>
 
@@ -136,7 +178,18 @@ function PageHome() {
               so sánh…
             </p>
             <p>Bạn muốn bước ra, nhưng lại quá tải.</p>
-            <p>Không biết bắt đầu từ đâu. Gỡ rối thế nào.</p>
+            <p className="relative">
+                Không biết bắt đầu từ đâu.{" "}
+                <span className="font-bold">Gỡ rối</span>{" "}
+                thế nào.
+              <div className="w-[200px] h-[200px] md:w-[200px] md:h-[200px] lg:w-[250px] lg:h-[250px] display-flex justify-center items-center inline-block absolute top-[-90px] left-[65%] md:top-[-120px] md:left-[45%] md:translate-x-[-50%]">
+                <img
+                  src={homepage_5.src}
+                  alt="The Loop"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
+            </p>
           </div>
         </div>
       </section>
@@ -148,12 +201,19 @@ function PageHome() {
         </h2>
         <div className="space-y-4">
           <p>Không phải để trốn chạy.</p>
-          <p>
+          <p className="relative">
             {" "}
             Mà để{" "}
             <strong>
               lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.
             </strong>
+             <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-90px] right-[10%] md:top-[-165px] md:right-[-10%] md:translate-x-[-50%]">
+                <img
+                  src={homepage_6.src}
+                  alt="The Loop"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
           </p>
           <p>
             Một chốn <strong>“Ở đây.”</strong> — ngay bên cạnh, quan sát, cùng
@@ -189,13 +249,20 @@ function PageHome() {
           Tại sao là lúc này?
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
           <p className="font-bold text-md">Vì bạn sắp kiệt sức.</p>
           <p>Nếu cứ tiếp tục như vậy, không chắc bạn còn đủ lực để vực dậy.</p>
           <p>Bạn đã rất cố gắng.</p>
           <p>Đã kiên cường đi qua những khoảng tối mà không ai thấy.</p>
           <p>Nhưng niềm tin vào chính mình</p>
           <p>… đã mòn đi từ lúc nào.</p>
+          <div className="w-[150px] h-[150px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[10px] right-[-10%] md:top-[-80px] md:right-[-10%] md:translate-x-[-50%]">
+            <img
+              src={homepage_7.src}
+              alt="The Loop"
+              className="w-full h-full object-cover object-center"
+            />
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -211,12 +278,19 @@ function PageHome() {
           </ul>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 relative">
           <p className="font-bold text-md">
             Và vì bạn không thể trì hoãn thêm nữa.
           </p>
           <p>Thời gian không quay lại.</p>
           <p>Và cuộc đời này cũng không kéo dài mãi để bạn “chuẩn bị thêm”.</p>
+          <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-100px] right-[-30%] md:top-[-140px] md:right-[-10%] md:translate-x-[-50%]">
+            <img
+              src={homepage_8.src}
+              alt="The Loop"
+              className="w-full h-full object-cover object-center"
+            />
+          </div>
         </div>
       </section>
 
@@ -275,12 +349,20 @@ function PageHome() {
             Mình ở đây để <strong>đi cùng bạn</strong>, chứng kiến khoảnh khắc
             bạn:
           </p>
-          <ul className="list-disc pl-10 space-y-4">
+          <ul className="list-disc pl-10 space-y-4 relative">
             <li>bước qua nỗi sợ,</li>
             <li>tái lập sự tự tin,</li>
             <li>
               và bước vào <strong>cuộc đời thực sự của mình.</strong>
             </li>
+            <div className="w-[200px] h-[200px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-80px] right-[-5%] md:top-[-140px] md:right-[-10%] md:translate-x-[-50%]">
+              <img
+                src={homepage_9.src}
+                alt="The Loop"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+            
           </ul>
           <p>Vì có lẽ,</p>
           <p className="font-bold">
