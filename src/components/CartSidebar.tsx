@@ -32,8 +32,9 @@ import {
 import { getCartItemPrices } from "@/utils/cartHelper";
 import Link from "next/link";
 import AnonymousCheckoutModal from "./AnonymousCheckoutModal";
+import foodImageDefault from "../images/food_image_default.jpg";
 
-const PLACEHOLDER_IMAGE = "https://orderus.au/images/food_image_default.jpg";
+const PLACEHOLDER_IMAGE = foodImageDefault;
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
 
 // --- HELPER COMPONENTS ---
@@ -269,8 +270,9 @@ export default function CartSidebar() {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = PLACEHOLDER_IMAGE;
-  };
+      // PLACEHOLDER_IMAGE là StaticImageData, cần dùng .src để lấy string path
+      e.currentTarget.src = (PLACEHOLDER_IMAGE as any).src || PLACEHOLDER_IMAGE;
+    };
 
   // --- RENDER COUPON PANEL ---
   const renderCouponPanel = () => (

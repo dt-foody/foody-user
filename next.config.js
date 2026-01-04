@@ -55,7 +55,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'orderus.au',
-        pathname: '/*',
+        pathname: '/**',
       }
     ],
   },
