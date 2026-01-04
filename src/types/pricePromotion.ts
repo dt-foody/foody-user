@@ -30,6 +30,9 @@ export interface PricePromotion {
   lastUsedDate?: string | null;
   dailyUsedCount?: number;
 
+  minOrderValue: number;    // Giá trị đơn tối thiểu
+  limitPerOrder: number;    // Giới hạn số lượng FS mỗi đơn
+
   // Audit / soft-delete / timestamps
   createdBy?: string;
   isDeleted?: boolean;
