@@ -400,6 +400,12 @@ export default function ComboSelectionModal() {
       });
     });
 
+    const comboPromo =
+      comboForSelection.promotion &&
+      comboForSelection.promotion.isActive !== false
+        ? comboForSelection.promotion
+        : "";
+
     const itemData = {
       itemType: "Combo" as const,
       item: {
@@ -407,6 +413,7 @@ export default function ComboSelectionModal() {
         name: comboForSelection.name,
         comboPrice: comboForSelection.comboPrice,
         basePrice: 0,
+        promotion: comboPromo,
       },
       totalPrice: finalPrice,
       note: note.trim(),

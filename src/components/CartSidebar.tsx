@@ -18,6 +18,7 @@ import {
   MapPin,
   Ticket,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -270,9 +271,9 @@ export default function CartSidebar() {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-      // PLACEHOLDER_IMAGE là StaticImageData, cần dùng .src để lấy string path
-      e.currentTarget.src = (PLACEHOLDER_IMAGE as any).src || PLACEHOLDER_IMAGE;
-    };
+    // PLACEHOLDER_IMAGE là StaticImageData, cần dùng .src để lấy string path
+    e.currentTarget.src = (PLACEHOLDER_IMAGE as any).src || PLACEHOLDER_IMAGE;
+  };
 
   // --- RENDER COUPON PANEL ---
   const renderCouponPanel = () => (
@@ -537,6 +538,17 @@ export default function CartSidebar() {
                         </div>
                       </div>
                     </div>
+                    {item.promotionWarning && (
+                      <div className="flex items-center gap-1 mt-2 text-[12px] text-orange-700 p-1.5 rounded-md">
+                        <AlertTriangle
+                          size={12}
+                          className="flex-shrink-0"
+                        />
+                        <span className="leading-tight">
+                          {item.promotionWarning}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

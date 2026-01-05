@@ -150,6 +150,10 @@ export default function ProductOptionsModal() {
       }));
     });
 
+    const promoData = (productForOptions as any).promotion;
+    const promotionPayload =
+      promoData && promoData.isActive !== false ? promoData : null;
+
     addItemToCart({
       itemType: "Product",
       item: {
@@ -158,7 +162,7 @@ export default function ProductOptionsModal() {
         basePrice: productForOptions.basePrice,
         salePrice: productForOptions.salePrice || undefined,
         comboPrice: 0,
-        promotion: (productForOptions as any).promotion?.id || null,
+        promotion: promotionPayload, // Truyền Object
       },
       totalPrice: totalPrice,
       note: note.trim(),

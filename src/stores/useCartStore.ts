@@ -12,8 +12,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 0;
-const CART_STORAGE_KEY = "foody_cart_v16"; // Bump version để reset state cũ tránh lỗi
-const DATA_TTL_MS = 60_000; // 1 phút cache
+const CART_STORAGE_KEY = "foody_cart_v16";
+const DATA_TTL_MS = 60_000;
 
 export type DeliveryOption = "immediate" | "scheduled";
 
@@ -27,13 +27,13 @@ const buildVariantKey = (
   itemData: Omit<CartLine, "cartId" | "quantity">
 ): string => {
   const baseId = itemData.item.id;
-
-  // SỬA TẠI ĐÂY: Dùng totalPrice đã tính toán để làm Key định danh
   const appliedPrice = Math.round(itemData.totalPrice);
 
   const promotionTag =
     itemData.item.promotion && itemData.item.promotion !== ""
-      ? itemData.item.promotion
+      ? typeof itemData.item.promotion === "object"
+        ? (itemData.item.promotion as any).id || "promo"
+        : itemData.item.promotion
       : "normal";
 
   if (itemData.itemType === "Product") {
@@ -76,8 +76,53 @@ const buildVariantKey = (
   return `${baseId}:${promotionTag}:${appliedPrice}::`;
 };
 
-// --- TYPE DEFINITIONS ---
+// --- HELPER: TẠO DATA SẢN PHẨM THƯỜNG ---
+const createNormalItemData = (sourceItem: any) => {
+  const normalItemData = { ...sourceItem };
+  delete normalItemData.cartId;
+  delete normalItemData.quantity;
 
+  normalItemData.item = {
+    ...normalItemData.item,
+    promotion: "",
+  };
+
+  if (normalItemData.itemType === "Combo" && normalItemData.comboSnapshot) {
+    normalItemData.totalPrice = normalItemData.comboSnapshot.totalMarketPrice;
+  } else if (normalItemData.itemType === "Product") {
+    let price = normalItemData.item.basePrice;
+    if (normalItemData.options) {
+      Object.values(normalItemData.options)
+        .flat()
+        .forEach((opt: any) => {
+          price += opt.priceModifier;
+        });
+    }
+    normalItemData.totalPrice = price;
+  }
+
+  return normalItemData;
+};
+
+// --- HELPER MỚI: Tính giá gốc (Market Price) của 1 item ---
+const getLineItemMarketPrice = (line: CartLine) => {
+  // 1. Nếu là Combo: Lấy từ snapshot market price
+  if (line.itemType === "Combo") {
+    return line.comboSnapshot?.totalMarketPrice || line.totalPrice;
+  }
+  // 2. Nếu là Product: Base Price + Options
+  let price = line.item.basePrice;
+  if (line.options) {
+    Object.values(line.options)
+      .flat()
+      .forEach((opt) => {
+        price += opt.priceModifier;
+      });
+  }
+  return price;
+};
+
+// --- TYPE DEFINITIONS ---
 interface ExtendedStateData {
   availableCoupons: Coupon[];
   isLoadingCoupons: boolean;
@@ -93,30 +138,23 @@ interface ExtendedCartStore extends CartState, ExtendedStateData, CartActions {
 const initialState: CartState & ExtendedStateData = {
   cartItems: [],
   showCart: false,
-
   publicCoupons: [],
   isLoadingPublicCoupons: false,
   publicCouponsFetchedAt: 0,
-
   availableCoupons: [],
   isLoadingCoupons: false,
   couponsFetchedAt: 0,
-
   appliedCoupons: [],
   couponStatus: { isLoading: false, error: null },
-
   productForOptions: null,
   comboForSelection: null,
-
   deliveryOption: "immediate",
   scheduledDate: "",
   scheduledTime: "",
-
   shippingFee: DEFAULT_SHIPPING_FEE,
   shippingDistance: 0,
   selectedAddress: null,
   isCalculatingShip: false,
-
   surcharges: [],
 };
 
@@ -125,7 +163,6 @@ export const useCartStore = create<ExtendedCartStore>()(
     (set, get) => ({
       ...initialState,
 
-      // --- UI & Basic Actions ---
       startProductConfiguration: (product) => {
         set({
           productForOptions: product,
@@ -144,9 +181,52 @@ export const useCartStore = create<ExtendedCartStore>()(
 
       addItemToCart: (itemData) => {
         const cartId = buildVariantKey(itemData);
+
         set((state) => {
-          const exists = state.cartItems.find((i) => i.cartId === cartId);
-          if (exists) {
+          const existingItem = state.cartItems.find((i) => i.cartId === cartId);
+          const currentQty = existingItem ? existingItem.quantity : 0;
+
+          const promotionAny = (itemData.item as any).promotion;
+          const limitPerOrder =
+            promotionAny && typeof promotionAny === "object"
+              ? promotionAny.limitPerOrder
+              : 0;
+
+          if (limitPerOrder > 0 && currentQty >= limitPerOrder) {
+            const normalItemData = createNormalItemData(itemData);
+            const normalCartId = buildVariantKey(normalItemData);
+            const normalExists = state.cartItems.find(
+              (i) => i.cartId === normalCartId
+            );
+
+            if (normalExists) {
+              return {
+                cartItems: state.cartItems.map((i) =>
+                  i.cartId === normalCartId
+                    ? { ...i, quantity: i.quantity + 1 }
+                    : i
+                ),
+                productForOptions: null,
+                comboForSelection: null,
+                showCart: false,
+              };
+            } else {
+              const newNormalLine: any = {
+                ...normalItemData,
+                cartId: normalCartId,
+                quantity: 1,
+                note: itemData.note || "",
+              };
+              return {
+                cartItems: [...state.cartItems, newNormalLine],
+                productForOptions: null,
+                comboForSelection: null,
+                showCart: false,
+              };
+            }
+          }
+
+          if (existingItem) {
             return {
               cartItems: state.cartItems.map((i) =>
                 i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i
@@ -156,6 +236,7 @@ export const useCartStore = create<ExtendedCartStore>()(
               showCart: false,
             };
           }
+
           const newLine: any = {
             ...itemData,
             cartId: cartId,
@@ -172,13 +253,63 @@ export const useCartStore = create<ExtendedCartStore>()(
       },
 
       updateQuantity: (cartId, amount) => {
-        set((state) => ({
-          cartItems: state.cartItems
-            .map((i) =>
+        set((state) => {
+          const itemIndex = state.cartItems.findIndex(
+            (i) => i.cartId === cartId
+          );
+          if (itemIndex === -1) return state;
+
+          const item = state.cartItems[itemIndex];
+
+          if (amount < 0) {
+            return {
+              cartItems: state.cartItems
+                .map((i) =>
+                  i.cartId === cartId
+                    ? { ...i, quantity: i.quantity + amount }
+                    : i
+                )
+                .filter((i) => i.quantity > 0),
+            };
+          }
+
+          const promotionAny = (item.item as any).promotion;
+          const limitPerOrder =
+            promotionAny && typeof promotionAny === "object"
+              ? promotionAny.limitPerOrder
+              : 0;
+
+          if (limitPerOrder > 0 && item.quantity >= limitPerOrder) {
+            const normalItemData = createNormalItemData(item);
+            const normalCartId = buildVariantKey(normalItemData);
+            const normalExistsIndex = state.cartItems.findIndex(
+              (i) => i.cartId === normalCartId
+            );
+            const newCartItems = [...state.cartItems];
+
+            if (normalExistsIndex > -1) {
+              newCartItems[normalExistsIndex] = {
+                ...newCartItems[normalExistsIndex],
+                quantity: newCartItems[normalExistsIndex].quantity + amount,
+              };
+            } else {
+              const newNormalLine: any = {
+                ...normalItemData,
+                cartId: normalCartId,
+                quantity: amount,
+                note: item.note || "",
+              };
+              newCartItems.splice(itemIndex + 1, 0, newNormalLine);
+            }
+            return { cartItems: newCartItems };
+          }
+
+          return {
+            cartItems: state.cartItems.map((i) =>
               i.cartId === cartId ? { ...i, quantity: i.quantity + amount } : i
-            )
-            .filter((i) => i.quantity > 0),
-        }));
+            ),
+          };
+        });
       },
 
       clearCart: () => set({ cartItems: [], appliedCoupons: [] }),
@@ -293,12 +424,9 @@ export const useCartStore = create<ExtendedCartStore>()(
         }
       },
 
-      // --- COUPON LOGIC ---
-
       fetchAvailableCoupons: async () => {
         const { isLoadingCoupons, couponsFetchedAt } = get();
         const now = Date.now();
-        // Cache 1 phút
         if (isLoadingCoupons || now - couponsFetchedAt < DATA_TTL_MS) return;
 
         try {
@@ -320,28 +448,22 @@ export const useCartStore = create<ExtendedCartStore>()(
         await get().fetchAvailableCoupons();
       },
 
-      // [FIX] Cập nhật toggleCoupon để xử lý chuyển đổi mượt mà
       toggleCoupon: (coupon: Coupon) => {
         set((state) => {
-          // Kiểm tra xem coupon này đã được áp dụng chưa (so sánh id)
           const isApplied = state.appliedCoupons.some(
             (c) => c.id === coupon.id
           );
 
           if (isApplied) {
-            // Nếu đang áp dụng -> Bỏ chọn (Remove)
             return {
               appliedCoupons: state.appliedCoupons.filter(
                 (c) => c.id !== coupon.id
               ),
             };
           } else {
-            // Nếu chưa áp dụng -> Chọn (Switch)
-            // 1. Loại bỏ các coupon cùng loại (VD: chọn mã giảm giá mới thì bỏ mã cũ)
             const others = state.appliedCoupons.filter(
               (c) => c.type !== coupon.type
             );
-            // 2. Thêm coupon mới vào
             return {
               appliedCoupons: [...others, coupon],
             };
@@ -388,7 +510,6 @@ export const useCartStore = create<ExtendedCartStore>()(
           appliedCoupons: s.appliedCoupons.filter((c) => c.id !== id),
         })),
 
-      // --- NEW: Fetch surcharges ---
       fetchSurcharges: async () => {
         try {
           const res = await orderService.getSurcharges();
@@ -421,11 +542,48 @@ export function useCart() {
   const store = useCartStore();
   const { me } = useAuthStore();
 
-  // 1. Tính Subtotal
+  // 1. Tính "Tổng giá trị thị trường" của giỏ hàng (Market Subtotal)
+  // Dùng giá này làm mốc chuẩn để so sánh với minOrderValue
+  const marketSubtotal = useMemo(() => {
+    return store.cartItems.reduce((sum, item) => {
+      const marketPrice = getLineItemMarketPrice(item);
+      return sum + marketPrice * item.quantity;
+    }, 0);
+  }, [store.cartItems]);
+
+  // 2. [FIX] Tính toán lại danh sách Item dựa trên điều kiện minOrderValue
+  // Nếu Market Subtotal < minOrderValue -> Revert giá sản phẩm về giá gốc
+  const effectiveCartItems = useMemo(() => {
+    return store.cartItems.map((item) => {
+      const promotion = (item.item as any).promotion;
+
+      // Kiểm tra xem item này có promotion kèm minOrderValue không
+      if (
+        promotion &&
+        typeof promotion === "object" &&
+        promotion.minOrderValue > 0
+      ) {
+        // So sánh với Tổng giá trị thực của giỏ hàng
+        if (marketSubtotal < promotion.minOrderValue) {
+          const marketPrice = getLineItemMarketPrice(item);
+          // Trả về item với giá đã bị đưa về gốc (hiển thị UI)
+          return {
+            ...item,
+            totalPrice: marketPrice,
+            // Thêm flag để UI có thể hiển thị cảnh báo (tuỳ chọn)
+            promotionWarning: `Đơn hàng chưa đạt tối thiểu ${promotion.minOrderValue.toLocaleString()}đ để áp dụng giá ưu đãi.`,
+          };
+        }
+      }
+      return item;
+    });
+  }, [store.cartItems, marketSubtotal]);
+
+  // 3. Tính Subtotal cuối cùng (Dựa trên Effective Items)
   const subtotal = useMemo(
     () =>
-      store.cartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
-    [store.cartItems]
+      effectiveCartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
+    [effectiveCartItems]
   );
 
   const cartCount = useMemo(
@@ -433,13 +591,12 @@ export function useCart() {
     [store.cartItems]
   );
 
-  // 2. Xử lý danh sách Coupon & Override Logic Backend
+  // 4. Xử lý Coupon (Voucher)
   const processedCoupons = useMemo(() => {
     // @ts-ignore
-    const cartContext = { items: store.cartItems, subtotal };
+    const cartContext = { items: effectiveCartItems, subtotal }; // Dùng effectiveCartItems
 
     return store.availableCoupons.map((coupon) => {
-      // Check lại điều kiện tại Frontend (Realtime theo giỏ hàng)
       // @ts-ignore
       const check = checkCouponEligibility(coupon, cartContext, me);
 
@@ -456,11 +613,7 @@ export function useCart() {
       let isEligible = check.isEligible;
       let reason = check.reason;
 
-      // Logic Override:
-      // Nếu FE thấy thỏa điều kiện (isEligible=true), ta sẽ BỎ QUA lỗi mềm từ backend
-      // (vì backend trả về status lúc chưa có giỏ hàng)
       if (isEligible) {
-        // Chỉ chặn nếu gặp lỗi hệ thống cứng
         if (
           !isBackendApplicable &&
           backendReason &&
@@ -469,27 +622,30 @@ export function useCart() {
           isEligible = false;
           reason = backendReason;
         }
-        // Nếu không phải lỗi cứng -> Coupon hợp lệ (Override backend)
+
+        const minOrderVal = (coupon as any).minOrderValue || 0;
+        if (subtotal < minOrderVal) {
+          isEligible = false;
+          reason = `Đơn tối thiểu ${minOrderVal.toLocaleString()}đ`;
+        }
       }
 
       return {
         ...coupon,
         isEligible: isEligible,
-        reason: reason || backendReason, // Ưu tiên lý do realtime từ FE
+        reason: reason || backendReason,
         scope:
           (coupon as any).couponScope ||
           ((coupon as any).voucherId ? "PERSONAL" : "PUBLIC"),
       };
     });
-  }, [store.availableCoupons, store.cartItems, subtotal, me]);
+  }, [store.availableCoupons, effectiveCartItems, subtotal, me]);
 
-  // Lọc coupon cá nhân
   const personalCoupons = useMemo(
     () => processedCoupons.filter((c) => c.scope === "PERSONAL"),
     [processedCoupons]
   );
 
-  // Lọc coupon công khai & Loại bỏ trùng lặp nếu đã có trong Personal
   const publicCoupons = useMemo(
     () =>
       processedCoupons.filter(
@@ -500,7 +656,7 @@ export function useCart() {
     [processedCoupons, personalCoupons]
   );
 
-  // 3. Tính toán Discount
+  // 5. Tính toán Discount (Voucher)
   const { itemDiscount, shippingDiscount } = useMemo(() => {
     let totalItemDiscount = 0;
     let totalShippingDiscount = 0;
@@ -510,23 +666,42 @@ export function useCart() {
       (c) => c.type === "freeship"
     );
     if (freeshipCoupon) {
-      totalShippingDiscount = Math.min(store.shippingFee, freeshipCoupon.value);
+      const minOrderVal = (freeshipCoupon as any).minOrderValue || 0;
+      const limitPerOrder = (freeshipCoupon as any).limitPerOrder || 0;
+
+      if (currentSubtotal >= minOrderVal) {
+        let discount = Math.min(store.shippingFee, freeshipCoupon.value);
+        if (limitPerOrder > 0) {
+          discount = Math.min(discount, limitPerOrder);
+        }
+        totalShippingDiscount = discount;
+      }
     }
 
     const discountCoupon = store.appliedCoupons.find(
       (c) => c.type === "discount_code"
     );
     if (discountCoupon) {
-      let val = 0;
-      if (discountCoupon.valueType === "percentage") {
-        val = currentSubtotal * (discountCoupon.value / 100);
-        if (discountCoupon.maxDiscountAmount) {
-          val = Math.min(val, discountCoupon.maxDiscountAmount);
+      const minOrderVal = (discountCoupon as any).minOrderValue || 0;
+      const limitPerOrder = (discountCoupon as any).limitPerOrder || 0;
+
+      if (currentSubtotal >= minOrderVal) {
+        let val = 0;
+        if (discountCoupon.valueType === "percentage") {
+          val = currentSubtotal * (discountCoupon.value / 100);
+          if (discountCoupon.maxDiscountAmount) {
+            val = Math.min(val, discountCoupon.maxDiscountAmount);
+          }
+        } else {
+          val = discountCoupon.value;
         }
-      } else {
-        val = discountCoupon.value;
+
+        if (limitPerOrder > 0) {
+          val = Math.min(val, limitPerOrder);
+        }
+
+        totalItemDiscount = Math.min(val, currentSubtotal);
       }
-      totalItemDiscount = Math.min(val, currentSubtotal);
     }
 
     return {
@@ -535,7 +710,6 @@ export function useCart() {
     };
   }, [subtotal, store.appliedCoupons, store.shippingFee]);
 
-  // 4. Tính toán surcharges nếu có
   const totalSurcharge = useMemo(
     () => store.surcharges.reduce((sum, s) => sum + s.cost, 0),
     [store.surcharges]
@@ -549,6 +723,7 @@ export function useCart() {
 
   return {
     ...store,
+    cartItems: effectiveCartItems, // [QUAN TRỌNG] Ghi đè cartItems bằng danh sách đã tính toán lại giá
     subtotal,
     cartCount,
     personalCoupons,

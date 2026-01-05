@@ -17,7 +17,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { cartItems, addItemToCart, updateQuantity } = useCartStore();
   const [quantity, setQuantity] = useState(0);
 
-  // --- 1. LOGIC GIÁ & TAG (GIỮ NGUYÊN 100%) ---
+  // --- 1. LOGIC GIÁ & TAG ---
   const { displayPrice, originalPrice, hasDiscount, discountLabel } =
     useMemo(() => {
       const basePrice = product.basePrice || 0;
@@ -61,36 +61,35 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const isSimpleProduct =
     !product.optionGroups || product.optionGroups.length === 0;
 
-  // --- 2. LOGIC TÌM QUANTITY (ĐÃ ĐỒNG BỘ VỚI STORE) ---
-  const promotionId =
-    product.promotion?.id && product.promotion.id !== ""
-      ? product.promotion.id
-      : "normal";
-
-  const currentCartLine = useMemo(() => {
-    return cartItems.find((item) => {
-      // Key chuẩn: ID : PROMO : GIÁ_ĐÃ_ROUND ::
-      const variantPrefix = `${product.id}:${promotionId}:${Math.round(
-        displayPrice
-      )}::`;
-      return item.cartId.startsWith(variantPrefix);
-    });
-  }, [cartItems, product.id, promotionId, displayPrice]);
-
+  // --- 2. LOGIC TÌM QUANTITY (ĐÃ SỬA: Cộng dồn mọi biến thể) ---
   useEffect(() => {
-    setQuantity(currentCartLine ? currentCartLine.quantity : 0);
-  }, [currentCartLine]);
+    // Tìm tất cả các line items của sản phẩm này (cả giá gốc và giá KM)
+    const totalQty = cartItems
+      .filter(
+        (item) => item.itemType === "Product" && item.item.id === product.id
+      )
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    setQuantity(totalQty);
+  }, [cartItems, product.id]);
 
   // --- 3. HANDLERS ---
   const increase = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // [FIX] Truyền toàn bộ object promotion để store check limitPerOrder
+    const promoData =
+      product.promotion && product.promotion.isActive !== false
+        ? product.promotion
+        : "";
+
     const itemSnapshot: CreateOrderItem_ItemSnapshot = {
       id: product.id,
       name: product.name,
       basePrice: product.basePrice,
       salePrice: product.salePrice || undefined,
       comboPrice: 0,
-      promotion: product.promotion?.id || "",
+      promotion: promoData, // Truyền Object thay vì ID string
     };
 
     addItemToCart({
@@ -106,9 +105,21 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
   const decrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (currentCartLine) {
-      updateQuantity(currentCartLine.cartId, -1);
-    }
+    // [FIX] Ưu tiên giảm trừ item giá đắt trước (item nguyên giá)
+    // Để giữ lại item khuyến mãi cho khách hàng
+    const productLines = cartItems.filter(
+      (i) => i.itemType === "Product" && i.item.id === product.id
+    );
+
+    if (productLines.length === 0) return;
+
+    // Sắp xếp giảm dần theo giá -> Xóa item giá cao trước
+    const sortedLines = productLines.sort(
+      (a, b) => b.totalPrice - a.totalPrice
+    );
+
+    // Giảm số lượng của line đầu tiên tìm thấy
+    updateQuantity(sortedLines[0].cartId, -1);
   };
 
   const canDecrease = quantity > 0 && isSimpleProduct;

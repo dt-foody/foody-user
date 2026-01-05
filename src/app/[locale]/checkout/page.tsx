@@ -285,13 +285,13 @@ export default function CheckoutPage() {
       toast.error("Vui lòng nhập đủ tên và số điện thoại!");
       return;
     }
-    
+
     // Validate Địa chỉ chỉ khi là Giao hàng
     if (fulfillmentType === "delivery" && !selectedAddress) {
       toast.error("Vui lòng chọn địa chỉ giao hàng!");
       return;
     }
-    
+
     if (!cartItems.length) {
       toast.error("Giỏ hàng trống!");
       return;
@@ -349,12 +349,33 @@ export default function CheckoutPage() {
     const finalOrderType =
       fulfillmentType === "pickup" ? "TakeAway" : "Delivery";
 
+    const cleanedItems = cartItems.map((cartItem) => {
+      // 1. Tách các field UI không cần thiết (_image, cartId)
+      const { _image, cartId, promotionWarning, ...rest } = cartItem;
+
+      // 2. Xử lý field promotion trong nested object 'item'
+      const rawPromotion = rest.item.promotion;
+
+      // Nếu promotion là object (có id) -> lấy id. Nếu là string -> giữ nguyên.
+      const promotionId =
+        rawPromotion && typeof rawPromotion === "object"
+          ? (rawPromotion as any).id
+          : rawPromotion;
+
+      return {
+        ...rest,
+        item: {
+          ...rest.item,
+          promotion: promotionId || "", // Backend chỉ nhận string ID hoặc rỗng
+        },
+      };
+    });
+
     // 5. Tạo Payload chuẩn gửi Backend
     const payload = {
       orderType: finalOrderType,
 
-      // Loại bỏ các trường UI không cần thiết từ item
-      items: cartItems.map(({ _image, cartId, ...rest }) => rest),
+      items: cleanedItems,
 
       coupons: payloadCoupons,
       vouchers: payloadVouchers,
@@ -494,8 +515,17 @@ export default function CheckoutPage() {
                         ))}
                     </div>
                     {it.note && (
-                      <div className="mt-1 text-xs bg-blue-50 p-1 text-blue-700 rounded italic">
+                      <div className="mt-1 w-fit max-w-full text-xs bg-blue-50 p-1 text-blue-700 rounded italic">
                         {it.note}
+                      </div>
+                    )}
+                    {it.promotionWarning && (
+                      <div className="flex items-start gap-1.5 text-xs text-orange-700 px-2 py-1.5">
+                        <AlertTriangle
+                          size={14}
+                          className="flex-shrink-0"
+                        />
+                        <span>{it.promotionWarning}</span>
                       </div>
                     )}
                   </div>
