@@ -28,7 +28,7 @@ export default async function BlogCategoryPage({
   try {
     const data = await blogPostService.getAll({
       categorySlug: slugPath,
-      limit: 6,
+      limit: 20,
       page,
       populate: "categories",
     });

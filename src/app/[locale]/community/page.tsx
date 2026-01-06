@@ -13,7 +13,7 @@ export default async function BlogPage() {
   let data: GroupedBlog[] = [];
   try {
     data = await blogPostService.groupByCategory({
-      limit: 2,
+      limit: 20,
       displayPage: "community",
     });
   } catch (err) {
