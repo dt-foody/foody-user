@@ -12,9 +12,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { userService } from "@/services/user.service"; // Giả sử bạn lưu code API ở đây
 import { ReferralUser } from "@/types";
 import ButtonPrimary from "@/shared/ButtonPrimary";
+import { customerService } from "@/services";
 
 const AccountReferral = () => {
   const { fetchUser } = useAuthStore();
@@ -36,9 +36,11 @@ const AccountReferral = () => {
       setIsLoading(true);
       try {
         await fetchUser();
-        const state = useAuthStore.getState();
-        if (state.user?.referralCode) {
-          setReferralCode(state.user.referralCode);
+
+        const { me: profile } = useAuthStore.getState();
+
+        if (profile?.referralCode) {
+          setReferralCode(profile.referralCode);
         }
         await fetchReferralList(1);
       } catch (error) {
@@ -53,7 +55,7 @@ const AccountReferral = () => {
   // Hàm fetch danh sách từ API mới
   const fetchReferralList = async (pageNum: number) => {
     try {
-      const res = await userService.getReferralUsers({
+      const res = await customerService.getReferrals({
         page: pageNum,
         limit: 10,
       });

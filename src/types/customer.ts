@@ -79,6 +79,9 @@ export interface Customer {
   // --- Addresses ---
   addresses: CustomerAddress[];
 
+  referralCode?: string;
+  referredBy?: any;
+
   // --- Meta ---
   isActive: boolean;
   lastOrderDate?: string;
