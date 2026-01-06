@@ -24,11 +24,11 @@ export default async function BlogPage() {
     <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 min-h-screen py-6 px-4 sm:px-6 lg:px-12">
       <div className="max-w-7xl mx-auto">
         {/* ====== HEADER ====== */}
-        <div className="mb-10">
+        <div className="mb-14">
           <h1 className="text-2xl font-bold text-[#b9915f] mb-2 tracking-wide">
             Nơi các chương trình đồng hành được tổ chức và cập nhật.
           </h1>
-          <p className="text-sm text-gray-600 mb-5">
+          <p className="text-sm text-gray-600 mb-4">
             Cộng đồng sinh hoạt chính tại Facebook — bạn có thể tham gia tại đây
             để theo dõi đầy đủ thông tin.
           </p>
