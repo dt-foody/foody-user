@@ -29,34 +29,50 @@ export async function generateMetadata({
   const messages = (await import(`../../../messages/${params.locale}.json`))
     .default;
 
+  const canonicalUrl = `https://luuchi.com.vn/${params.locale}`;
+
   return {
+    metadataBase: new URL("https://luuchi.com.vn"),
+
     title: messages.metadata.siteTitle,
     description: messages.metadata.siteDescription,
     keywords: messages.metadata.keywords,
-    icons: {
-      icon: "/favicon.ico", // Hoặc .png, .svg...
+
+    alternates: {
+      canonical: canonicalUrl,
     },
+
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+        { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      ],
+      apple: "/apple-touch-icon.png",
+    },
+
     openGraph: {
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
+      url: canonicalUrl,
       locale: params.locale === "ar" ? "ar_AR" : "en_US",
-      url: `https://luuchi.com.vn/${params.locale}`,
+      type: "website",
       images: [
         {
-          url: "https://luuchi.com.vn/images/logo.png",
+          url: "/images/logo.png",
           width: 1200,
           height: 630,
           alt: messages.metadata.siteTitle,
         },
       ],
-      type: "website",
     },
+
     twitter: {
       card: "summary_large_image",
       title: messages.metadata.siteTitle,
       description: messages.metadata.siteDescription,
-      images: ["https://luuchi.com.vn/images/logo.png"],
+      images: ["/images/logo.png"],
     },
+
     verification: {
       google: "NNl_9gfnaQ2Fb_iVVt32qXyLKuk7bfe30m3IKV67OMk",
     },
