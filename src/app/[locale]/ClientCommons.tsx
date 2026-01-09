@@ -1,36 +1,28 @@
+// src/app/[locale]/ClientCommons.tsx
 "use client";
 
 import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useThemeMode } from "@/utils/useThemeMode";
+import FloatingContact from "@/components/FloatingContact"; // [NEW] Import
 
 const ClientCommons = () => {
-  //
+  // Hook xử lý Dark/Light mode
   useThemeMode();
 
   const pathname = usePathname();
-  //  CUSTOM THEME STYLE
+
+  // Scroll lên đầu trang mỗi khi chuyển trang
   useEffect(() => {
-    const $body = document.querySelector("body");
-    if (!$body) return;
-
-    let newBodyClass = "";
-
-    if (pathname === "/home-3") {
-      newBodyClass = "theme-purple-blueGrey";
-    }
-    if (pathname === "/home-2") {
-      newBodyClass = "theme-cyan-blueGrey";
-    }
-    newBodyClass = "theme-custom";
-
-    newBodyClass && $body.classList.add(newBodyClass);
-    return () => {
-      newBodyClass && $body.classList.remove(newBodyClass);
-    };
+    window.scrollTo(0, 0);
   }, [pathname]);
 
-  return <></>;
+  return (
+    <>
+      {/* Component này không render giao diện chính, nó chỉ render các tiện ích nổi */}
+      <FloatingContact />
+    </>
+  );
 };
 
 export default ClientCommons;
