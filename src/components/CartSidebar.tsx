@@ -19,6 +19,7 @@ import {
   Ticket,
   Info,
   AlertTriangle,
+  Gift,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -139,6 +140,10 @@ const CouponItem = ({
   isApplied: boolean;
   onToggle: (c: Coupon) => void;
 }) => {
+  const isGift =
+    coupon.valueType === "gift_item" ||
+    (coupon.giftItems && coupon.giftItems.length > 0);
+
   return (
     <div
       onClick={() => coupon.isEligible && onToggle(coupon)}
@@ -156,13 +161,28 @@ const CouponItem = ({
           isApplied ? "border-primary-200" : "border-gray-200"
         } pr-3`}
       >
-        <Ticket
-          className={`w-6 h-6 ${
-            isApplied ? "text-primary-600" : "text-gray-400"
-          }`}
-        />
-        <span className="text-[10px] font-bold text-gray-500 mt-1 uppercase">
-          {coupon.type === "freeship" ? "SHIP" : "GIẢM"}
+        {coupon.type === "freeship" ? (
+          <Ticket
+            className={`w-6 h-6 ${
+              isApplied ? "text-primary-600" : "text-gray-400"
+            }`}
+          />
+        ) : isGift ? (
+          <Gift
+            className={`w-6 h-6 ${
+              isApplied ? "text-purple-600" : "text-purple-400"
+            }`}
+          />
+        ) : (
+          <Ticket
+            className={`w-6 h-6 ${
+              isApplied ? "text-primary-600" : "text-gray-400"
+            }`}
+          />
+        )}
+
+        <span className="text-[10px] font-bold text-gray-500 mt-1 uppercase text-center">
+          {coupon.type === "freeship" ? "SHIP" : isGift ? "GIFT" : "GIẢM"}
         </span>
       </div>
       <div className="flex-1 min-w-0">
@@ -170,6 +190,20 @@ const CouponItem = ({
           {coupon.name}
         </h4>
         <p className="text-xs text-gray-500 truncate mt-0.5">{coupon.code}</p>
+
+        {isGift && coupon.giftItems && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {coupon.giftItems.map((g: any, idx: number) => (
+              <span
+                key={idx}
+                className="inline-flex items-center gap-1 text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100"
+              >
+                <Gift size={10} /> + {g.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {!coupon.isEligible ? (
           <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
             <XCircle size={10} /> {coupon.reason || "Chưa đủ điều kiện"}
@@ -200,6 +234,8 @@ const CouponItem = ({
 export default function CartSidebar() {
   const {
     cartItems,
+    giftLines,
+    giftTotal,
     cartCount,
     surcharges,
     showCart,
@@ -324,7 +360,7 @@ export default function CartSidebar() {
           </h3>
           <div className="space-y-2.5">
             {personalCoupons.length > 0 ? (
-              personalCoupons.map((c) => (
+              personalCoupons.map((c: any) => (
                 <CouponItem
                   key={c.id}
                   coupon={c}
@@ -416,7 +452,8 @@ export default function CartSidebar() {
 
       {/* Items List */}
       <div className="flex-1 overflow-y-auto">
-        {cartItems.length === 0 ? (
+        {cartItems.length === 0 && giftLines.length === 0 ? (
+          // ... (Empty state giữ nguyên)
           <div className="text-center h-full flex flex-col justify-center items-center p-4">
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
               <ShoppingCart className="w-10 h-10 text-gray-300" />
@@ -426,6 +463,7 @@ export default function CartSidebar() {
         ) : (
           <>
             <div className="p-3 space-y-2.5">
+              {/* 1. Render Cart Items Chính */}
               {cartItems.map((item) => {
                 const isEditing = editingNoteId === item.cartId;
                 const lineTotal = item.totalPrice * item.quantity;
@@ -540,10 +578,7 @@ export default function CartSidebar() {
                     </div>
                     {item.promotionWarning && (
                       <div className="flex items-center gap-1 mt-2 text-[12px] text-orange-700 p-1.5 rounded-md">
-                        <AlertTriangle
-                          size={12}
-                          className="flex-shrink-0"
-                        />
+                        <AlertTriangle size={12} className="flex-shrink-0" />
                         <span className="leading-tight">
                           {item.promotionWarning}
                         </span>
@@ -552,6 +587,60 @@ export default function CartSidebar() {
                   </div>
                 );
               })}
+
+              {/* 2. [NEW] Render Gift Items (Quà tặng) */}
+              {giftLines.map((gift: any, idx: number) => (
+                <div
+                  key={`gift-${idx}`}
+                  className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 relative overflow-hidden"
+                >
+                  {/* Decorative background stripe */}
+                  <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 bg-purple-100 rounded-full opacity-50 blur-xl"></div>
+
+                  <div className="flex items-start gap-3 relative z-10">
+                    <div className="relative w-14 h-14 flex-shrink-0">
+                      <Image
+                        src={PLACEHOLDER_IMAGE} // Dùng placeholder hoặc logic lấy ảnh
+                        alt={gift.name}
+                        width={56}
+                        height={56}
+                        className="object-cover rounded-md opacity-90 grayscale-[0.2]"
+                      />
+                      <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white p-1 rounded-full shadow-sm">
+                        <Gift size={10} />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-200 text-purple-800 mb-1">
+                            {gift.price === 0 ? "QUÀ TẶNG" : "MUA KÈM ƯU ĐÃI"}
+                          </span>
+                          <h4 className="text-sm font-semibold text-gray-800 line-clamp-2">
+                            {gift.name}
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end justify-center h-full">
+                      {/* Hiển thị giá: Nếu 0 thì hiện 0đ/Miễn phí, nếu >0 thì hiện giá bán */}
+                      <span
+                        className={`text-sm font-bold ${
+                          gift.price === 0 ? "text-purple-600" : "text-gray-900"
+                        }`}
+                      >
+                        {gift.price === 0 ? "0đ" : formatPrice(gift.price)}
+                      </span>
+
+                      <span className="text-xs font-medium text-gray-500 mt-1">
+                        x{gift.quantity}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="px-3 pb-3 space-y-2.5">
@@ -623,6 +712,17 @@ export default function CartSidebar() {
                     {subtotal.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
+
+                {/* [NEW]: Hiển thị dòng Phí quà tặng/Mua kèm nếu > 0 */}
+                {giftTotal > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Sản phẩm mua kèm</span>
+                    <span className="font-medium">
+                      +{giftTotal.toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className="font-medium">

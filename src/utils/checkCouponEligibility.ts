@@ -150,7 +150,11 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
 
   current_day_of_week: (ctx) => {
     return new Date().getDay(); // 0 (Chủ nhật) đến 6 (Thứ bảy)
-  }
+  },
+
+  // --- REFERRAL/REWARD ---
+  referrer_successful_invites: (context) => context?.customer?.referrerSuccessfulInvites || 0,
+  is_referred_new_customer: (context) => !!context?.customer?.referredBy,
 };
 
 // =============================================================================

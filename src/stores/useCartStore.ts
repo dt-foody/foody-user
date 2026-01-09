@@ -6,7 +6,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { couponService } from "@/services";
 import { orderService } from "@/services/order.service";
 import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
-import { CartActions, CartLine, CartState } from "@/types/cart";
+import { CartActions, CartLine, CartState, GiftLineItem } from "@/types/cart";
 import { Coupon } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -542,6 +542,33 @@ export function useCart() {
   const store = useCartStore();
   const { me } = useAuthStore();
 
+  const { giftLines, giftTotal } = useMemo(() => {
+    const lines: GiftLineItem[] = [];
+    let total = 0;
+    
+    store.appliedCoupons.forEach((coupon) => {
+      if (coupon.giftItems && coupon.giftItems.length > 0) {
+        coupon.giftItems.forEach((gift) => {
+          const quantity = 1; // Mặc định 1 (hoặc logic khác nếu cần)
+          const price = gift.price || 0; // Giá admin set (0 hoặc > 0)
+          
+          lines.push({
+            id: gift.item,
+            name: gift.name || "Quà tặng",
+            itemType: gift.itemType,
+            quantity: quantity, 
+            price: price, 
+            sourceCouponCode: coupon.code || "VOUCHER",
+          });
+          
+          total += price * quantity;
+        });
+      }
+    });
+    
+    return { giftLines: lines, giftTotal: total };
+  }, [store.appliedCoupons]);
+
   // 1. Tính "Tổng giá trị thị trường" của giỏ hàng (Market Subtotal)
   // Dùng giá này làm mốc chuẩn để so sánh với minOrderValue
   const marketSubtotal = useMemo(() => {
@@ -656,7 +683,7 @@ export function useCart() {
     [processedCoupons, personalCoupons]
   );
 
-  // 5. Tính toán Discount (Voucher)
+  // [CHANGE 3]: Cập nhật logic tính Discount để hỗ trợ thêm type "referral"
   const { itemDiscount, shippingDiscount } = useMemo(() => {
     let totalItemDiscount = 0;
     let totalShippingDiscount = 0;
@@ -678,9 +705,14 @@ export function useCart() {
       }
     }
 
+    // --- Xử lý Giảm giá (Discount Code & Referral) ---
+    // [UPDATE]: Chấp nhận cả "discount_code" VÀ "referral" nếu valueType không phải là "gift_item"
     const discountCoupon = store.appliedCoupons.find(
-      (c) => c.type === "discount_code"
+      (c) =>
+        (c.type === "discount_code" || c.type === "referral") &&
+        c.valueType !== "gift_item"
     );
+
     if (discountCoupon) {
       const minOrderVal = (discountCoupon as any).minOrderValue || 0;
       const limitPerOrder = (discountCoupon as any).limitPerOrder || 0;
@@ -692,7 +724,7 @@ export function useCart() {
           if (discountCoupon.maxDiscountAmount) {
             val = Math.min(val, discountCoupon.maxDiscountAmount);
           }
-        } else {
+        } else if (discountCoupon.valueType === "fixed_amount") {
           val = discountCoupon.value;
         }
 
@@ -716,16 +748,19 @@ export function useCart() {
   );
 
   const finalShippingFee = Math.max(0, store.shippingFee - shippingDiscount);
+ 
   const finalTotal = Math.max(
     0,
-    subtotal - itemDiscount + finalShippingFee + totalSurcharge
+    subtotal - itemDiscount + finalShippingFee + totalSurcharge + giftTotal
   );
 
   return {
     ...store,
     cartItems: effectiveCartItems, // [QUAN TRỌNG] Ghi đè cartItems bằng danh sách đã tính toán lại giá
+    giftLines,
+    giftTotal,
     subtotal,
-    cartCount,
+    cartCount: cartCount + giftLines.length, // [OPTIONAL]: Cộng thêm số lượng quà vào badge giỏ hàng nếu muốn    
     personalCoupons,
     publicCoupons,
     itemDiscount,

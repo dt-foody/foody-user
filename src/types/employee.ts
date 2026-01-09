@@ -26,6 +26,11 @@ export interface Employee {
   // Địa chỉ (tương tự customer)
   addresses: EmployeeAddress[];
 
+  referralCode?: string;
+  referredBy?: any;
+
+  referrerSuccessfulInvites?: number;
+
   // Meta
   isActive: boolean;
   lastOrderDate?: string;

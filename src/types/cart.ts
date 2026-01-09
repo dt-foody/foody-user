@@ -68,6 +68,16 @@ type ComboCartLine = {
   comboSnapshot?: CartComboSnapshot;
 };
 
+export interface GiftLineItem {
+  id: string; // ID của item quà tặng
+  name: string;
+  itemType: "Product" | "Combo";
+  quantity: number;
+  price: number; // Thường là 0
+  image?: string; // Có thể null nếu coupon không trả về ảnh
+  sourceCouponCode: string; // Mã coupon tặng quà này
+}
+
 export type CartLine = (ProductCartLine | ComboCartLine) & {
   cartId: string;
   quantity: number;

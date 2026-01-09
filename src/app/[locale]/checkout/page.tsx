@@ -12,6 +12,7 @@ import {
   Store, // Icon cửa hàng
   Bike, // Icon giao hàng
   Ticket,
+  Gift,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -29,6 +30,10 @@ import { X } from "lucide-react";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import { dealSettingService } from "@/services/dealSetting.service";
 import { DealOptionConfig } from "@/types/dealSetting";
+
+import foodImageDefault from "@/images/food_image_default.jpg";
+
+const PLACEHOLDER_IMAGE = foodImageDefault;
 
 const formatPrice = (price: number) =>
   `${(price || 0).toLocaleString("vi-VN")}đ`;
@@ -75,6 +80,8 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
 export default function CheckoutPage() {
   const {
     cartItems,
+    giftLines,
+    giftTotal,
     subtotal,
     surcharges,
     itemDiscount,
@@ -521,13 +528,71 @@ export default function CheckoutPage() {
                     )}
                     {it.promotionWarning && (
                       <div className="flex items-start gap-1.5 text-xs text-orange-700 px-2 py-1.5">
-                        <AlertTriangle
-                          size={14}
-                          className="flex-shrink-0"
-                        />
+                        <AlertTriangle size={14} className="flex-shrink-0" />
                         <span>{it.promotionWarning}</span>
                       </div>
                     )}
+                  </div>
+                </div>
+              ))}
+
+              {giftLines.map((gift, idx) => (
+                <div
+                  key={`gift-${idx}`}
+                  className="flex gap-4 py-4 border-b border-gray-100 bg-purple-50/50 px-4 rounded-lg -mx-4"
+                >
+                  {/* Ảnh quà tặng */}
+                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-purple-100">
+                    {/* Bạn có thể thay src bằng gift.image hoặc placeholder */}
+                    <Image
+                      src={PLACEHOLDER_IMAGE} // Dùng placeholder hoặc logic lấy ảnh
+                      alt={gift.name}
+                      width={56}
+                      height={56}
+                      className="object-cover rounded-md opacity-90 grayscale-[0.2]"
+                    />
+                    <div className="absolute bottom-0 right-0 bg-purple-600 text-white p-1 rounded-tl-md">
+                      <Gift size={10} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col">
+                    <div>
+                      <div className="flex justify-between">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          <span
+                            className={`mr-2 inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                              gift.price === 0
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {gift.price === 0 ? "QUÀ TẶNG" : "ƯU ĐÃI"}
+                          </span>
+                          {gift.name}
+                        </h3>
+
+                        {/* Giá tiền */}
+                        <p
+                          className={`text-sm font-medium ${
+                            gift.price === 0
+                              ? "text-purple-600"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {gift.price === 0
+                            ? "0đ"
+                            : `${gift.price.toLocaleString("vi-VN")}đ`}
+                        </p>
+                      </div>
+
+                      {/* Thông tin phụ */}
+                      <div className="mt-1 flex items-end justify-between">
+                        <p className="text-sm text-gray-500">
+                          SL: {gift.quantity}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

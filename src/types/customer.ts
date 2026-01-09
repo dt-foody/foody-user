@@ -82,6 +82,8 @@ export interface Customer {
   referralCode?: string;
   referredBy?: any;
 
+  referrerSuccessfulInvites?: number;
+
   // --- Meta ---
   isActive: boolean;
   lastOrderDate?: string;
