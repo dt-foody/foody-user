@@ -12,7 +12,6 @@ import homepage_7 from "@/images/homepage_7.png";
 import homepage_8 from "@/images/homepage_8.png";
 import homepage_9 from "@/images/homepage_9.png";
 
-
 function PageHome() {
   const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/claritylab";
 
@@ -67,7 +66,9 @@ function PageHome() {
 
       {/* The Loop Section */}
       <section className="container max-w-4xl mx-auto px-6 py-6 border-t border-neutral-100">
-        <h2 className="mb-4 font-bold">Bạn có thấy quen với vòng lặp này không?</h2>
+        <h2 className="mb-4 font-bold">
+          Bạn có thấy quen với vòng lặp này không?
+        </h2>
         <div className="w-full h-[200px] md:h-[350px] lg:h-[450px] display-flex justify-center items-center">
           <Image
             src={homepage_1}
@@ -81,22 +82,24 @@ function PageHome() {
         </div>
         <div className="mt-6 space-y-4">
           <p className="font-bold text-neutral-900">Đúng vậy.</p>
-          <div>Bạn đang ở trong</div>
-          <div
-            className="w-[200px] h-[70px] flex items-center justify-center text-white font-bold text-xl"
-            style={{
-              backgroundImage: `url(${homepage_2.src})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              display: 'inline-block',
-              textAlign: 'center',
-              color: 'black',
-              fontWeight: 'bold',
-              fontSize: '1.1rem',
-              lineHeight: '40px',
-            }}
-          >
-            <span>một lồng kính</span>
+          <div className="flex items-center gap-4">
+            <div>Bạn đang ở trong</div>
+            <div
+              className="w-[200px] flex items-center justify-center text-white font-bold text-xl"
+              style={{
+                backgroundImage: `url(${homepage_2.src})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                display: "inline-block",
+                textAlign: "center",
+                color: "black",
+                fontWeight: "bold",
+                fontSize: "1.1rem",
+                lineHeight: "56px",
+              }}
+            >
+              <span>một lồng kính</span>
+            </div>
           </div>
           <p className="!mt-0">
             do chính bạn tạo ra, trong những ngày phải{" "}
@@ -119,24 +122,18 @@ function PageHome() {
           <div className="flex flex-row items-center gap-2">
             <span className="text-sm font-medium">Vì bạn</span>
             <span
-              className="w-[250px] h-[70px] flex items-center justify-center text-white font-bold text-xl"
+              className="w-[250px] h-[70px] flex items-center justify-center text-black font-bold text-[1.1rem]"
               style={{
                 backgroundImage: `url(${homepage_3.src})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                display: 'inline-block',
-                textAlign: 'center',
-                color: 'black',
-                fontWeight: 'bold',
-                fontSize: '1.1rem',
-                lineHeight: '70px',
+                backgroundSize: "cover",
+                backgroundPosition: "center", // 👈 chỉnh trọng tâm
+                backgroundRepeat: "no-repeat",
               }}
             >
               có năng lực
             </span>
           </div>
-          <p className="italic text-sm !mt-0"  
-          >
+          <p className="italic text-sm !mt-0">
             “Nghe mâu thuẫn à? Để mình nói tiếp nhé.”
           </p>
           <p>
@@ -163,7 +160,9 @@ function PageHome() {
           </p>
           <p>Thế nên…</p>
           <p>
-            Bạn đã đối xử với bản thân rất <span className="font-bold line-through">khắc nghiệt</span>, từ lúc chưa bắt đầu.
+            Bạn đã đối xử với bản thân rất{" "}
+            <span className="font-bold line-through">khắc nghiệt</span>, từ lúc
+            chưa bắt đầu.
           </p>
         </div>
 
@@ -186,9 +185,8 @@ function PageHome() {
             </p>
             <p>Bạn muốn bước ra, nhưng lại quá tải.</p>
             <div className="relative">
-                Không biết bắt đầu từ đâu.{" "}
-                <span className="font-bold">Gỡ rối</span>{" "}
-                thế nào.
+              Không biết bắt đầu từ đâu.{" "}
+              <span className="font-bold">Gỡ rối</span> thế nào.
               <div className="w-[200px] h-[200px] md:w-[200px] md:h-[200px] lg:w-[250px] lg:h-[250px] display-flex justify-center items-center inline-block absolute top-[-90px] left-[65%] md:top-[-120px] md:left-[45%] md:translate-x-[-50%]">
                 <Image
                   src={homepage_5}
@@ -217,16 +215,16 @@ function PageHome() {
             <strong>
               lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.
             </strong>
-             <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-90px] right-[10%] md:top-[-165px] md:right-[-10%] md:translate-x-[-50%]">
-                <Image
-                  src={homepage_6}
-                  alt="The Loop"
-                  className="w-full h-full object-cover object-center"
-                  fill={false}
-                  width={350}
-                  height={350}
-                />
-              </div>
+            <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-90px] right-[10%] md:top-[-165px] md:right-[-10%] md:translate-x-[-50%]">
+              <Image
+                src={homepage_6}
+                alt="The Loop"
+                className="w-full h-full object-cover object-center"
+                fill={false}
+                width={350}
+                height={350}
+              />
+            </div>
           </div>
           <p>
             Một chốn <strong>“Ở đây.”</strong> — ngay bên cạnh, quan sát, cùng
@@ -384,7 +382,6 @@ function PageHome() {
                 height={350}
               />
             </div>
-            
           </ul>
           <p>Vì có lẽ,</p>
           <p className="font-bold">
@@ -401,7 +398,9 @@ function PageHome() {
           </p>
           <p>Ở đây.</p>
           <div>
-            <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL}>Bước vào</ButtonPrimary>
+            <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL}>
+              Bước vào
+            </ButtonPrimary>
           </div>
           <p>Ta sẽ cùng bắt đầu từ đó.</p>
         </div>
