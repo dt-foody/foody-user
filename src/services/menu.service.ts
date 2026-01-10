@@ -6,6 +6,7 @@ export interface MenuApiResponse {
   flashSaleCategory: any;
   thucDon: any[];
   combos: any[];
+  descriptionCombo: string;
 }
 
 

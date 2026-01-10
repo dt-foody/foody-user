@@ -11,6 +11,8 @@ export interface Category {
   isActive: boolean;
   priority: number;
 
+  showInMenu: boolean;
+
   /** id của parent hoặc null */
   parent: string | Category | null;
 

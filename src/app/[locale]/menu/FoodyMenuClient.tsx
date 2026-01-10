@@ -15,12 +15,14 @@ interface FoodyMenuClientProps {
   initialFlashSaleCategory: any;
   initialThucDon: any[];
   initialCombos: any[];
+  descriptionCombo: string;
 }
 
 export default function FoodyMenuClient({
   initialFlashSaleCategory,
   initialThucDon,
   initialCombos,
+  descriptionCombo,
 }: FoodyMenuClientProps) {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState<{
@@ -162,10 +164,17 @@ export default function FoodyMenuClient({
             data-scroll-spy-type="flashsale"
             data-scroll-spy-id={initialFlashSaleCategory.id}
           >
-            <h2 className="text-xl font-bold mb-4 text-red-600 flex items-center">
+            <h2 className="text-xl font-bold mb-1 text-red-600 flex items-center">
               <Gift className="w-6 h-6 mr-2" />
               {initialFlashSaleCategory.name} 🔥
             </h2>
+
+            {initialFlashSaleCategory.description &&
+              initialFlashSaleCategory.showInMenu && (
+                <p className="mb-4 text-sm text-gray-600">
+                  {initialFlashSaleCategory.description}
+                </p>
+              )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {initialFlashSaleCategory.products.map((item: any) => {
@@ -200,7 +209,12 @@ export default function FoodyMenuClient({
             data-scroll-spy-type="combo"
             data-scroll-spy-id="combo"
           >
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Combo</h2>
+            <h2 className="text-xl font-bold mb-1 text-gray-800">Combo</h2>
+
+            {descriptionCombo && (
+              <p className="mb-4 text-sm text-gray-600">{descriptionCombo}</p>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {combosToDisplay.map((combo) => (
                 <ComboCard
@@ -225,13 +239,20 @@ export default function FoodyMenuClient({
               }
               data-scroll-spy-id={group.id}
             >
-              <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
+              <h2 className="text-xl font-bold mb-1 text-gray-800 flex items-center">
                 {group.id === "flashsale" && (
                   <Gift className="w-6 h-6 text-primary-500 mr-2" />
                 )}
                 {group.name}
                 {group.id === "flashsale" && " 🔥"}
               </h2>
+
+              {group.showInMenu && group.description && (
+                <p className="mb-4 text-sm text-gray-600">
+                  {group.description}
+                </p>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {group.products.map((product: any) => (
                   <ProductCard

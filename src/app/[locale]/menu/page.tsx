@@ -14,6 +14,7 @@ export default async function FoodyMenuPage() {
         initialFlashSaleCategory={menuData.flashSaleCategory}
         initialThucDon={menuData.thucDon || []}
         initialCombos={menuData.combos || []}
+        descriptionCombo={menuData.descriptionCombo || ""}
       />
     );
   } catch (err: any) {

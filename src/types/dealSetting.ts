@@ -18,6 +18,8 @@ export interface DealSetting {
   // --- New Options ---
   homeDelivery: DealOptionConfig; // Bật/tắt tính năng giao hàng
   storePickup: DealOptionConfig;  // Bật/tắt tính năng tự đến lấy
+
+  flashSale: DealOptionConfig;
 }
 
 export type DealSettingPaginate = Paginated<DealSetting>;
