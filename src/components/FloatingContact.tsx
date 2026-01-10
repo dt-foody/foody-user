@@ -75,7 +75,7 @@ const FloatingContact = () => {
           className="group relative flex items-center justify-center w-12 h-12 bg-green-600 text-white rounded-full shadow-md hover:scale-110 transition-transform duration-200"
         >
           {/* Tooltip (Hiện bên phải) */}
-          <span className="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
+          <span className="absolute right-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
             0889.058.678
           </span>
           <Phone size={22} />
@@ -89,7 +89,7 @@ const FloatingContact = () => {
           className="group relative flex items-center justify-center w-12 h-12 bg-[#0084FF] text-white rounded-full shadow-md hover:scale-110 transition-transform duration-200"
         >
           {/* Tooltip (Hiện bên phải) */}
-          <span className="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
+          <span className="absolute right-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
             Chat Messenger
           </span>
           <MessengerIcon size={22} />
