@@ -4,7 +4,10 @@
 import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useThemeMode } from "@/utils/useThemeMode";
-import FloatingContact from "@/components/FloatingContact"; // [NEW] Import
+
+// Import cả 2 component
+import FloatingContact from "@/components/FloatingContact";
+import FacebookChat from "@/components/FacebookChat";
 
 const ClientCommons = () => {
   // Hook xử lý Dark/Light mode
@@ -19,7 +22,10 @@ const ClientCommons = () => {
 
   return (
     <>
-      {/* Component này không render giao diện chính, nó chỉ render các tiện ích nổi */}
+      {/* 1. Bong bóng chat của Facebook */}
+      <FacebookChat />
+
+      {/* 2. Nút gọi điện và Zalo/Messenger nổi */}
       <FloatingContact />
     </>
   );
