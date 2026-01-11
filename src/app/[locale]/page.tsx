@@ -184,10 +184,28 @@ function PageHome() {
               so sánh…
             </p>
             <p>Bạn muốn bước ra, nhưng lại quá tải.</p>
-            <div className="relative">
-              Không biết bắt đầu từ đâu.{" "}
-              <span className="font-bold">Gỡ rối</span> thế nào.
-              <div className="w-[200px] h-[200px] md:w-[200px] md:h-[200px] lg:w-[250px] lg:h-[250px] display-flex justify-center items-center inline-block absolute top-[-90px] left-[65%] md:top-[-120px] md:left-[45%] md:translate-x-[-50%]">
+            {/* <div className="flex items-center sm:relative sm:block !mt-0">
+              <div className="sm:order-none">
+                Không biết bắt đầu từ đâu.{" "}
+                <span className="font-bold">Gỡ rối</span> thế nào.
+              </div>
+              <div className="sm:order-none w-24 h-24 flex-shrink-0 sm:absolute sm:w-35 sm:h-35 md:w-40 md:h-40 lg:w-[100px] lg:h-[100px] sm:top-[-90px] sm:left-[65%] md:top-[-120px] md:left-[50%] md:-translate-x-1/2">
+                <Image
+                  src={homepage_5}
+                  alt="The Loop"
+                  className="w-full h-full object-cover object-center"
+                  fill={false}
+                  width={200}
+                  height={200}
+                />
+              </div>
+            </div> */}
+            <div className="flex items-center gap-4 !mt-0">
+              <div>
+                Không biết bắt đầu từ đâu.{" "}
+                <span className="font-bold">Gỡ rối</span> thế nào.
+              </div>
+              <div className="w-24 h-24 flex-shrink-0 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-40 lg:h-40">
                 <Image
                   src={homepage_5}
                   alt="The Loop"
@@ -209,13 +227,12 @@ function PageHome() {
         </h2>
         <div className="space-y-4">
           <p>Không phải để trốn chạy.</p>
-          <div className="relative">
-            {" "}
-            Mà để{" "}
-            <strong>
-              lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.
-            </strong>
-            <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-90px] right-[10%] md:top-[-165px] md:right-[-10%] md:translate-x-[-50%]">
+          {/* <div className="flex items-center sm:relative sm:block !mt-0">
+            <div className="sm:order-none">
+              Mà để{" "}
+              <span className="font-bold">lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.</span>
+            </div>
+            <div className="sm:order-none w-24 h-24 flex-shrink-0 sm:w-[250px] sm:h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] sm:absolute sm:top-[-90px] sm:right-[10%] md:top-[-165px] md:right-[-10%] md:-translate-x-1/2">
               <Image
                 src={homepage_6}
                 alt="The Loop"
@@ -225,7 +242,21 @@ function PageHome() {
                 height={350}
               />
             </div>
-          </div>
+          </div> */}
+          <div className="flex items-center !mt-0">
+  <div className="w-[70%]">
+    Mà để{" "}
+    <span className="font-bold">lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.</span>
+  </div>
+  <div className="w-24 h-24 flex-shrink-0 flex-1 sm:w-28 sm:h-24 md:w-40 md:h-32 lg:w-48 lg:h-32">
+    <Image
+      src={homepage_6}
+      alt="The Loop"
+      className="w-full h-full object-cover object-center"
+      fill={false}
+    />
+  </div>
+</div>
           <p>
             Một chốn <strong>“Ở đây.”</strong> — ngay bên cạnh, quan sát, cùng
             bước, và <strong>đưa tay ra khi bạn cần.</strong>
