@@ -34,7 +34,7 @@ export interface Employee {
   // Meta
   isActive: boolean;
   lastOrderDate?: string;
-  orderCount: number;
+  totalOrder: number;
   totalSpent: number;
 
   // Audit / soft delete

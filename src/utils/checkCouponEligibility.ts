@@ -135,7 +135,7 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
     return new Date(dob).getFullYear();
   },
 
-  customer_order_count: (ctx) => ctx.customer?.orderCount || 0,
+  customer_order_count: (ctx) => ctx.customer?.totalOrder || 0,
   customer_total_spent: (ctx) => ctx.customer?.totalSpent || 0,
 
   // --- ORDER CONTEXT ---
