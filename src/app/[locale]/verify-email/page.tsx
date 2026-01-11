@@ -48,8 +48,8 @@ export default function VerifyEmailPage() {
 
         // Tự động chuyển hướng sau 1 giây
         setTimeout(() => {
-          router.push("/en/login");
-        }, 1000);
+          router.push("/login");
+        }, 2000);
 
       } catch (error: any) {
         setStatus("error");

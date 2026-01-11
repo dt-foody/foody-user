@@ -102,13 +102,13 @@ const PageSignUp: FC<PageSignUpProps> = () => {
       setRegisteredEmail(email);
       // Bật màn hình thành công trước
       setShowSuccessMessage(true);
-      // Đợi 0.5s rồi bật Popup đè lên màn hình thành công
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Đợi 2s rồi bật Popup đè lên màn hình thành công
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       setShowWelcomeModal(true);
     } catch (error) {
-      console.error("Signup error:", error);
       setErrors({
-        email: "Đã có lỗi xảy ra hoặc email đã tồn tại. Vui lòng thử lại.",
+        email:
+          "Đã có lỗi xảy ra hoặc email hoặc số điện thoại đã tồn tại. Vui lòng thử lại.",
       });
     } finally {
       setIsLoading(false);
@@ -221,7 +221,10 @@ const PageSignUp: FC<PageSignUpProps> = () => {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-neutral-700 dark:text-neutral-300">
               <p className="font-medium mb-2">Không nhận được email?</p>
               <ul className="text-left space-y-1 list-disc list-inside">
-                <li>Vui lòng kiểm tra hộp thư đến (hoặc thư mục spam) và nhấp vào liên kết xác thực để hoàn tất đăng ký</li>
+                <li>
+                  Vui lòng kiểm tra hộp thư đến (hoặc thư mục spam) và nhấp vào
+                  liên kết xác thực để hoàn tất đăng ký
+                </li>
                 <li>Đảm bảo địa chỉ email chính xác</li>
                 <li>Chờ vài phút và kiểm tra lại</li>
                 <li>Đường link có hiệu lực tối đa 10 phút</li>

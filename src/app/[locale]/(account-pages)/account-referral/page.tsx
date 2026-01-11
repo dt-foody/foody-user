@@ -12,7 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ReferralUser } from "@/types";
+import { Customer, CustomerEmail, CustomerPhone } from "@/types";
 import ButtonPrimary from "@/shared/ButtonPrimary";
 import { customerService } from "@/services";
 
@@ -21,7 +21,7 @@ const AccountReferral = () => {
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
   // States cho danh sách referral và phân trang
-  const [listReferral, setListReferral] = useState<ReferralUser[]>([]);
+  const [listReferral, setListReferral] = useState<Customer[]>([]);
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -89,6 +89,13 @@ const AccountReferral = () => {
       toast.success("Đã sao chép mã giới thiệu!");
       setTimeout(() => setIsCopied(false), 2000);
     }
+  };
+
+  // Helper function để lấy thông tin liên hệ (Email/Phone)
+  const getContactValue = (items: CustomerEmail[] | CustomerPhone[]) => {
+    if (!items || items.length === 0) return null;
+    const primary = items.find((item) => item.isPrimary);
+    return primary ? primary.value : items[0].value;
   };
 
   if (isLoading) {
@@ -179,30 +186,47 @@ const AccountReferral = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {listReferral.map((referral) => (
-                  <div
-                    key={referral._id}
-                    className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 transition-all hover:border-orange-200 hover:shadow-md group"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-100 to-orange-50 font-bold text-orange-700 ring-4 ring-white shadow-sm group-hover:from-orange-500 group-hover:to-orange-400 group-hover:text-white transition-all">
-                      {referral.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800 truncate group-hover:text-orange-600 transition-colors">
-                        {referral.name}
-                      </p>
-                      <div className="flex flex-col text-xs text-gray-500 mt-0.5">
-                        <span className="truncate">{referral.email}</span>
-                        {referral.phone && (
-                          <span className="mt-0.5">{referral.phone}</span>
-                        )}
+                {listReferral.map((referral) => {
+                  const email = getContactValue(referral.emails);
+                  const phone = getContactValue(referral.phones);
+                  const isSuccess = referral.totalOrder > 0;
+
+                  return (
+                    <div
+                      key={referral._id}
+                      className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 transition-all hover:border-orange-200 hover:shadow-md group"
+                    >
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-100 to-orange-50 font-bold text-orange-700 ring-4 ring-white shadow-sm group-hover:from-orange-500 group-hover:to-orange-400 group-hover:text-white transition-all">
+                        {(referral.name || "U").charAt(0).toUpperCase()}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-800 truncate group-hover:text-orange-600 transition-colors">
+                          {referral.name}
+                        </p>
+                        <div className="flex flex-col text-xs text-gray-500 mt-0.5">
+                          {email && (
+                            <span className="truncate" title={email}>
+                              {email}
+                            </span>
+                          )}
+                          {phone && <span className="mt-0.5">{phone}</span>}
+                        </div>
+                      </div>
+
+                      {/* Trạng thái đơn hàng */}
+                      <div
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded whitespace-nowrap ${
+                          isSuccess
+                            ? "text-green-600 bg-green-50 border border-green-100"
+                            : "text-gray-500 bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {isSuccess ? "Thành công" : "Chưa phát sinh đơn"}
                       </div>
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Thành công
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Nút Xem thêm */}

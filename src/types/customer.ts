@@ -59,6 +59,7 @@ export interface CustomerAddress {
 export interface Customer {
   /** mapped from _id */
   id: string;
+  _id: string;
 
   /** auto-increment from BE */
   customerId: number;
@@ -87,7 +88,7 @@ export interface Customer {
   // --- Meta ---
   isActive: boolean;
   lastOrderDate?: string;
-  orderCount: number;
+  totalOrder: number;
   totalSpent: number;
 
   // --- Audit / Soft Delete ---

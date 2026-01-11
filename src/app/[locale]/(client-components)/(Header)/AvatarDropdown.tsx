@@ -28,9 +28,16 @@ export default function AvatarDropdown({ user = null, className = "" }: Props) {
             try {
               await authService.logout(); //
 
-              // Đóng popover
+              // 1. Đóng popover
               close();
+              
+              // 2. Xóa state user trong store
               useAuthStore.getState().clearUser();
+              
+              // 3. Chuyển hướng về trang chủ
+              router.push("/"); 
+              
+              // 4. (Tùy chọn) Refresh để đảm bảo các Server Component cập nhật lại trạng thái guest
               router.refresh();
             } catch (error) {
               console.error("Failed to log out:", error);

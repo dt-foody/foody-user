@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { orderService } from "@/services/order.service";
-import { PaymentMethod } from "@/types";
+import { CustomerPhone, PaymentMethod } from "@/types";
 import Image from "next/image";
 import { CreateOrderItem_Option, CartLine } from "@/types/cart";
 import { getImageUrl, handleImageError } from "@/utils/imageHelper";
@@ -32,6 +32,7 @@ import { dealSettingService } from "@/services/dealSetting.service";
 import { DealOptionConfig } from "@/types/dealSetting";
 
 import foodImageDefault from "@/images/food_image_default.jpg";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const PLACEHOLDER_IMAGE = foodImageDefault;
 
@@ -274,11 +275,25 @@ export default function CheckoutPage() {
     fetchSettings();
   }, []);
 
+   // Helper function để lấy thông tin liên hệ (Email/Phone)
+    const getContactValue = (items: CustomerPhone[]) => {
+      if (!items || items.length === 0) return null;
+      const primary = items.find((item) => item.isPrimary);
+      return primary ? primary.value : items[0].value;
+    };
+
   // Điền thông tin người nhận từ địa chỉ đã chọn
   useEffect(() => {
     if (selectedAddress) {
       setName(selectedAddress.recipientName || "");
       setPhone(selectedAddress.recipientPhone || "");
+    } else {
+      const { me: profile } = useAuthStore.getState();
+
+      console.log("profile", profile)
+      
+      setName(profile ? profile.name || "" : "");
+      setPhone(profile ? getContactValue(profile.phones || []) || "": "")
     }
   }, [selectedAddress]);
 
