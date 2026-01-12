@@ -821,7 +821,7 @@ export default function CartSidebar() {
       )}
       {!user && (
         <div className="px-4 py-3 border-t bg-yellow-50 gap-2 text-sm text-yellow-800">
-          &quot;Đăng ký tài khoản để theo dõi đơn hàng và không bỏ lỡ quà tặng cũng như những đặc quyền chỉ dành riêng cho thành viên&quot;
+          &quot;Đăng ký tài khoản để theo dõi đơn hàng và không bỏ lỡ quà tặng cũng như những đặc quyền chỉ dành riêng cho thành viên&quot;.
           &nbsp;
           <Link
             href="/signup"

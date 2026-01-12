@@ -203,7 +203,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (selectedTimeSlot) {
       const [startTime] = selectedTimeSlot.split("-");
-      setScheduledTime(startTime); // Lưu "07:30" vào store
+      setScheduledTime(startTime.trim()); // Lưu "07:30" vào store
     } else {
       setScheduledTime("");
     }
