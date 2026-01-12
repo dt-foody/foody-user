@@ -963,7 +963,7 @@ export default function CheckoutPage() {
                   <Loader2 size={12} className="animate-spin" />
                 )}
               </span>
-              <span>{originalShippingFee.toLocaleString("vi-VN")}đ</span>
+              <span>{displayShippingFee.toLocaleString("vi-VN")}đ</span>
             </div>
 
             {totalSurcharge > 0 && (
