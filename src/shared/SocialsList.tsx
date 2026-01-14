@@ -11,12 +11,12 @@ const socialsDemo: SocialType[] = [
   { 
     name: "Facebook", 
     icon: "lab la-facebook-square", 
-    href: "https://www.facebook.com/luuchi.caphechirua/" 
+    href: "https://www.facebook.com/claritylab.vn" 
   },
   { 
     name: "Instagram", 
     icon: "lab la-instagram", 
-    href: "https://www.instagram.com/luuchi.caphechirua/" 
+    href: "https://www.instagram.com/claritylab.vn" 
   },
   { 
     name: "Youtube", 
@@ -26,12 +26,12 @@ const socialsDemo: SocialType[] = [
   { 
     name: "Tiktok", 
     icon: "lab la-tiktok", 
-    href: "https://www.tiktok.com/@luuchi.caphechirua" 
+    href: "https://www.tiktok.com/@claritylab.vn" 
   },
   { 
     name: "Threads", 
     icon: "lab la-at", // Dùng tạm icon @ vì LineAwesome cũ chưa có icon Threads
-    href: "https://www.threads.net/@luuchi.caphechirua" 
+    href: "https://www.threads.net/@claritylab.vn" 
   },
 ];
 
