@@ -9,7 +9,7 @@ import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import { CartActions, CartLine, CartState, GiftLineItem } from "@/types/cart";
 import { Coupon } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { toast } from "sonner"; // Thêm import này để hiển thị thông báo
+import { toast } from "sonner";
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 0;
@@ -538,11 +538,9 @@ export const useCartStore = create<ExtendedCartStore>()(
   )
 );
 
-/** ===== PUBLIC HOOK ===== */
+/** ===== PUBLIC HOOK: DÙNG ĐỂ HIỂN THỊ VÀ TÍNH TOÁN ===== */
 export function useCart() {
   const store = useCartStore();
-
-  const { appliedCoupons, removeCoupon } = store;
   const { me } = useAuthStore();
 
   const { giftLines, giftTotal } = useMemo(() => {
@@ -552,8 +550,8 @@ export function useCart() {
     store.appliedCoupons.forEach((coupon) => {
       if (coupon.giftItems && coupon.giftItems.length > 0) {
         coupon.giftItems.forEach((gift) => {
-          const quantity = 1; // Mặc định 1 (hoặc logic khác nếu cần)
-          const price = gift.price || 0; // Giá admin set (0 hoặc > 0)
+          const quantity = 1;
+          const price = gift.price || 0;
 
           lines.push({
             id: gift.item,
@@ -573,7 +571,6 @@ export function useCart() {
   }, [store.appliedCoupons]);
 
   // 1. Tính "Tổng giá trị thị trường" của giỏ hàng (Market Subtotal)
-  // Dùng giá này làm mốc chuẩn để so sánh với minOrderValue
   const marketSubtotal = useMemo(() => {
     return store.cartItems.reduce((sum, item) => {
       const marketPrice = getLineItemMarketPrice(item);
@@ -581,26 +578,21 @@ export function useCart() {
     }, 0);
   }, [store.cartItems]);
 
-  // 2. [FIX] Tính toán lại danh sách Item dựa trên điều kiện minOrderValue
-  // Nếu Market Subtotal < minOrderValue -> Revert giá sản phẩm về giá gốc
+  // 2. Tính toán lại danh sách Item dựa trên điều kiện minOrderValue của Promotion
   const effectiveCartItems = useMemo(() => {
     return store.cartItems.map((item) => {
       const promotion = (item.item as any).promotion;
 
-      // Kiểm tra xem item này có promotion kèm minOrderValue không
       if (
         promotion &&
         typeof promotion === "object" &&
         promotion.minOrderValue > 0
       ) {
-        // So sánh với Tổng giá trị thực của giỏ hàng
         if (marketSubtotal < promotion.minOrderValue) {
           const marketPrice = getLineItemMarketPrice(item);
-          // Trả về item với giá đã bị đưa về gốc (hiển thị UI)
           return {
             ...item,
             totalPrice: marketPrice,
-            // Thêm flag để UI có thể hiển thị cảnh báo (tuỳ chọn)
             promotionWarning: `Đơn hàng chưa đạt tối thiểu ${promotion.minOrderValue.toLocaleString()}đ để áp dụng giá ưu đãi.`,
           };
         }
@@ -609,7 +601,7 @@ export function useCart() {
     });
   }, [store.cartItems, marketSubtotal]);
 
-  // 3. Tính Subtotal cuối cùng (Dựa trên Effective Items)
+  // 3. Tính Subtotal cuối cùng
   const subtotal = useMemo(
     () =>
       effectiveCartItems.reduce((sum, i) => sum + i.totalPrice * i.quantity, 0),
@@ -621,14 +613,10 @@ export function useCart() {
     [store.cartItems]
   );
 
-
-  useEffect(() => {
-    if (appliedCoupons.length === 0) return;
-
-    const idsToRemove: string[] = [];
-
-    // [RECOMMENDED] Map dữ liệu chuẩn xác để hàm checkCouponEligibility hoạt động đúng
-    const cartContext = {
+  // 4. Xử lý Coupon Status (Dùng để hiển thị trong Modal chọn mã)
+  const processedCoupons = useMemo(() => {
+    // Map dữ liệu chuẩn xác để kiểm tra logic
+    const cartContextData = {
       items: effectiveCartItems.map((i) => ({
         productId: i.item.id,
         quantity: i.quantity,
@@ -638,45 +626,9 @@ export function useCart() {
       total: subtotal,
     };
 
-    appliedCoupons.forEach((coupon) => {
-      // 1. Kiểm tra bằng logic điều kiện phức tạp
-      const check = checkCouponEligibility(coupon, cartContext, me);
-
-      // 2. Kiểm tra cứng Min Order Value (nếu có)
-      const minOrderVal =
-        (coupon as any).minOrderValue || (coupon as any).minOrderAmount || 0;
-
-      const isNotEnoughMoney = minOrderVal > 0 && subtotal < minOrderVal;
-
-      if (!check.isEligible || isNotEnoughMoney) {
-        idsToRemove.push(coupon.id);
-      }
-    });
-
-    // Nếu có coupon không hợp lệ, thực hiện gỡ bỏ
-    if (idsToRemove.length > 0) {
-      idsToRemove.forEach((id) => removeCoupon(id));
-
-      toast.warning(
-        "Mã giảm giá đã bị gỡ do đơn hàng thay đổi không còn đủ điều kiện.",
-        { duration: 3000 }
-      );
-    }
-  }, [
-    subtotal,
-    effectiveCartItems,
-    appliedCoupons, // Đã thay store.appliedCoupons bằng biến cục bộ
-    me,
-    removeCoupon, // Đã thay store.removeCoupon bằng biến cục bộ
-  ]);
-
-  // 4. Xử lý Coupon (Voucher)
-  const processedCoupons = useMemo(() => {
-    const cartContext = { items: effectiveCartItems, subtotal }; // Dùng effectiveCartItems
-
     return store.availableCoupons.map((coupon) => {
       // @ts-ignore
-      const check = checkCouponEligibility(coupon, cartContext, me);
+      const check = checkCouponEligibility(coupon, cartContextData, me);
 
       const backendReason = (coupon as any).inapplicableReason;
       const isBackendApplicable = (coupon as any).isApplicable !== false;
@@ -734,7 +686,7 @@ export function useCart() {
     [processedCoupons, personalCoupons]
   );
 
-  // [CHANGE 3]: Cập nhật logic tính Discount để hỗ trợ thêm type "referral"
+  // 5. Tính toán Discount
   const { itemDiscount, shippingDiscount } = useMemo(() => {
     let totalItemDiscount = 0;
     let totalShippingDiscount = 0;
@@ -756,8 +708,6 @@ export function useCart() {
       }
     }
 
-    // --- Xử lý Giảm giá (Discount Code & Referral) ---
-    // [UPDATE]: Chấp nhận cả "discount_code" VÀ "referral" nếu valueType không phải là "gift_item"
     const discountCoupon = store.appliedCoupons.find(
       (c) =>
         (c.type === "discount_code" || c.type === "referral") &&
@@ -807,11 +757,11 @@ export function useCart() {
 
   return {
     ...store,
-    cartItems: effectiveCartItems, // [QUAN TRỌNG] Ghi đè cartItems bằng danh sách đã tính toán lại giá
+    cartItems: effectiveCartItems,
     giftLines,
     giftTotal,
     subtotal,
-    cartCount: cartCount + giftLines.length, // [OPTIONAL]: Cộng thêm số lượng quà vào badge giỏ hàng nếu muốn
+    cartCount: cartCount + giftLines.length,
     personalCoupons,
     publicCoupons,
     itemDiscount,
@@ -824,17 +774,76 @@ export function useCart() {
   };
 }
 
+/** * ===== MANAGER COMPONENT (SINGLETON) =====
+ * Component này chịu trách nhiệm:
+ * 1. Fetch dữ liệu coupon/surcharge khi mới vào.
+ * 2. Theo dõi và tự động gỡ coupon không hợp lệ khi giỏ hàng thay đổi.
+ * Đặt component này ở ClientCommons hoặc Layout (chỉ render 1 lần duy nhất).
+ */
 export function CartStoreInitializer() {
   const fetchAvailableCoupons = useCartStore((s) => s.fetchAvailableCoupons);
   const fetchSurcharges = useCartStore((s) => s.fetchSurcharges);
+
+  // Lấy dữ liệu cần thiết từ store để kiểm tra
+  const { appliedCoupons, removeCoupon } = useCartStore();
+  const { cartItems, subtotal } = useCart(); // Dùng hook useCart để lấy items và subtotal đã tính toán
+  const { me } = useAuthStore();
+
   const ranRef = useRef(false);
 
+  // 1. Initial Fetch
   useEffect(() => {
     if (ranRef.current) return;
     ranRef.current = true;
     fetchAvailableCoupons();
     fetchSurcharges();
   }, [fetchAvailableCoupons, fetchSurcharges]);
+
+  // 2. Auto-Validation Logic (Singleton)
+  useEffect(() => {
+    if (appliedCoupons.length === 0) return;
+
+    const idsToRemove: string[] = [];
+
+    // Map dữ liệu chuẩn xác để function checkCouponEligibility hiểu được
+    const cartContextData = {
+      items: cartItems.map((i: any) => ({
+        productId: i.item.id,
+        quantity: i.quantity,
+        price: i.totalPrice,
+        categoryIds: i.item.categoryIds, // Quan trọng để check điều kiện danh mục
+      })),
+      subtotal: subtotal,
+      total: subtotal,
+    };
+
+    appliedCoupons.forEach((coupon) => {
+      // 1. Check logic phức tạp
+      // @ts-ignore
+      const check = checkCouponEligibility(coupon, cartContextData, me);
+
+      // 2. Check logic min order value cứng
+      const minOrderVal =
+        (coupon as any).minOrderValue || (coupon as any).minOrderAmount || 0;
+
+      const isNotEnoughMoney = minOrderVal > 0 && subtotal < minOrderVal;
+
+      if (!check.isEligible || isNotEnoughMoney) {
+        idsToRemove.push(coupon.id);
+      }
+    });
+
+    if (idsToRemove.length > 0) {
+      idsToRemove.forEach((id) => removeCoupon(id));
+
+      toast.warning(
+        "Mã giảm giá đã bị gỡ do đơn hàng thay đổi không còn đủ điều kiện.",
+        {
+          duration: 3000,
+        }
+      );
+    }
+  }, [subtotal, cartItems, appliedCoupons, me, removeCoupon]);
 
   return null;
 }
