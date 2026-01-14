@@ -9,6 +9,7 @@ import { checkCouponEligibility } from "@/utils/checkCouponEligibility";
 import { CartActions, CartLine, CartState, GiftLineItem } from "@/types/cart";
 import { Coupon } from "@/types";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { toast } from "sonner"; // Thêm import này để hiển thị thông báo
 
 // --- CONSTANTS & TYPES ---
 const DEFAULT_SHIPPING_FEE = 0;
@@ -540,32 +541,34 @@ export const useCartStore = create<ExtendedCartStore>()(
 /** ===== PUBLIC HOOK ===== */
 export function useCart() {
   const store = useCartStore();
+
+  const { appliedCoupons, removeCoupon } = store;
   const { me } = useAuthStore();
 
   const { giftLines, giftTotal } = useMemo(() => {
     const lines: GiftLineItem[] = [];
     let total = 0;
-    
+
     store.appliedCoupons.forEach((coupon) => {
       if (coupon.giftItems && coupon.giftItems.length > 0) {
         coupon.giftItems.forEach((gift) => {
           const quantity = 1; // Mặc định 1 (hoặc logic khác nếu cần)
           const price = gift.price || 0; // Giá admin set (0 hoặc > 0)
-          
+
           lines.push({
             id: gift.item,
             name: gift.name || "Quà tặng",
             itemType: gift.itemType,
-            quantity: quantity, 
-            price: price, 
+            quantity: quantity,
+            price: price,
             sourceCouponCode: coupon.code || "VOUCHER",
           });
-          
+
           total += price * quantity;
         });
       }
     });
-    
+
     return { giftLines: lines, giftTotal: total };
   }, [store.appliedCoupons]);
 
@@ -618,9 +621,57 @@ export function useCart() {
     [store.cartItems]
   );
 
+
+  useEffect(() => {
+    if (appliedCoupons.length === 0) return;
+
+    const idsToRemove: string[] = [];
+
+    // [RECOMMENDED] Map dữ liệu chuẩn xác để hàm checkCouponEligibility hoạt động đúng
+    const cartContext = {
+      items: effectiveCartItems.map((i) => ({
+        productId: i.item.id,
+        quantity: i.quantity,
+        price: i.totalPrice,
+      })),
+      subtotal: subtotal,
+      total: subtotal,
+    };
+
+    appliedCoupons.forEach((coupon) => {
+      // 1. Kiểm tra bằng logic điều kiện phức tạp
+      const check = checkCouponEligibility(coupon, cartContext, me);
+
+      // 2. Kiểm tra cứng Min Order Value (nếu có)
+      const minOrderVal =
+        (coupon as any).minOrderValue || (coupon as any).minOrderAmount || 0;
+
+      const isNotEnoughMoney = minOrderVal > 0 && subtotal < minOrderVal;
+
+      if (!check.isEligible || isNotEnoughMoney) {
+        idsToRemove.push(coupon.id);
+      }
+    });
+
+    // Nếu có coupon không hợp lệ, thực hiện gỡ bỏ
+    if (idsToRemove.length > 0) {
+      idsToRemove.forEach((id) => removeCoupon(id));
+
+      toast.warning(
+        "Mã giảm giá đã bị gỡ do đơn hàng thay đổi không còn đủ điều kiện.",
+        { duration: 3000 }
+      );
+    }
+  }, [
+    subtotal,
+    effectiveCartItems,
+    appliedCoupons, // Đã thay store.appliedCoupons bằng biến cục bộ
+    me,
+    removeCoupon, // Đã thay store.removeCoupon bằng biến cục bộ
+  ]);
+
   // 4. Xử lý Coupon (Voucher)
   const processedCoupons = useMemo(() => {
-    // @ts-ignore
     const cartContext = { items: effectiveCartItems, subtotal }; // Dùng effectiveCartItems
 
     return store.availableCoupons.map((coupon) => {
@@ -748,7 +799,7 @@ export function useCart() {
   );
 
   const finalShippingFee = Math.max(0, store.shippingFee - shippingDiscount);
- 
+
   const finalTotal = Math.max(
     0,
     subtotal - itemDiscount + finalShippingFee + totalSurcharge + giftTotal
@@ -760,7 +811,7 @@ export function useCart() {
     giftLines,
     giftTotal,
     subtotal,
-    cartCount: cartCount + giftLines.length, // [OPTIONAL]: Cộng thêm số lượng quà vào badge giỏ hàng nếu muốn    
+    cartCount: cartCount + giftLines.length, // [OPTIONAL]: Cộng thêm số lượng quà vào badge giỏ hàng nếu muốn
     personalCoupons,
     publicCoupons,
     itemDiscount,

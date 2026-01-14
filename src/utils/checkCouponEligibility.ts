@@ -14,7 +14,6 @@ export type CartData = {
     productId: string;
     quantity: number;
     price: number;
-    categoryIds?: string[];
   }[];
   subtotal: number;
   total?: number;
@@ -40,7 +39,6 @@ interface EvaluationContext {
     items: CartData["items"];
     total: number;
     subtotal: number;
-    categoryIds: string[];
   };
 }
 
@@ -144,9 +142,6 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
   order_total_items: (ctx) => {
     return ctx.order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   },
-
-  // Trả về mảng category của các item trong giỏ
-  order_category_ids: (ctx) => ctx.order.categoryIds,
 
   current_day_of_week: (ctx) => {
     return new Date().getDay(); // 0 (Chủ nhật) đến 6 (Thứ bảy)
@@ -323,18 +318,12 @@ export const checkCouponEligibility = (
     return { isEligible: true, reason: null };
   }
 
-  // C. Chuẩn bị Context
-  const categoryIds = Array.from(
-    new Set(cart.items.flatMap((i) => i.categoryIds || []))
-  );
-
   const context: EvaluationContext = {
     customer: user,
     order: {
       items: cart.items,
       total: cart.total || cart.subtotal,
       subtotal: cart.subtotal,
-      categoryIds: categoryIds,
     },
   };
 
