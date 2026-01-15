@@ -139,6 +139,7 @@ interface ExtendedCartStore extends CartState, ExtendedStateData, CartActions {
 const initialState: CartState & ExtendedStateData = {
   cartItems: [],
   showCart: false,
+  fulfillmentType: "delivery",
   publicCoupons: [],
   isLoadingPublicCoupons: false,
   publicCouponsFetchedAt: 0,
@@ -179,6 +180,8 @@ export const useCartStore = create<ExtendedCartStore>()(
           productForOptions: null,
         });
       },
+
+      setFulfillmentType: (type) => set({ fulfillmentType: type }),
 
       addItemToCart: (itemData) => {
         const cartId = buildVariantKey(itemData);
@@ -744,15 +747,24 @@ export function useCart() {
   }, [subtotal, store.appliedCoupons, store.shippingFee]);
 
   const totalSurcharge = useMemo(
-    () => store.surcharges.reduce((sum, s) => sum + s.cost, 0),
-    [store.surcharges]
+    () => {
+        // Nếu là pickup -> Phụ thu = 0
+        if (store.fulfillmentType === "pickup") return 0;
+        return store.surcharges.reduce((sum, s) => sum + s.cost, 0);
+    },
+    [store.surcharges, store.fulfillmentType]
   );
 
-  const finalShippingFee = Math.max(0, store.shippingFee - shippingDiscount);
+  const finalShippingFee = useMemo(() => {
+    // Nếu là pickup -> Ship = 0
+    if (store.fulfillmentType === "pickup") return 0;
+    return Math.max(0, store.shippingFee - shippingDiscount);
+  }, [store.fulfillmentType, store.shippingFee, shippingDiscount]);
 
+  // Tổng tiền cuối
   const finalTotal = Math.max(
     0,
-    subtotal - itemDiscount + finalShippingFee + totalSurcharge + giftTotal
+    subtotal + finalShippingFee + totalSurcharge + giftTotal - itemDiscount
   );
 
   return {

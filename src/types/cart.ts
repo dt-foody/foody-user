@@ -101,6 +101,9 @@ export interface CartState {
   showCart: boolean;
   productForOptions: Product | null;
   comboForSelection: Combo | null;
+
+  fulfillmentType: "delivery" | "pickup";
+
   deliveryOption: DeliveryOption;
   scheduledDate: string;
   scheduledTime: string;
@@ -133,6 +136,9 @@ export interface CartActions {
   setShowCart: (show: boolean) => void;
   setProductForOptions: (product: Product | null) => void;
   setComboForSelection: (combo: Combo | null) => void;
+
+  setFulfillmentType: (type: "delivery" | "pickup") => void;
+  
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
   setScheduledTime: (time: string) => void;

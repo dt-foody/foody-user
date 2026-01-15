@@ -20,6 +20,8 @@ import {
   Info,
   AlertTriangle,
   Gift,
+  Store,
+  Bike,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -33,8 +35,8 @@ import {
 } from "@/types/cart";
 import { getCartItemPrices } from "@/utils/cartHelper";
 import Link from "next/link";
-import AnonymousCheckoutModal from "./AnonymousCheckoutModal";
 import foodImageDefault from "../images/food_image_default.jpg";
+import { dealSettingService } from "@/services/dealSetting.service";
 
 const PLACEHOLDER_IMAGE = foodImageDefault;
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
@@ -260,6 +262,9 @@ export default function CartSidebar() {
     publicCoupons,
     isLoadingCoupons,
     fetchAvailableCoupons,
+
+    fulfillmentType,
+    setFulfillmentType,
   } = useCart();
 
   const totalSaved = useMemo(() => {
@@ -310,6 +315,39 @@ export default function CartSidebar() {
     // PLACEHOLDER_IMAGE là StaticImageData, cần dùng .src để lấy string path
     e.currentTarget.src = (PLACEHOLDER_IMAGE as any).src || PLACEHOLDER_IMAGE;
   };
+
+  // [NEW] State cho settings
+  const [settings, setSettings] = useState<any>({});
+  const [loadingSetting, setLoadingSetting] = useState(false);
+
+  // [NEW] Fetch settings khi mount
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      setLoadingSetting(true);
+      try {
+        const data = await dealSettingService.getAll({});
+        if (data && data.results && data.results.length) {
+          const setting = data.results[0];
+          setSettings(setting);
+
+          // Logic set default nếu chưa chọn gì hợp lý (optional vì store đã có default)
+          // Nhưng nếu user đang để Delivery mà Delivery bị tắt -> switch sang Pickup
+          if (
+            !setting.homeDelivery?.value &&
+            setting.storePickup?.value &&
+            fulfillmentType === "delivery"
+          ) {
+            setFulfillmentType("pickup");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingSetting(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // --- RENDER COUPON PANEL ---
   const renderCouponPanel = () => (
@@ -429,6 +467,46 @@ export default function CartSidebar() {
           </button>
         </div>
       </div>
+
+      {/* [NEW] FULFILLMENT TOGGLE - Đặt ngay dưới Header hoặc trên danh sách món */}
+      {!loadingSetting &&
+        (settings.homeDelivery?.value || settings.storePickup?.value) && (
+          <div className="px-4 py-2 bg-white border-b border-gray-100">
+            <div className="flex p-1 bg-gray-100 rounded-lg">
+              {settings.homeDelivery?.value && (
+                <button
+                  onClick={() => setFulfillmentType("delivery")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-sm font-bold transition-all ${
+                    fulfillmentType === "delivery"
+                      ? "bg-white text-primary-600 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Bike size={14} /> Giao hàng
+                </button>
+              )}
+
+              {settings.storePickup?.value && (
+                <button
+                  onClick={() => setFulfillmentType("pickup")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-sm font-bold transition-all ${
+                    fulfillmentType === "pickup"
+                      ? "bg-white text-primary-600 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Store size={14} /> Mang về
+                </button>
+              )}
+            </div>
+            {/* Note Warning */}
+            {fulfillmentType === "pickup" && settings.storePickup?.note && (
+              <p className="text-[10px] text-blue-600 italic mt-1 px-1">
+                * {settings.storePickup.note}
+              </p>
+            )}
+          </div>
+        )}
 
       {/* Address */}
       {user && selectedAddress && (
@@ -726,7 +804,7 @@ export default function CartSidebar() {
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className="font-medium">
-                    {originalShippingFee.toLocaleString("vi-VN")}đ
+                    +{originalShippingFee.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
                 {itemDiscount > 0 && (
@@ -746,7 +824,7 @@ export default function CartSidebar() {
                   </div>
                 )}
 
-                {totalSurcharge > 0 && (
+                {totalSurcharge >= 0 && (
                   <div className="group relative flex justify-between text-sm text-gray-500">
                     <div className="flex items-center gap-1 cursor-pointer">
                       <span>Phụ thu dịch vụ</span>
@@ -821,8 +899,8 @@ export default function CartSidebar() {
       )}
       {!user && (
         <div className="px-4 py-3 border-t bg-yellow-50 gap-2 text-sm text-yellow-800">
-          Đăng ký tài khoản để theo dõi đơn hàng và không bỏ lỡ quà tặng cũng như những đặc quyền chỉ dành riêng cho thành viên.
-          &nbsp;
+          Đăng ký tài khoản để theo dõi đơn hàng và không bỏ lỡ quà tặng cũng
+          như những đặc quyền chỉ dành riêng cho thành viên. &nbsp;
           <Link
             href="/signup"
             className="font-semibold text-primary-600 underline"
@@ -867,14 +945,6 @@ export default function CartSidebar() {
           </div>
         </div>
       </div>
-      <AnonymousCheckoutModal
-        isOpen={showAnonymousModal}
-        onClose={() => setShowAnonymousModal(false)}
-        cartItems={cartItems}
-        subtotal={subtotal}
-        shippingFee={originalShippingFee}
-        finalTotal={finalTotal}
-      />
     </div>
   );
 }

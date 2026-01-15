@@ -102,6 +102,9 @@ export default function CheckoutPage() {
     setSelectedAddress,
     isCalculatingShip,
     recalculateShippingFee,
+
+    fulfillmentType,
+    setFulfillmentType,
   } = useCart();
 
   const router = useRouter();
@@ -112,11 +115,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [loadingSetting, setLoadingSetting] = useState(false);
   const [settings, setSettings] = useState<any>({});
-
-  // 🔥 State mới: Loại hình nhận hàng
-  const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">(
-    "delivery"
-  );
 
   // 🔥 Local state cho khung giờ (UI only)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
@@ -130,25 +128,6 @@ export default function CheckoutPage() {
   // Nếu là Pickup, phí ship = 0. Nếu Delivery, dùng phí ship từ store.
   const displayShippingFee =
     fulfillmentType === "pickup" ? 0 : originalShippingFee;
-
-  // Tính lại tổng tiền hiển thị dựa trên phí ship mới
-  // Công thức: Tổng hiển thị = (Subtotal + Surcharge - Discounts) + DisplayShipping
-  // Tuy nhiên, finalTotal trong store = (Subtotal + Surcharge - Discounts) + originalShippingFee
-  // => DisplayTotal = finalTotal - originalShippingFee + displayShippingFee
-  // Lưu ý: Cần xử lý trường hợp mã freeship (shippingDiscount) nếu chuyển sang pickup
-  const displayFinalTotal = React.useMemo(() => {
-    // Lấy phần tiền hàng (chưa ship)
-    const totalWithoutShip =
-      finalTotal - (originalShippingFee - shippingDiscount);
-
-    // Nếu Pickup: Ship = 0, Discount Ship = 0
-    if (fulfillmentType === "pickup") {
-      return Math.max(0, totalWithoutShip + 0);
-    }
-
-    // Nếu Delivery: Giữ nguyên logic store
-    return finalTotal;
-  }, [finalTotal, originalShippingFee, shippingDiscount, fulfillmentType]);
 
   // Xử lý khi chọn vị trí trên HereMap
   const handleLocationSelect = (data: {
@@ -233,17 +212,19 @@ export default function CheckoutPage() {
           const setting = data.results[0];
           setSettings(setting);
 
-          // --- Logic chọn mặc định dựa trên cấu hình mới ---
+          // --- Logic chọn mặc định dựa trên cấu hình mới (Đã sửa) ---
 
           // 1. Logic chọn Fulfilment Default
-          // Nếu HomeDelivery tắt và StorePickup bật -> set Pickup
+          // Case 1: Nếu Shop TẮT Giao hàng, chỉ BẬT Mang về -> Buộc set thành Pickup
           if (!setting.homeDelivery?.value && setting.storePickup?.value) {
             setFulfillmentType("pickup");
           }
-          // Ngược lại mặc định là delivery (nếu delivery bật hoặc cả 2 đều bật/tắt)
-          else {
+          // Case 2: Nếu Shop TẮT Mang về, chỉ BẬT Giao hàng -> Buộc set thành Delivery
+          // (Điều này xử lý trường hợp user chọn Pickup từ trước nhưng giờ shop đã tắt)
+          else if (setting.homeDelivery?.value && !setting.storePickup?.value) {
             setFulfillmentType("delivery");
           }
+          // Case 3: Nếu cả 2 đều BẬT -> Không làm gì cả, giữ nguyên lựa chọn của User (từ Store/Sidebar)
 
           // 2. Kiểm tra Giao hàng: Nếu Giao nhanh bị tắt (.value === false) và Hẹn giờ đang bật
           if (
@@ -252,8 +233,9 @@ export default function CheckoutPage() {
           ) {
             setDeliveryOption("scheduled");
           }
-          // Ngược lại, nếu Giao nhanh bật, mặc định chọn immediate (hoặc giữ nguyên state ban đầu)
+          // Ngược lại, nếu Giao nhanh bật, mặc định chọn immediate
           else if (setting.fastDelivery?.value) {
+             // Có thể giữ nguyên logic này hoặc bỏ else để tôn trọng lựa chọn cũ nếu muốn
             setDeliveryOption("immediate");
           }
 
@@ -273,6 +255,7 @@ export default function CheckoutPage() {
       }
     };
     fetchSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
    // Helper function để lấy thông tin liên hệ (Email/Phone)
@@ -289,8 +272,6 @@ export default function CheckoutPage() {
       setPhone(selectedAddress.recipientPhone || "");
     } else {
       const { me: profile } = useAuthStore.getState();
-
-      console.log("profile", profile)
       
       setName(profile ? profile.name || "" : "");
       setPhone(profile ? getContactValue(profile.phones || []) || "": "")
@@ -406,7 +387,7 @@ export default function CheckoutPage() {
       discountAmount:
         itemDiscount + (fulfillmentType === "pickup" ? 0 : shippingDiscount),
       shippingFee: finalShippingFee,
-      grandTotal: displayFinalTotal, // Sử dụng giá trị hiển thị đã tính toán
+      grandTotal: finalTotal, // Sử dụng giá trị hiển thị đã tính toán
       payment: {
         method: (paymentMethod === "cod" ? "cash" : "payos") as PaymentMethod,
       },
@@ -1032,7 +1013,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between border-t pt-2 mt-1 font-bold text-lg">
               <span>Tổng cộng</span>
               <span className="text-[#b9915f]">
-                {displayFinalTotal.toLocaleString("vi-VN")}đ
+                {finalTotal.toLocaleString("vi-VN")}đ
               </span>
             </div>
           </div>
@@ -1047,7 +1028,7 @@ export default function CheckoutPage() {
             {loading ? (
               <Loader2 className="animate-spin mx-auto" />
             ) : (
-              `Đặt hàng • ${displayFinalTotal.toLocaleString("vi-VN")}đ`
+              `Đặt hàng • ${finalTotal.toLocaleString("vi-VN")}đ`
             )}
           </button>
         </div>
