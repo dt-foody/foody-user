@@ -267,6 +267,9 @@ export default function CartSidebar() {
     setFulfillmentType,
   } = useCart();
 
+  const displayShippingFee =
+    fulfillmentType === "pickup" ? 0 : originalShippingFee;
+
   const totalSaved = useMemo(() => {
     return cartItems.reduce((acc, item) => {
       const { savedAmountPerItem } = getCartItemPrices(item);
@@ -804,7 +807,7 @@ export default function CartSidebar() {
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Phí vận chuyển</span>
                   <span className="font-medium">
-                    +{originalShippingFee.toLocaleString("vi-VN")}đ
+                    +{displayShippingFee.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
                 {itemDiscount > 0 && (
