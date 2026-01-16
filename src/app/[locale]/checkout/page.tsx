@@ -116,6 +116,8 @@ export default function CheckoutPage() {
   const [loadingSetting, setLoadingSetting] = useState(false);
   const [settings, setSettings] = useState<any>({});
 
+  const [isRestrictedTime, setIsRestrictedTime] = useState(false);
+
   // 🔥 Local state cho khung giờ (UI only)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
@@ -123,6 +125,22 @@ export default function CheckoutPage() {
 
   // Thông tin địa chỉ tạm thời khi người dùng thao tác trên bản đồ
   const [tempAddress, setTempAddress] = useState<any>(null);
+
+  useEffect(() => {
+    const checkTime = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      // Logic: Từ 21h trở đi HOẶC trước 7h HOẶC (7h mà phút < 30)
+      const isRestricted =
+        hours >= 21 || hours < 7 || (hours === 7 && minutes < 30);
+      setIsRestrictedTime(isRestricted);
+      return isRestricted;
+    };
+
+    checkTime();
+  }, []);
 
   // --- LOGIC TÍNH TOÁN HIỂN THỊ (Overrides Store Logic) ---
   // Nếu là Pickup, phí ship = 0. Nếu Delivery, dùng phí ship từ store.
@@ -212,7 +230,15 @@ export default function CheckoutPage() {
           const setting = data.results[0];
           setSettings(setting);
 
-          // --- Logic chọn mặc định dựa trên cấu hình mới (Đã sửa) ---
+          // --- Logic chọn mặc định dựa trên cấu hình mới ---
+
+          // --- LOGIC KIỂM TRA GIỜ (THÊM VÀO ĐÂY) ---
+          const now = new Date();
+          const hours = now.getHours();
+          const minutes = now.getMinutes();
+          // Kiểm tra lại lần nữa tại thời điểm fetch xong
+          const isRestricted =
+            hours >= 21 || hours < 7 || (hours === 7 && minutes < 30);
 
           // 1. Logic chọn Fulfilment Default
           // Case 1: Nếu Shop TẮT Giao hàng, chỉ BẬT Mang về -> Buộc set thành Pickup
@@ -227,16 +253,21 @@ export default function CheckoutPage() {
           // Case 3: Nếu cả 2 đều BẬT -> Không làm gì cả, giữ nguyên lựa chọn của User (từ Store/Sidebar)
 
           // 2. Kiểm tra Giao hàng: Nếu Giao nhanh bị tắt (.value === false) và Hẹn giờ đang bật
-          if (
-            !setting.fastDelivery?.value &&
-            setting.scheduledDelivery?.value
-          ) {
+
+          if (isRestricted) {
             setDeliveryOption("scheduled");
-          }
-          // Ngược lại, nếu Giao nhanh bật, mặc định chọn immediate
-          else if (setting.fastDelivery?.value) {
-             // Có thể giữ nguyên logic này hoặc bỏ else để tôn trọng lựa chọn cũ nếu muốn
-            setDeliveryOption("immediate");
+          } else {
+            if (
+              !setting.fastDelivery?.value &&
+              setting.scheduledDelivery?.value
+            ) {
+              setDeliveryOption("scheduled");
+            }
+            // Ngược lại, nếu Giao nhanh bật, mặc định chọn immediate
+            else if (setting.fastDelivery?.value) {
+              // Có thể giữ nguyên logic này hoặc bỏ else để tôn trọng lựa chọn cũ nếu muốn
+              setDeliveryOption("immediate");
+            }
           }
 
           // 3. Kiểm tra Thanh toán: Nếu Tiền mặt bị tắt và Chuyển khoản đang bật
@@ -255,15 +286,15 @@ export default function CheckoutPage() {
       }
     };
     fetchSettings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-   // Helper function để lấy thông tin liên hệ (Email/Phone)
-    const getContactValue = (items: CustomerPhone[]) => {
-      if (!items || items.length === 0) return null;
-      const primary = items.find((item) => item.isPrimary);
-      return primary ? primary.value : items[0].value;
-    };
+  // Helper function để lấy thông tin liên hệ (Email/Phone)
+  const getContactValue = (items: CustomerPhone[]) => {
+    if (!items || items.length === 0) return null;
+    const primary = items.find((item) => item.isPrimary);
+    return primary ? primary.value : items[0].value;
+  };
 
   // Điền thông tin người nhận từ địa chỉ đã chọn
   useEffect(() => {
@@ -272,9 +303,9 @@ export default function CheckoutPage() {
       setPhone(selectedAddress.recipientPhone || "");
     } else {
       const { me: profile } = useAuthStore.getState();
-      
+
       setName(profile ? profile.name || "" : "");
-      setPhone(profile ? getContactValue(profile.phones || []) || "": "")
+      setPhone(profile ? getContactValue(profile.phones || []) || "" : "");
     }
   }, [selectedAddress]);
 
@@ -712,25 +743,52 @@ export default function CheckoutPage() {
                   <div className="space-y-4">
                     {/* --- Option 1: Giao nhanh (Khi BẬT) --- */}
                     {settings.fastDelivery?.value && (
-                      <div className="flex flex-col gap-1">
-                        <label className="flex items-center gap-3 cursor-pointer group">
+                      <div
+                        className={`flex flex-col gap-1 ${
+                          isRestrictedTime ? "opacity-60" : ""
+                        }`}
+                      >
+                        {" "}
+                        <label
+                          className={`flex items-center gap-3 cursor-pointer group ${
+                            isRestrictedTime ? "cursor-not-allowed" : ""
+                          }`}
+                        >
+                          {" "}
                           <input
                             type="radio"
                             name="delivery"
+                            disabled={isRestrictedTime}
                             className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                             checked={deliveryOption === "immediate"}
-                            onChange={() => setDeliveryOption("immediate")}
+                            onChange={() =>
+                              !isRestrictedTime &&
+                              setDeliveryOption("immediate")
+                            }
                           />
                           <span className="font-medium text-gray-800 group-hover:text-blue-700 transition-colors">
                             Giao nhanh ngay
+                            {isRestrictedTime && (
+                              <span className="text-red-500 text-xs ml-2 font-normal">
+                                (Tạm đóng)
+                              </span>
+                            )}
                           </span>
                         </label>
-                        {/* Note con của Giao nhanh */}
-                        {shouldShowNote(settings.fastDelivery) && (
-                          <p className="ml-7 text-xs text-blue-600 italic leading-relaxed">
-                            * {settings.fastDelivery.note}
+                        {/* 🔥 Hiển thị thông báo lý do bị đóng */}
+                        {isRestrictedTime && (
+                          <p className="ml-7 text-sm text-yellow-600 leading-relaxed">
+                            Tính năng giao ngay chỉ hoạt động từ 07:30 đến
+                            21:00.
                           </p>
                         )}
+                        {/* Note gốc từ setting (chỉ hiện nếu chưa có thông báo trên để đỡ rối) */}
+                        {!isRestrictedTime &&
+                          shouldShowNote(settings.fastDelivery) && (
+                            <p className="ml-7 text-xs text-blue-600 italic leading-relaxed">
+                              * {settings.fastDelivery.note}
+                            </p>
+                          )}
                       </div>
                     )}
 

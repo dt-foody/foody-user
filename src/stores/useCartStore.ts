@@ -369,6 +369,8 @@ export const useCartStore = create<ExtendedCartStore>()(
             } catch (e) {
               console.warn("Invalid scheduled time, falling back to now");
             }
+          } else {
+            return;
           }
         }
 
