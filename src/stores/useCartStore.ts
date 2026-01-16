@@ -359,6 +359,19 @@ export const useCartStore = create<ExtendedCartStore>()(
 
         let orderTime = new Date().toISOString();
 
+        if (deliveryOption === "scheduled") {
+          if (scheduledDate && scheduledTime) {
+            try {
+              const combined = new Date(`${scheduledDate}T${scheduledTime}`);
+              if (!isNaN(combined.getTime())) {
+                orderTime = combined.toISOString();
+              }
+            } catch (e) {
+              console.warn("Invalid scheduled time, falling back to now");
+            }
+          }
+        }
+
         try {
           set({ isCalculatingShip: true });
           const res = await orderService.getShippingFee(lat, lng, orderTime);
