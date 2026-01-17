@@ -24,6 +24,8 @@ import {
   OrderItemComboSelection,
   OrderItem,
 } from "@/types";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { initSocket } from "@/lib/socket";
 
 // =================================================================
 // 1. HELPER COMPONENTS
@@ -445,6 +447,7 @@ const AccountOrders = () => {
   const [loading, setLoading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [error, setError] = useState("");
+  const { user } = useAuthStore();
 
   const fetchOrders = async (pageNum = 1) => {
     try {
@@ -480,6 +483,58 @@ const AccountOrders = () => {
     setPage(next);
     fetchOrders(next);
   };
+
+  // =================================================================
+  // [THÊM MỚI] LOGIC SOCKET REAL-TIME
+  // =================================================================
+  useEffect(() => {
+    // Nếu chưa đăng nhập thì không kết nối
+    if (!user) return;
+
+    // Khởi tạo hoặc lấy instance socket
+    const socket = initSocket();
+
+    if (socket) {
+      // Lắng nghe sự kiện 'order_update' từ backend
+      socket.on("order_update", (data: any) => {
+        console.log("data", data);
+        // Backend gửi format: { type: 'ORDER_UPDATE', payload: order }
+        if (data && data.type === "ORDER_UPDATE" && data.payload) {
+          const updatedOrder = data.payload;
+          
+          console.log("🔔 Có đơn hàng cập nhật:", updatedOrder.orderId, updatedOrder.status);
+
+          setOrders((prevOrders) => {
+            // Tìm xem đơn hàng này có đang hiển thị trong danh sách không
+            const index = prevOrders.findIndex((o) => o.id === updatedOrder.id);
+            
+            if (index > -1) {
+              // Nếu có, tạo bản sao danh sách và cập nhật đơn hàng đó
+              const newOrders = [...prevOrders];
+              newOrders[index] = updatedOrder;
+              return newOrders;
+            }
+            
+            // Nếu đơn hàng không có trong danh sách hiện tại (ví dụ đang ở trang 2 mà đơn ở trang 1, 
+            // hoặc đơn hàng mới tạo chưa kịp fetch), ta giữ nguyên để tránh lỗi UI.
+            // Nếu muốn thêm đơn hàng mới vào đầu danh sách (cho trường hợp vừa đặt xong):
+            // if (page === 1) return [updatedOrder, ...prevOrders];
+            
+            return prevOrders;
+          });
+        }
+      });
+    } else {
+      console.log("Socket is not found");
+    }
+
+    // Cleanup: Hủy lắng nghe khi component unmount
+    return () => {
+      if (socket) {
+        socket.off("order_update");
+      }
+    };
+  }, [user, page]); // Dependency: user và page (để xử lý logic thêm mới nếu cần)
 
   return (
     <div className="min-h-screen bg-[#fffaf5] p-4 md:px-10 font-sans">
