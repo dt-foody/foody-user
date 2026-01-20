@@ -83,7 +83,7 @@ const FloatingContact = () => {
 
         {/* Nút Messenger */}
         <a
-          href="https://m.me/luuchi.caphechirua"
+          href="https://m.me/claritylab.vn"
           target="_blank"
           rel="noopener noreferrer"
           className="group relative flex items-center justify-center w-12 h-12 bg-[#0084FF] text-white rounded-full shadow-md hover:scale-110 transition-transform duration-200"
