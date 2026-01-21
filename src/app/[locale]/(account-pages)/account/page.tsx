@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react"; // Thêm useRef
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Mail,
@@ -11,7 +11,6 @@ import {
   Edit2,
   Loader,
   Info,
-  Users,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { customerService } from "@/services";
@@ -26,13 +25,15 @@ import { toast } from "sonner";
 import Input from "@/shared/Input";
 import Label from "@/components/Label";
 import dynamic from "next/dynamic";
-import { useSearchParams, useRouter, usePathname } from "next/navigation"; // Thêm router hooks
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Select from "@/shared/Select";
 
+// Dynamic import Map để tránh lỗi SSR
 const HereMapPicker = dynamic(() => import("@/components/HereMapPicker"), {
   ssr: false,
 });
 
+// --- HELPER FUNCTIONS ---
 const formatDateForInput = (value?: string) =>
   value ? new Date(value).toISOString().split("T")[0] : "";
 
@@ -54,13 +55,6 @@ type NewAddressState = Omit<
   fullAddressFromMap: string;
 };
 
-interface ReferralUser {
-  _id: string;
-  email: string;
-  phone: string;
-  name: string;
-}
-
 const initialNewAddressState: NewAddressState = {
   label: "",
   recipientName: "",
@@ -77,15 +71,14 @@ const initialNewAddressState: NewAddressState = {
 };
 
 const AccountPage = () => {
-  const { me, fetchUser } = useAuthStore();
+  const { fetchUser } = useAuthStore();
 
-  // --- FIX 1: QUẢN LÝ TAB BẰNG URL ---
+  // --- QUẢN LÝ TAB BẰNG URL ---
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const redirectUri = searchParams.get("redirect_uri");
-
   const tabParam = searchParams.get("tab");
   const activeTab = tabParam === "addresses" ? "addresses" : "profile";
 
@@ -95,6 +88,7 @@ const AccountPage = () => {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  // --- STATE ---
   const [customerData, setCustomerData] = useState<CustomerForm>({
     name: "",
     gender: "male",
@@ -109,7 +103,7 @@ const AccountPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Email/Phone State (Giữ nguyên)
+  // Email/Phone State
   const [newEmail, setNewEmail] = useState("");
   const [newEmailType, setNewEmailType] = useState<
     "Home" | "Company" | "Other"
@@ -122,21 +116,21 @@ const AccountPage = () => {
   // Address Form State
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(
-    null
+    null,
   );
   const [newAddress, setNewAddress] = useState<NewAddressState>(
-    initialNewAddressState
+    initialNewAddressState,
   );
 
   const addressFormRef = useRef<HTMLDivElement>(null);
 
+  // --- EFFECT: FETCH USER ---
   useEffect(() => {
     (async () => {
       setIsLoading(true);
       await fetchUser();
       const { me: profile } = useAuthStore.getState();
 
-      // const profile = useAuthStore.getState().me;
       if (profile) {
         setCustomerData({
           name: profile.name,
@@ -153,7 +147,7 @@ const AccountPage = () => {
     })();
   }, [fetchUser]);
 
-  // Cuộn xuống form khi mở form
+  // Cuộn xuống form khi mở form địa chỉ
   useEffect(() => {
     if (showAddressForm && addressFormRef.current) {
       addressFormRef.current.scrollIntoView({
@@ -163,14 +157,40 @@ const AccountPage = () => {
     }
   }, [showAddressForm]);
 
-  // ... (Giữ nguyên logic handleFormChange, handleAddEmail/Phone...)
+  // --- CORE HELPER: GỌI API UPDATE ---
+  // Hàm này dùng chung cho việc lưu ngay lập tức (Instant Save)
+  const saveProfileChange = async (updatedData: UpdateCustomerInput) => {
+    setIsSaving(true);
+    try {
+      await customerService.updateProfile(updatedData);
+      await fetchUser(); // Sync lại dữ liệu mới nhất từ server
+
+      // Update Local State để UI phản hồi ngay
+      setCustomerData((prev) => ({
+        ...prev,
+        ...updatedData,
+        addresses: updatedData.addresses || [],
+      }));
+
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Cập nhật thất bại, vui lòng thử lại.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // --- HANDLERS: PROFILE FORM ---
   const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setCustomerData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // --- HANDLERS: EMAIL & PHONE ---
   const handleAddEmail = () => {
     if (!newEmail) return toast.error("Vui lòng nhập email");
     const exists = customerData.emails.some((e) => e.value === newEmail);
@@ -186,7 +206,7 @@ const AccountPage = () => {
       primaryEmail: item.isPrimary ? newEmail : prev.primaryEmail,
     }));
     setNewEmail("");
-    toast.success("Đã thêm email");
+    toast.success("Đã thêm email (Hãy nhớ bấm Lưu thay đổi)");
   };
 
   const handleDeleteEmail = (value: string) => {
@@ -223,7 +243,7 @@ const AccountPage = () => {
       primaryPhone: item.isPrimary ? newPhone : prev.primaryPhone,
     }));
     setNewPhone("");
-    toast.success("Đã thêm số điện thoại");
+    toast.success("Đã thêm số điện thoại (Hãy nhớ bấm Lưu thay đổi)");
   };
 
   const handleDeletePhone = (value: string) => {
@@ -245,13 +265,12 @@ const AccountPage = () => {
     }));
   };
 
-  // --- MAP HANDLERS ---
+  // --- HANDLERS: ADDRESS & MAP ---
 
   const handleMapSelect = (data: {
     lat: number;
     lng: number;
     address: string;
-    // Nhận thêm các trường đã được HereMapPicker tách sẵn
     houseNumber?: string;
     street?: string;
     ward?: string;
@@ -269,23 +288,16 @@ const AccountPage = () => {
       city,
     } = data;
 
-    const coordinates: [number, number] = [lng, lat];
-
-    // --- CẬP NHẬT AN TOÀN: Dùng trực tiếp dữ liệu từ HERE Maps ---
     setNewAddress((prev) => ({
       ...prev,
       location: {
         type: "Point",
-        coordinates,
+        coordinates: [lng, lat],
       },
       fullAddressFromMap: fullAddress,
-
-      // Gán trực tiếp các trường hành chính, HereMapPicker đã lo phần phân tách
-      city: city || "", // Cấp Tỉnh/Thành phố (Đà Nẵng, Hà Nội...)
-      district: district || "", // Cấp Quận/Huyện (Quận Liên Chiểu, Đống Đa...)
-      ward: ward || "", // Cấp Phường/Xã (Phường Hòa Khánh Bắc...)
-
-      // Tên đường có thể kết hợp thêm số nhà nếu có
+      city: city || "",
+      district: district || "",
+      ward: ward || "",
       street: houseNumber ? `${houseNumber} ${street}`.trim() : street || "",
     }));
   };
@@ -295,7 +307,8 @@ const AccountPage = () => {
     setNewAddress((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddAddress = () => {
+  // [UPDATED] Hàm thêm/sửa địa chỉ: GỌI API LƯU LUÔN
+  const handleAddAddress = async () => {
     const [lng, lat] = newAddress.location.coordinates;
 
     if (!newAddress.recipientName || !newAddress.recipientPhone || !lat || !lng)
@@ -320,31 +333,40 @@ const AccountPage = () => {
       city: newAddress.city,
       location: newAddress.location,
       fullAddress,
-      isDefault: customerData.addresses.length === 0, // Nếu chưa có địa chỉ nào thì cái này là default
+      isDefault: customerData.addresses.length === 0, // Tự động default nếu là cái đầu tiên
     };
 
+    // 1. Tính toán danh sách mới
+    let updatedAddresses: CustomerAddress[] = [];
     if (editingAddressIndex !== null) {
-      setCustomerData((prev) => ({
-        ...prev,
-        addresses: prev.addresses.map((a, i) =>
-          i === editingAddressIndex ? { ...newObj, isDefault: a.isDefault } : a
-        ),
-      }));
-      setEditingAddressIndex(null);
+      updatedAddresses = customerData.addresses.map((a, i) =>
+        i === editingAddressIndex ? { ...newObj, isDefault: a.isDefault } : a,
+      );
     } else {
-      setCustomerData((prev) => ({
-        ...prev,
-        addresses: [...prev.addresses, newObj],
-      }));
+      updatedAddresses = [...customerData.addresses, newObj];
     }
 
-    setShowAddressForm(false);
-    setNewAddress(initialNewAddressState);
-    toast.success(
-      editingAddressIndex !== null
-        ? "Cập nhật thành công"
-        : "Thêm mới thành công"
-    );
+    // 2. Gọi API Lưu Ngay
+    const success = await saveProfileChange({
+      name: customerData.name,
+      gender: customerData.gender,
+      birthDate: customerData.birthDate || undefined,
+      emails: customerData.emails,
+      phones: customerData.phones,
+      addresses: updatedAddresses,
+    });
+
+    // 3. Nếu thành công -> Đóng form & Reset
+    if (success) {
+      setShowAddressForm(false);
+      setNewAddress(initialNewAddressState);
+      setEditingAddressIndex(null);
+      toast.success(
+        editingAddressIndex !== null
+          ? "Cập nhật địa chỉ thành công"
+          : "Thêm địa chỉ mới thành công",
+      );
+    }
   };
 
   const handleEditAddress = (index: number) => {
@@ -368,53 +390,64 @@ const AccountPage = () => {
     setShowAddressForm(true);
   };
 
-  const handleDeleteAddress = (index: number) => {
+  // [UPDATED] Xóa địa chỉ -> Gọi API Lưu Luôn
+  const handleDeleteAddress = async (index: number) => {
     if (confirm("Bạn có chắc muốn xóa địa chỉ này?")) {
       const remaining = customerData.addresses.filter((_, i) => i !== index);
       if (customerData.addresses[index].isDefault && remaining.length > 0)
         remaining[0].isDefault = true;
-      setCustomerData((prev) => ({ ...prev, addresses: remaining }));
-    }
-  };
 
-  const handleSetDefaultAddress = (index: number) => {
-    setCustomerData((prev) => ({
-      ...prev,
-      addresses: prev.addresses.map((a, i) => ({
-        ...a,
-        isDefault: i === index,
-      })),
-    }));
-    toast.success("Đã đặt làm địa chỉ mặc định");
-  };
+      const success = await saveProfileChange({
+        ...customerData,
+        addresses: remaining,
+      });
 
-  const handleSubmit = async () => {
-    setIsSaving(true);
-    try {
-      const payload: UpdateCustomerInput = {
-        name: customerData.name,
-        gender: customerData.gender,
-        birthDate: customerData.birthDate || undefined,
-        addresses: customerData.addresses,
-        emails: customerData.emails,
-        phones: customerData.phones,
-      };
-      await customerService.updateProfile(payload);
-      await fetchUser();
-      toast.success("Cập nhật hồ sơ thành công!");
-
-      if (redirectUri) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        router.push(redirectUri);
+      if (success) {
+        toast.success("Đã xóa địa chỉ");
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Cập nhật thất bại, vui lòng thử lại.");
     }
-    setIsSaving(false);
   };
 
-  // --- UI RENDER ---
+  // [UPDATED] Đặt mặc định -> Gọi API Lưu Luôn
+  const handleSetDefaultAddress = async (index: number) => {
+    const updatedAddresses = customerData.addresses.map((a, i) => ({
+      ...a,
+      isDefault: i === index,
+    }));
+
+    const success = await saveProfileChange({
+      ...customerData,
+      addresses: updatedAddresses,
+    });
+
+    if (success) {
+      toast.success("Đã đặt làm địa chỉ mặc định");
+    }
+  };
+
+  // Hàm Submit cho Tab Profile (Vẫn giữ nút Lưu thủ công cho tab này)
+  const handleSubmitProfile = async () => {
+    const success = await saveProfileChange({
+      name: customerData.name,
+      gender: customerData.gender,
+      birthDate: customerData.birthDate || undefined,
+      addresses: customerData.addresses,
+      emails: customerData.emails,
+      phones: customerData.phones,
+    });
+
+    if (success) {
+      toast.success("Cập nhật hồ sơ thành công!");
+      if (redirectUri) {
+        // Đợi 1 xíu cho toast hiện rồi chuyển trang
+        setTimeout(() => {
+          router.push(redirectUri);
+        }, 500);
+      }
+    }
+  };
+
+  // --- RENDER UI ---
 
   const [lng, lat] = newAddress.location.coordinates;
 
@@ -469,7 +502,6 @@ const AccountPage = () => {
           {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <div className="space-y-6">
-              {/* Profile Inputs... (Giữ nguyên phần này) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Họ và tên</Label>
@@ -506,7 +538,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              {/* EMAILS & PHONES SECTION (GIỮ NGUYÊN LOGIC CŨ, CHỈ TỐI ƯU UI NẾU CẦN) */}
+              {/* EMAILS SECTION */}
               <div className="space-y-3 pt-4 border-t">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Mail className="w-4 h-4" /> Emails
@@ -571,6 +603,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
+              {/* PHONES SECTION */}
               <div className="space-y-3 pt-4 border-t">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Phone className="w-4 h-4" /> Số điện thoại
@@ -635,9 +668,10 @@ const AccountPage = () => {
                 </div>
               </div>
 
+              {/* Nút Save cho Tab Profile */}
               <div className="pt-6 border-t flex items-center justify-end">
                 <button
-                  onClick={handleSubmit}
+                  onClick={handleSubmitProfile}
                   disabled={isSaving}
                   className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-end gap-2"
                 >
@@ -691,17 +725,21 @@ const AccountPage = () => {
                     </p>
                   </div>
 
+                  {/* Actions Area */}
                   <div className="flex items-center gap-3 md:justify-end">
+                    {/* Disable các nút sửa/xóa khi đang lưu cái gì đó để tránh conflict */}
                     <button
                       onClick={() => handleEditAddress(idx)}
-                      className="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
+                      disabled={isSaving}
+                      className="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors disabled:opacity-50"
                       title="Sửa"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteAddress(idx)}
-                      className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
+                      disabled={isSaving}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors disabled:opacity-50"
                       title="Xóa"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -709,7 +747,8 @@ const AccountPage = () => {
                     {!addr.isDefault && (
                       <button
                         onClick={() => handleSetDefaultAddress(idx)}
-                        className="text-sm text-orange-600 hover:underline mt-2 md:mt-0"
+                        disabled={isSaving}
+                        className="text-sm text-orange-600 hover:underline mt-2 md:mt-0 disabled:opacity-50"
                       >
                         Đặt mặc định
                       </button>
@@ -821,7 +860,6 @@ const AccountPage = () => {
                     </div>
                   </div>
 
-                  {/* GHI CHÚ TỰ ĐỘNG ĐIỀN */}
                   <div className="mt-3 flex items-start gap-2 bg-[#fff9e9] border border-blue-100 p-3 rounded-lg text-sm text-black">
                     <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <p>
@@ -832,7 +870,6 @@ const AccountPage = () => {
                     </p>
                   </div>
 
-                  {/* READONLY FIELDS */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <Label className="text-xs">Tỉnh/TP</Label>
@@ -887,32 +924,25 @@ const AccountPage = () => {
 
                     <button
                       onClick={handleAddAddress}
-                      className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2.5 rounded-lg font-medium transition-colors"
+                      disabled={isSaving}
+                      className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
-                      {editingAddressIndex !== null
-                        ? "Cập nhật địa chỉ"
-                        : "Lưu địa chỉ mới"}
+                      {isSaving ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Đang lưu...
+                        </>
+                      ) : editingAddressIndex !== null ? (
+                        "Cập nhật địa chỉ"
+                      ) : (
+                        "Lưu địa chỉ mới"
+                      )}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* SAVE PROFILE BUTTON (Chỉ hiện khi không mở form địa chỉ để đỡ rối) */}
-              {!showAddressForm && (
-                <div className="pt-6 border-t flex items-center justify-end">
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isSaving}
-                    className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-end gap-2"
-                  >
-                    {isSaving ? (
-                      <Loader className="w-5 h-5 animate-spin" />
-                    ) : (
-                      "Lưu thay đổi"
-                    )}
-                  </button>
-                </div>
-              )}
+              {/* ĐÃ XÓA NÚT "LƯU THAY ĐỔI" TO Ở ĐÂY VÌ KHÔNG CẦN THIẾT NỮA */}
             </div>
           )}
         </div>

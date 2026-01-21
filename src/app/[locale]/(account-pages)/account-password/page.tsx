@@ -4,10 +4,11 @@ import React, { useState } from "react";
 // Giữ nguyên import icon từ lucide-react
 import { Lock, Eye, EyeOff, Check, AlertCircle, Shield } from "lucide-react";
 import { authService } from "@/services";
+import { toast } from "sonner"; // Import sonner
 
 interface PasswordStrength {
   score: number;
-  label: string; // Nhãn này sẽ được dịch
+  label: string;
   color: string;
 }
 
@@ -29,7 +30,7 @@ const AccountPass = () => {
     confirm: "",
   });
 
-  // Tính toán độ mạnh mật khẩu (đã dịch nhãn)
+  // Tính toán độ mạnh mật khẩu
   const calculatePasswordStrength = (password: string): PasswordStrength => {
     if (!password) return { score: 0, label: "", color: "" };
 
@@ -50,7 +51,7 @@ const AccountPass = () => {
     value: string
   ) => {
     setPasswords((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    if (errors[field as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
@@ -59,7 +60,7 @@ const AccountPass = () => {
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  // Validate form (đã dịch thông báo lỗi)
+  // Validate form
   const validateForm = (): boolean => {
     const newErrors = { current: "", new: "", confirm: "" };
     let isValid = true;
@@ -103,32 +104,50 @@ const AccountPass = () => {
         newPassword: passwords.new,
       });
 
-      setIsSaving(false);
-      alert("Cập nhật mật khẩu thành công!");
+      // 1. Thông báo thành công qua sonner
+      toast.success("Cập nhật mật khẩu thành công!");
+
+      // 2. Reset form về trạng thái ban đầu
+      setPasswords({
+        current: "",
+        new: "",
+        confirm: "",
+      });
+
+      // Reset hiển thị password (ẩn đi hết) cho gọn
+      setShowPasswords({
+        current: false,
+        new: false,
+        confirm: false,
+      });
+
+      // Xóa hết các lỗi cũ (nếu có)
+      setErrors({
+        current: "",
+        new: "",
+        confirm: "",
+      });
+
     } catch (err: any) {
+      const errorMessage =
+        err?.message ||
+        "Đã có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại.";
+      
+      // Thông báo lỗi qua sonner
+      toast.error(errorMessage);
+
       setErrors((prev) => ({
         ...prev,
-        current:
-          err?.message ||
-          "Đã có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại.",
+        current: errorMessage,
       }));
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Danh sách yêu cầu (đã dịch)
+  // Danh sách yêu cầu
   const requirements = [
     { met: passwords.new.length >= 8, text: "Ít nhất 8 ký tự" },
-    // {
-    //   met: /[a-z]/.test(passwords.new) && /[A-Z]/.test(passwords.new),
-    //   text: "Chữ hoa & chữ thường",
-    // },
-    // { met: /\d/.test(passwords.new), text: "Ít nhất một số" },
-    // {
-    //   met: /[^a-zA-Z0-9]/.test(passwords.new),
-    //   text: "Ít nhất một ký tự đặc biệt",
-    // },
   ];
 
   return (

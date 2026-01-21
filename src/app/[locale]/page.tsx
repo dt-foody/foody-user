@@ -18,7 +18,7 @@ function PageHome() {
   const getHomepageImage = (i: number) => `@/images/homepage_${i}.png`;
 
   // Khởi tạo state với mảng chứa tất cả index từ 0 đến 3 để mặc định mở hết
-  const [openIndexes, setOpenIndexes] = useState([0, 1, 2, 3]);
+  const [openIndexes, setOpenIndexes] = useState<number[]>([]);
 
   const toggleQuestion = (index: number) => {
     setOpenIndexes(

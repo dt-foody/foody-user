@@ -42,7 +42,7 @@ export default function MenuCategory({
           onClick={() => onTabClick(tab.type, tab.id)}
           className={`flex-shrink-0 px-6 py-2 rounded-2xl font-semibold ${
             activeTab.type === tab.type && activeTab.id === tab.id
-              ? "bg-category-active text-black scale-105"
+              ? "bg-primary-6000 text-white scale-105"
               : "bg-white text-black hover:bg-gray-100 border"
           }`}
         >

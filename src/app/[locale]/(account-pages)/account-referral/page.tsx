@@ -118,7 +118,7 @@ const AccountReferral = () => {
           Mã giới thiệu
         </h1>
         <p className="text-sm text-gray-500">
-          Mời bạn bè tham gia để cùng nhận những ưu đãi hấp dẫn từ hệ thống.
+          Mời bạn bè trải nghiệm để cùng nhận những ưu đãi hấp dẫn từ Lưu Chi.
         </p>
       </div>
 
