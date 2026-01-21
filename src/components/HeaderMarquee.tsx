@@ -8,19 +8,18 @@ const HeaderMarquee: React.FC<Props> = ({ text }) => {
   if (!text) return null;
 
   return (
-    // Thay đổi màu nền ở đây: bg-yellow-50 (hoặc bg-primary-50 nếu thích màu xanh)
     <div className="relative w-full overflow-hidden bg-primary-6000 py-2.5 border-b border-yellow-100">
-      {/* Container flex để chứa 2 dòng text nối đuôi nhau */}
-      <div className="flex whitespace-nowrap">
-        {/* Dòng text 1: Chạy từ 0% -> -100% */}
-        <div className="animate-marquee flex items-center min-w-full">
+      {/* Thêm overflow-hidden để cắt phần thừa */}
+      <div className="flex whitespace-nowrap overflow-hidden">
+        {/* Dòng text 1: Thêm flex-shrink-0 để đảm bảo chiều rộng không bị co */}
+        <div className="animate-marquee flex items-center min-w-full flex-shrink-0">
           <span className="mx-4 text-md font-medium text-white tracking-wide px-4">
             {text}
           </span>
         </div>
 
-        {/* Dòng text 2: Bản sao để lấp vào chỗ trống ngay lập tức (Hiệu ứng vô tận) */}
-        <div className="animate-marquee flex items-center min-w-full absolute top-0 left-full py-2.5">
+        {/* Dòng text 2: Bỏ absolute, nó sẽ tự động nối đuôi dòng 1 nhờ Flexbox */}
+        <div className="animate-marquee flex items-center min-w-full flex-shrink-0">
           <span className="mx-4 text-md font-medium text-white tracking-wide px-4">
             {text}
           </span>
