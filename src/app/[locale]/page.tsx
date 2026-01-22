@@ -446,7 +446,7 @@ function PageHome() {
           <p>
             Xem
             <a
-              href="https://luuchi.com.vn/en/maps"
+              href="https://luuchi.com.vn/vi/maps"
               className="text-blue-600 font-bold mx-2"
             >
               👉 Lối đi

@@ -799,7 +799,7 @@ export function CartStoreInitializer() {
   const fetchSurcharges = useCartStore((s) => s.fetchSurcharges);
 
   // Lấy dữ liệu cần thiết từ store để kiểm tra
-  const { appliedCoupons, removeCoupon } = useCartStore();
+  const { appliedCoupons, removeCoupon, fulfillmentType } = useCartStore();
   const { cartItems, subtotal } = useCart(); // Dùng hook useCart để lấy items và subtotal đã tính toán
   const { me } = useAuthStore();
 
@@ -842,7 +842,10 @@ export function CartStoreInitializer() {
 
       const isNotEnoughMoney = minOrderVal > 0 && subtotal < minOrderVal;
 
-      if (!check.isEligible || isNotEnoughMoney) {
+      const isInvalidFreeship = 
+        fulfillmentType === "pickup" && coupon.type === "freeship";
+
+      if (!check.isEligible || isNotEnoughMoney || isInvalidFreeship) {
         idsToRemove.push(coupon.id);
       }
     });
@@ -857,7 +860,7 @@ export function CartStoreInitializer() {
         }
       );
     }
-  }, [subtotal, cartItems, appliedCoupons, me, removeCoupon]);
+  }, [subtotal, cartItems, appliedCoupons, me, removeCoupon, fulfillmentType]);
 
   return null;
 }
