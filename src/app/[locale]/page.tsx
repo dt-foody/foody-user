@@ -69,20 +69,20 @@ function PageHome() {
         <h2 className="mb-4 font-bold">
           Bạn có thấy quen với vòng lặp này không?
         </h2>
-        <div className="w-full h-[200px] md:h-[350px] lg:h-[450px] display-flex justify-center items-center">
+        <div className="w-full h-[200px] md:h-[350px] lg:h-[400px] display-flex justify-center items-center">
           <Image
             src={homepage_1}
             alt="The Loop"
             className="w-full h-full object-cover object-center"
             fill={false}
-            width={800}
-            height={350}
+            // width={800}
+            // height={350}
             priority
           />
         </div>
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <p className="font-bold text-neutral-900">Đúng vậy.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 lg:gap-4">
             <div>Bạn đang ở trong</div>
             <div
               className="w-[200px] flex items-center justify-center text-white font-bold text-xl"
@@ -119,10 +119,10 @@ function PageHome() {
           <h2 className="text-xl font-bold text-neutral-900">
             Tại sao bạn lại rơi vào đây?
           </h2>
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center !mt-0">
             <span className="text-sm font-medium">Vì bạn</span>
             <span
-              className="w-[250px] h-[70px] flex items-center justify-center text-black font-bold text-[1.1rem]"
+              className="w-[170px] h-[60px] flex items-center justify-center text-black font-bold text-[1.1rem]"
               style={{
                 backgroundImage: `url(${homepage_3.src})`,
                 backgroundSize: "cover",
@@ -142,7 +142,7 @@ function PageHome() {
           </p>
           <div className="font-bold relative">
             Bạn sợ.
-            <div className="w-[250px] h-[40px] display-flex justify-center items-center inline-block absolute left-[-20px]">
+            <div className="w-[200px] h-[40px] display-flex justify-center items-center inline-block absolute left-[20px]">
               <Image
                 src={homepage_4}
                 alt="The Loop"
@@ -200,19 +200,17 @@ function PageHome() {
                 />
               </div>
             </div> */}
-            <div className="flex items-center gap-4 !mt-0">
-              <div>
+            <div className="flex items-start gap-4 !mt-0">
+              <div className="pt-4 sm:pt-6 lg:pt-8">
                 Không biết bắt đầu từ đâu.{" "}
                 <span className="font-bold">Gỡ rối</span> thế nào.
               </div>
-              <div className="w-24 h-24 flex-shrink-0 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-40 lg:h-40">
+              <div className="w-[100px] h-[100px] flex-shrink-0 sm:w-22 sm:h-22 md:w-26 md:h-26 lg:w-32 lg:h-32">
                 <Image
                   src={homepage_5}
                   alt="The Loop"
                   className="w-full h-full object-cover object-center"
                   fill={false}
-                  width={200}
-                  height={200}
                 />
               </div>
             </div>
@@ -244,20 +242,20 @@ function PageHome() {
             </div>
           </div> */}
           <div className="flex items-center !mt-0">
-  <div className="w-[70%]">
-    Mà để{" "}
-    <span className="font-bold">lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.</span>
-  </div>
-  <div className="w-24 h-24 flex-shrink-0 flex-1 sm:w-28 sm:h-24 md:w-40 md:h-32 lg:w-48 lg:h-32">
-    <Image
-      src={homepage_6}
-      alt="The Loop"
-      className="w-full h-full object-cover object-center"
-      fill={false}
-    />
-  </div>
-</div>
-          <p>
+            <div className="w-[65%]">
+              Mà để{" "}
+              <span className="font-bold">lấy lại sức, nhìn rõ mình đang ở đâu, và bước tiếp có ý thức.</span>
+            </div>
+            <div className="w-24 h-24 flex-shrink-0 flex-1 sm:w-24 sm:h-20 md:w-36 md:h-30 lg:w-28 lg:h-18">
+              <Image
+                src={homepage_6}
+                alt="The Loop"
+                className="w-full h-full object-cover object-center"
+                fill={false}
+              />
+            </div>
+          </div>
+          <p className="!mt-0">
             Một chốn <strong>“Ở đây.”</strong> — ngay bên cạnh, quan sát, cùng
             bước, và <strong>đưa tay ra khi bạn cần.</strong>
           </p>
@@ -298,7 +296,7 @@ function PageHome() {
           <p>Đã kiên cường đi qua những khoảng tối mà không ai thấy.</p>
           <p>Nhưng niềm tin vào chính mình</p>
           <p>… đã mòn đi từ lúc nào.</p>
-          <div className="w-[150px] h-[150px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[10px] right-[-10%] md:top-[-80px] md:right-[-10%] md:translate-x-[-50%]">
+          <div className="w-[120px] h-[120px]  top-[25px] right-[-10px] mt-[30px] md:w-[200px] md:h-[200px] lg:w-[220px] lg:h-[220px] display-flex justify-center items-center inline-block absolute md:top-[-80px] md:right-[-10%] md:translate-x-[-50%] lg:mr-[70px]">
             <Image
               src={homepage_7}
               alt="The Loop"
@@ -329,7 +327,7 @@ function PageHome() {
           </p>
           <p>Thời gian không quay lại.</p>
           <p>Và cuộc đời này cũng không kéo dài mãi để bạn “chuẩn bị thêm”.</p>
-          <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-100px] right-[-30%] md:top-[-140px] md:right-[-10%] md:translate-x-[-50%]">
+          <div className="w-[100px] h-[150px] right-[-50px] top-[-45px] md:w-[250px] md:h-[250px] lg:w-[280px] lg:h-[280px] display-flex justify-center items-center inline-block absolute lg:right-[50px] lg:top-[-110px]">
             <Image
               src={homepage_8}
               alt="The Loop"
@@ -403,7 +401,7 @@ function PageHome() {
             <li>
               và bước vào <strong>cuộc đời thực sự của mình.</strong>
             </li>
-            <div className="w-[200px] h-[200px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] display-flex justify-center items-center inline-block absolute top-[-80px] right-[-5%] md:top-[-140px] md:right-[-10%] md:translate-x-[-50%]">
+            <div className="w-[150px] h-[150px] md:w-[250px] md:h-[250px] lg:w-[300px] lg:h-[300px] display-flex justify-center items-center inline-block absolute top-[-80px] right-[-5%] md:top-[-140px] md:right-[-10%] md:translate-x-[-50%]">
               <Image
                 src={homepage_9}
                 alt="The Loop"
@@ -429,7 +427,7 @@ function PageHome() {
           </p>
           <p>Ở đây.</p>
           <div>
-            <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL}>
+            <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL} className="lg:h-[40px]">
               Bước vào
             </ButtonPrimary>
           </div>
@@ -445,12 +443,15 @@ function PageHome() {
           </p>
           <p>
             Xem
-            <a
+            {/* <a
               href="https://luuchi.com.vn/vi/maps"
               className="text-blue-600 font-bold mx-2"
             >
               👉 Lối đi
-            </a>
+            </a> */}
+            <ButtonPrimary targetBlank href="https://luuchi.com.vn/vi/maps" className="mx-2 lg:h-[40px]">
+              Lối đi
+            </ButtonPrimary>
             (Bắt đầu từ đâu?).
           </p>
         </div>

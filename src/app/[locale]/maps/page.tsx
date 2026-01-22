@@ -1,3 +1,4 @@
+import ButtonPrimary from "@/shared/ButtonPrimary";
 import Link from "next/link";
 import React from "react";
 
@@ -73,12 +74,16 @@ function PageMaps() {
             <p>để không phải trả giá bằng chính những va vấp của mình.</p>
             <p>
               Cộng đồng sinh hoạt chính tại{" "}
-              <a
+              {/* <a
                 href={FACEBOOK_GROUP_URL}
                 className="text-blue-600 font-bold mx-1"
               >
                 👉 Facebook
-              </a>{" "}
+              </a> */}
+              <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL} className="lg:mx-2 lg:h-[40px]">
+                Lối đi
+              </ButtonPrimary>
+              {" "}
               — nơi bạn thực sự được là chính mình.
             </p>
           </div>
