@@ -1,9 +1,225 @@
-// src/components/FloatingContact.tsx
 "use client";
 
-import React, { useState } from "react";
-import { Phone, MessageCircle, X, Headset } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Phone, X, Headset, Bell } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import Link from "next/link";
+import Avatar from "@/shared/Avatar";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
+import {
+  notificationService,
+  Notification,
+} from "@/services/notification.service";
 
+// --- COMPONENT: FLOATING NOTIFICATION ---
+const FloatingNotification = () => {
+  const { user } = useAuthStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 1. Lấy số lượng chưa đọc (Cho Badge)
+  const fetchUnreadCount = async () => {
+    try {
+      const data = await notificationService.getUnreadCount();
+      const count = typeof data === "number" ? data : data?.count || 0;
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Lỗi lấy số lượng thông báo:", error);
+    }
+  };
+
+  // 2. Lấy danh sách thông báo (Cho Dropdown)
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await notificationService.getNotifications({
+        limit: 5,
+        page: 1,
+        sortBy: "createdAt:desc",
+      });
+
+      if (data && data.results) {
+        setNotifications(data.results);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách thông báo:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. Đánh dấu đã đọc
+  const handleMarkAsRead = async (notification: Notification) => {
+    if (notification.isRead) return;
+
+    try {
+      const id = notification.id || notification._id;
+      if (!id) return;
+
+      await notificationService.markAsRead(id);
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id || n._id === id ? { ...n, isRead: true } : n,
+        ),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      console.error("Lỗi đánh dấu đã đọc:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+    }
+
+    const handleRefresh = () => {
+      fetchUnreadCount();
+      if (isOpen) fetchNotifications();
+    };
+
+    window.addEventListener("REFRESH_NOTIFICATIONS", handleRefresh);
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("REFRESH_NOTIFICATIONS", handleRefresh);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [user, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchNotifications();
+    }
+  }, [isOpen, user]);
+
+  if (!user) return null;
+
+  return (
+    <div className="relative group" ref={containerRef}>
+      {/* --- PANEL DANH SÁCH THÔNG BÁO --- */}
+      {/* bottom-14 để panel hiện ngay trên nút chuông */}
+      <div
+        className={`absolute bottom-14 right-0 w-80 sm:w-96 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden transition-all duration-300 origin-bottom-right z-50 ${
+          isOpen
+            ? "opacity-100 scale-100 pointer-events-auto"
+            : "opacity-0 scale-95 pointer-events-none"
+        }`}
+      >
+        <div className="p-4 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center bg-neutral-50 dark:bg-neutral-900/50">
+          <h3 className="font-semibold text-neutral-900 dark:text-white">
+            Thông báo
+          </h3>
+          <Link
+            href="/account-orders"
+            onClick={() => setIsOpen(false)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-500"
+          >
+            Xem tất cả đơn hàng
+          </Link>
+        </div>
+
+        <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+          {loading && notifications.length === 0 ? (
+            <div className="p-8 text-center text-sm text-neutral-500 animate-pulse">
+              Đang tải thông báo...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-8 text-center flex flex-col items-center gap-2 text-neutral-500">
+              <Bell size={32} className="opacity-20" />
+              <span className="text-xs">Bạn chưa có thông báo nào.</span>
+            </div>
+          ) : (
+            notifications.map((item) => (
+              <div
+                key={item.id || item._id}
+                onClick={() => handleMarkAsRead(item)}
+                className={`group flex p-3 gap-3 border-b border-neutral-50 dark:border-neutral-700/50 cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                  !item.isRead ? "bg-orange-50/60 dark:bg-neutral-700/30" : ""
+                }`}
+              >
+                <div
+                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm ${
+                    item.type === "ORDER_STATUS"
+                      ? "bg-blue-500"
+                      : item.type === "PROMOTION"
+                        ? "bg-pink-500"
+                        : "bg-primary-500"
+                  }`}
+                >
+                  {item.type === "PROMOTION" ? (
+                    <span className="las la-gift text-xl"></span>
+                  ) : (
+                    <span className="las la-bell text-xl"></span>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-0.5">
+                    <p
+                      className={`text-sm line-clamp-1 ${!item.isRead ? "font-bold text-neutral-900 dark:text-white" : "font-medium text-neutral-700 dark:text-neutral-200"}`}
+                    >
+                      {item.title}
+                    </p>
+                    {!item.isRead && (
+                      <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
+                    )}
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 mb-1.5 leading-relaxed">
+                    {item.content}
+                  </p>
+                  <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">
+                    {item.createdAt
+                      ? formatDistanceToNow(new Date(item.createdAt), {
+                          addSuffix: true,
+                          locale: vi,
+                        })
+                      : ""}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* --- NÚT CHUÔNG --- */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`relative flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 ${
+          isOpen
+            ? "bg-primary-50 text-primary-600 scale-110 ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-neutral-900"
+            : "bg-white text-neutral-600 hover:bg-neutral-50 hover:scale-110 hover:text-primary-600 dark:bg-neutral-800 dark:text-neutral-200"
+        }`}
+        title="Thông báo"
+      >
+        <Bell size={22} className={unreadCount > 0 ? "animate-swing" : ""} />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full shadow-md ring-2 ring-white dark:ring-neutral-900 animate-in zoom-in duration-300">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+};
+
+// --- ICON MESSENGER ---
 const MessengerIcon = ({ size = 24 }: { size?: number }) => (
   <svg
     width={size}
@@ -38,16 +254,12 @@ const MessengerIcon = ({ size = 24 }: { size?: number }) => (
 
 const FloatingContact = () => {
   const [isOpen, setIsOpen] = useState(false);
-
-  // Hàm bật/tắt menu
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-center gap-4">
-      {/* --- 1. NÚT CHÍNH (TOGGLE) --- */}
-      <div className="relative group">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-center">
+      {/* 1. NÚT CHÍNH (TOGGLE) - LUÔN HIỆN Ở DƯỚI CÙNG */}
+      <div className="relative group z-20">
         <button
           onClick={toggleMenu}
           className={`relative flex items-center justify-center w-12 h-12 rounded-full shadow-lg text-white transition-all duration-300 ${
@@ -61,12 +273,13 @@ const FloatingContact = () => {
         </button>
       </div>
 
-      {/* --- 2. DANH SÁCH CÁC NÚT CON (Hiện ra khi isOpen = true) --- */}
+      {/* 2. DANH SÁCH CÁC NÚT CON (Messenger, Phone) */}
+      {/* Sửa dụng max-h để animation chiều cao, giúp đóng lại hoàn toàn, không chiếm diện tích */}
       <div
-        className={`flex flex-col gap-3 transition-all duration-300 ease-in-out ${
+        className={`flex flex-col items-center gap-3 overflow-hidden transition-all duration-300 ease-in-out ${
           isOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-10 pointer-events-none"
+            ? "max-h-60 opacity-100 mb-3" // Khi mở: có chiều cao và có margin đẩy nút Notification lên
+            : "max-h-0 opacity-0 mb-0" // Khi đóng: chiều cao 0, margin 0 -> Notification rớt xuống sát nút chính
         }`}
       >
         {/* Nút Gọi Hotline */}
@@ -74,7 +287,6 @@ const FloatingContact = () => {
           href="tel:0889058678"
           className="group relative flex items-center justify-center w-12 h-12 bg-green-600 text-white rounded-full shadow-md hover:scale-110 transition-transform duration-200"
         >
-          {/* Tooltip (Hiện bên phải) */}
           <span className="absolute right-full mr-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
             0889.058.678
           </span>
@@ -88,12 +300,17 @@ const FloatingContact = () => {
           rel="noopener noreferrer"
           className="group relative flex items-center justify-center w-12 h-12 bg-[#0084FF] text-white rounded-full shadow-md hover:scale-110 transition-transform duration-200"
         >
-          {/* Tooltip (Hiện bên phải) */}
           <span className="absolute right-full mr-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-sm">
             Chat Messenger
           </span>
           <MessengerIcon size={22} />
         </a>
+      </div>
+
+      {/* 3. ICON NOTIFICATION - NẰM TRÊN CÙNG CỦA CỘT (Do flex-col-reverse) */}
+      {/* Luôn có mb-3 để tạo khoảng cách với phần tử bên dưới (dù là nút chính hay danh sách mở rộng) */}
+      <div className="mb-3 transition-all duration-300 z-10">
+        <FloatingNotification />
       </div>
     </div>
   );

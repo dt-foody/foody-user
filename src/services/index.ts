@@ -10,3 +10,4 @@ export * from './coupon.service';
 export * from './pricePromotion.service';
 export * from './order.service';
 export * from './user.service';
+export * from './notification.service';
