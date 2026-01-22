@@ -46,35 +46,25 @@ const getMe = async (): Promise<GetMeResponse | null> => {
 };
 
 const forgotPassword = async (data: any /* TRegisterSchema */): Promise<GetMeResponse | null> => {
-  try {
-    return await apiFetch("/auth/forgot-password", {
-      method: "POST",
-      body: JSON.stringify(data),
-      cache: "no-store",
-    });
-  } catch (err) {
-    console.error("forgotPassword() service error:", err);
-    return null;
-  }
+  return await apiFetch("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+    cache: "no-store",
+  });
 };
 
 
 
 const resetPassword = async (data: any /* TResetPasswordSchema */): Promise<GetMeResponse | null> => {
-  try {
-    // Luôn bỏ cache khi lấy thông tin user
-    const bodyData = {
-      password: data.password
-    }
-    return await apiFetch(`/auth/reset-password?token=${data.token}`, {
-      method: "POST",
-      body: JSON.stringify(bodyData),
-      cache: "no-store",
-    });
-  } catch (err) {
-    console.error("resetPassword() service error:", err);
-    return null;
+  // Luôn bỏ cache khi lấy thông tin user
+  const bodyData = {
+    password: data.password
   }
+  return await apiFetch(`/auth/reset-password?token=${data.token}`, {
+    method: "POST",
+    body: JSON.stringify(bodyData),
+    cache: "no-store",
+  });
 };
 
 const changePassword = async (data: any /* TChangePasswordSchema */): Promise<any> => {

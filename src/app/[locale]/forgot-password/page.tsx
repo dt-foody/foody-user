@@ -1,22 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect, type SyntheticEvent } from 'react';
-import { Mail, Lock, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { authService } from '@/services';
+import { useState, useEffect, type SyntheticEvent } from "react";
+import { Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner"; // 1. Import sonner
+import { authService } from "@/services";
 
 export default function ForgotPasswordPage() {
   const searchParams = useSearchParams();
-  const tokenFromUrl = searchParams.get('token');
-  
-  const [step, setStep] = useState(tokenFromUrl ? 2 : 1); // 1: nhập email, 2: đổi mật khẩu
-  const [email, setEmail] = useState('');
-  const [token, setToken] = useState(tokenFromUrl || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const tokenFromUrl = searchParams.get("token");
+
+  const [step, setStep] = useState(tokenFromUrl ? 2 : 1);
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState(tokenFromUrl || "");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+
+  // Không cần state error/success nữa
 
   useEffect(() => {
     if (tokenFromUrl) {
@@ -28,16 +29,19 @@ export default function ForgotPasswordPage() {
   // Gửi email để nhận reset password link
   const handleSendResetLink = async (e?: SyntheticEvent) => {
     if (e) e.preventDefault();
-
-    setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
-      const response = await authService.forgotPassword({ email });
-      setSuccess('Link đặt lại mật khẩu đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư.');
-    } catch (err) {
-      setError('Không thể kết nối đến server!');
+      await authService.forgotPassword({ email });
+      // 2. Dùng toast success
+      toast.success(
+        "Link đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra email.",
+      );
+    } catch (err: any) {
+      // 3. Dùng toast error
+      const message =
+        err?.response?.data?.message || "Không thể kết nối đến server!";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -47,40 +51,39 @@ export default function ForgotPasswordPage() {
   const handleResetPassword = async (e?: SyntheticEvent) => {
     if (e) e.preventDefault();
 
-    setError('');
-    setSuccess('');
-
     // Validate
     if (newPassword !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp!');
+      toast.error("Mật khẩu xác nhận không khớp!");
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự!');
+      toast.error("Mật khẩu phải có ít nhất 8 ký tự!");
       return;
     }
 
     if (!token) {
-      setError('Token không hợp lệ!');
+      toast.error("Token không hợp lệ!");
       return;
     }
 
     setLoading(true);
 
     try {
-      // 🟢 Thành công: API trả 204 → apiFetch trả null
       await authService.resetPassword({
         token,
         password: newPassword,
       });
 
-      setSuccess('Đổi mật khẩu thành công! Đang chuyển hướng...');
+      toast.success("Đổi mật khẩu thành công! Đang chuyển hướng...");
+
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = "/login";
       }, 2000);
     } catch (err: any) {
-      setError('Token không hợp lệ hoặc đã hết hạn!');
+      const message =
+        err?.response?.data?.message || "Token không hợp lệ hoặc đã hết hạn!";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -101,28 +104,16 @@ export default function ForgotPasswordPage() {
               )}
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              {step === 1 && 'Quên mật khẩu?'}
-              {step === 2 && 'Đặt mật khẩu mới'}
+              {step === 1 && "Quên mật khẩu?"}
+              {step === 2 && "Đặt mật khẩu mới"}
             </h1>
             <p className="text-gray-600 text-sm">
-              {step === 1 && 'Nhập email để nhận link đặt lại mật khẩu'}
-              {step === 2 && 'Tạo mật khẩu mới cho tài khoản của bạn'}
+              {step === 1 && "Nhập email để nhận link đặt lại mật khẩu"}
+              {step === 2 && "Tạo mật khẩu mới cho tài khoản của bạn"}
             </p>
           </div>
 
-          {/* Alerts */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-2">
-              <span className="text-red-500 mt-0.5">✕</span>
-              <span>{error}</span>
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-start gap-2">
-              <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-              <span>{success}</span>
-            </div>
-          )}
+          {/* Đã xóa phần hiển thị Alerts cũ ở đây */}
 
           {/* Step 1: Nhập Email */}
           {step === 1 && (
@@ -137,7 +128,9 @@ export default function ForgotPasswordPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendResetLink(e)}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleSendResetLink(e)
+                    }
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
                     placeholder="email@example.com"
                     required
@@ -156,14 +149,15 @@ export default function ForgotPasswordPage() {
                     Đang gửi...
                   </>
                 ) : (
-                  'Gửi yêu cầu'
+                  "Gửi yêu cầu"
                 )}
               </button>
 
-              <div className="mt-4 p-4 bg-[#FFFAF2] border  rounded-lg">
+              <div className="mt-4 p-4 bg-[#FFFAF2] border rounded-lg">
                 <p className="text-sm text-black">
-                  <strong>Lưu ý:</strong> Link đặt lại mật khẩu sẽ được gửi đến email của bạn. 
-                  Vui lòng kiểm tra cả hộp thư Spam nếu không thấy email trong vài phút.
+                  <strong>Lưu ý:</strong> Link đặt lại mật khẩu sẽ được gửi đến
+                  email của bạn. Vui lòng kiểm tra cả hộp thư Spam nếu không
+                  thấy email trong vài phút.
                 </p>
               </div>
             </div>
@@ -184,9 +178,7 @@ export default function ForgotPasswordPage() {
                   placeholder="Nhập mật khẩu mới"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Ít nhất 8 ký tự
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Ít nhất 8 ký tự</p>
               </div>
 
               <div className="mb-6">
@@ -197,7 +189,9 @@ export default function ForgotPasswordPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleResetPassword(e)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && handleResetPassword(e)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
                   placeholder="Nhập lại mật khẩu mới"
                   required
@@ -215,7 +209,7 @@ export default function ForgotPasswordPage() {
                     Đang xử lý...
                   </>
                 ) : (
-                  'Đặt lại mật khẩu'
+                  "Đặt lại mật khẩu"
                 )}
               </button>
             </div>
@@ -235,7 +229,7 @@ export default function ForgotPasswordPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Bạn đã nhớ mật khẩu?{' '}
+          Bạn đã nhớ mật khẩu?{" "}
           <a href="/login" className="text-black hover:underline font-medium">
             Đăng nhập ngay
           </a>
