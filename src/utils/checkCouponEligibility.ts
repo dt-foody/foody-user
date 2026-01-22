@@ -305,11 +305,20 @@ export const checkCouponEligibility = (
   cart: CartData,
   user: Employee | Customer | null
 ): EligibilityStatus => {
+  console.log("[CouponLogic] Checking eligibility for coupon", coupon.code);
   // A. Check cứng (Min Order Amount)
   if (coupon.minOrderAmount && cart.subtotal < coupon.minOrderAmount) {
     return {
       isEligible: false,
       reason: `Đơn hàng tối thiểu ${coupon.minOrderAmount.toLocaleString()}đ`,
+    };
+  }
+
+  // B. check maxUsesPerUser
+  if (coupon.maxUsesPerUser && !user) {
+    return {
+      isEligible: false,
+      reason: "Vui lòng đăng nhập để sử dụng mã này",
     };
   }
 
