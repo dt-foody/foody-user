@@ -105,7 +105,7 @@ export default async function RootLayout({
           <Toaster position="top-right" richColors />
           <CartStoreInitializer />
           <ClientCommons />
-          <SiteHeader ssrUser={data ? data.user : null} />
+          <SiteHeader ssrUser={data ? data.user : null} ssrMe={data ? data.me : null}/>
           {children}
           {/* <FooterNav /> */}
           <CartSidebar />

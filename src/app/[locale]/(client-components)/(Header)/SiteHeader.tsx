@@ -23,8 +23,8 @@ interface LayoutItem {
   enable: boolean;
 }
 
-export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
-  const { setUser, fetchUser } = useAuthStore();
+export default function SiteHeader({ ssrUser, ssrMe }: { ssrUser?: any, ssrMe?: any }) {
+  const { setUser, setMe, fetchUser } = useAuthStore();
   const pathname = usePathname();
 
   // State lưu cấu hình từ API
@@ -34,10 +34,14 @@ export default function SiteHeader({ ssrUser }: { ssrUser?: any }) {
   useEffect(() => {
     if (ssrUser) {
       setUser(ssrUser);
+
+      if (ssrMe) {
+        setMe(ssrMe);
+      }
     } else {
       fetchUser();
     }
-  }, [ssrUser, setUser, fetchUser]);
+  }, [ssrUser, ssrMe, setUser, setMe, fetchUser]);
 
   // 2. Logic gọi API lấy Description
   useEffect(() => {
