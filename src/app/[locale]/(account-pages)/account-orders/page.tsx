@@ -135,7 +135,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
 
   const totalItems = useMemo(
     () => order.items.reduce((sum, item) => sum + item.quantity, 0),
-    [order.items]
+    [order.items],
   );
 
   const recipientName = order.shipping?.address?.recipientName || "Không rõ";
@@ -385,6 +385,30 @@ const OrderCard = ({ order }: OrderCardProps) => {
                   <span>Tổng thanh toán:</span>
                   <span className="text-[#b9915f]">{grandTotal}</span>
                 </div>
+
+                {/* Hiển thị nút thanh toán lại nếu là PayOS + Pending + có link */}
+                {order.payment?.method === "payos" &&
+                  order.payment?.status === "pending" &&
+                  order.payment?.checkoutUrl && (
+                    <div className="pt-3 mt-2 border-t border-dashed border-gray-200">
+                      <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-xs mb-2 flex items-start gap-2">
+                        <Info size={14} className="mt-0.5 flex-shrink-0" />
+                        <span>
+                          Đơn hàng chưa hoàn tất thanh toán. Vui lòng thanh toán
+                          để xác nhận đơn.
+                        </span>
+                      </div>
+                      <ButtonPrimary
+                        className="w-full !py-2 !text-sm !font-medium bg-amber-600 hover:bg-amber-700 transition-colors"
+                        onClick={() => {
+                          // Mở link thanh toán ở tab mới hoặc chuyển hướng trực tiếp
+                          window.location.href = order.payment.checkoutUrl!;
+                        }}
+                      >
+                        Tiếp tục thanh toán (PayOS)
+                      </ButtonPrimary>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -501,25 +525,29 @@ const AccountOrders = () => {
         // Backend gửi format: { type: 'ORDER_UPDATE', payload: order }
         if (data && data.type === "ORDER_UPDATE" && data.payload) {
           const updatedOrder = data.payload;
-          
-          console.log("🔔 Có đơn hàng cập nhật:", updatedOrder.orderId, updatedOrder.status);
+
+          console.log(
+            "🔔 Có đơn hàng cập nhật:",
+            updatedOrder.orderId,
+            updatedOrder.status,
+          );
 
           setOrders((prevOrders) => {
             // Tìm xem đơn hàng này có đang hiển thị trong danh sách không
             const index = prevOrders.findIndex((o) => o.id === updatedOrder.id);
-            
+
             if (index > -1) {
               // Nếu có, tạo bản sao danh sách và cập nhật đơn hàng đó
               const newOrders = [...prevOrders];
               newOrders[index] = updatedOrder;
               return newOrders;
             }
-            
-            // Nếu đơn hàng không có trong danh sách hiện tại (ví dụ đang ở trang 2 mà đơn ở trang 1, 
+
+            // Nếu đơn hàng không có trong danh sách hiện tại (ví dụ đang ở trang 2 mà đơn ở trang 1,
             // hoặc đơn hàng mới tạo chưa kịp fetch), ta giữ nguyên để tránh lỗi UI.
             // Nếu muốn thêm đơn hàng mới vào đầu danh sách (cho trường hợp vừa đặt xong):
             // if (page === 1) return [updatedOrder, ...prevOrders];
-            
+
             return prevOrders;
           });
         }
