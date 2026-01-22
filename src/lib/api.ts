@@ -50,12 +50,9 @@ export const apiFetch = async <T>(
       };
     }
 
-    // ❌ 204 = No content => FE không dùng được => throw
+    // ✅ 2. XỬ LÝ 204: Trả về null thay vì throw lỗi
     if (response.status === 204) {
-      throw <ApiError>{
-        message: "Empty response (204 No Content)",
-        statusCode: 204,
-      };
+      return null as T;
     }
 
     // 🔥 Đọc raw text để tránh lỗi JSON parse khi body rỗng
