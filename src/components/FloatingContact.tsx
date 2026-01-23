@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Phone, X, Headset, Bell } from "lucide-react";
+import { Phone, X, Headset, Bell, Loader2 } from "lucide-react"; // Đã thêm Loader2
 import { useAuthStore } from "@/stores/useAuthStore";
 import Link from "next/link";
-import Avatar from "@/shared/Avatar";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -17,8 +16,14 @@ const FloatingNotification = () => {
   const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // State cho danh sách và phân trang
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Loading ban đầu / refresh
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Loading khi xem thêm
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 5; // Số lượng thông báo mỗi lần tải
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,27 +38,55 @@ const FloatingNotification = () => {
     }
   };
 
-  // 2. Lấy danh sách thông báo (Cho Dropdown)
-  const fetchNotifications = async () => {
+  // 2. Lấy danh sách thông báo (Hỗ trợ phân trang)
+  const fetchNotifications = async (currentPage = 1, isAppend = false) => {
     try {
-      setLoading(true);
+      if (isAppend) {
+        setIsLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       const data = await notificationService.getNotifications({
-        limit: 5,
-        page: 1,
+        limit: LIMIT,
+        page: currentPage,
         sortBy: "createdAt:desc",
       });
 
       if (data && data.results) {
-        setNotifications(data.results);
+        if (isAppend) {
+          // Nếu là load more thì nối thêm vào danh sách cũ
+          setNotifications((prev) => [...prev, ...data.results]);
+        } else {
+          // Nếu là refresh/init thì ghi đè
+          setNotifications(data.results);
+        }
+
+        // Kiểm tra xem còn dữ liệu để load tiếp không
+        if (data.results.length < LIMIT) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        setPage(currentPage);
       }
     } catch (error) {
       console.error("Lỗi lấy danh sách thông báo:", error);
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
-  // 3. Đánh dấu đã đọc
+  // 3. Xử lý sự kiện Load More
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      fetchNotifications(page + 1, true);
+    }
+  };
+
+  // 4. Đánh dấu đã đọc
   const handleMarkAsRead = async (notification: Notification) => {
     if (notification.isRead) return;
 
@@ -81,7 +114,8 @@ const FloatingNotification = () => {
 
     const handleRefresh = () => {
       fetchUnreadCount();
-      if (isOpen) fetchNotifications();
+      // Nếu đang mở thì refresh lại từ trang 1
+      if (isOpen) fetchNotifications(1, false);
     };
 
     window.addEventListener("REFRESH_NOTIFICATIONS", handleRefresh);
@@ -102,9 +136,12 @@ const FloatingNotification = () => {
     };
   }, [user, isOpen]);
 
+  // Khi mở popup thì reset về trang 1 và fetch lại
   useEffect(() => {
     if (isOpen && user) {
-      fetchNotifications();
+      setPage(1);
+      setHasMore(true);
+      fetchNotifications(1, false);
     }
   }, [isOpen, user]);
 
@@ -113,7 +150,6 @@ const FloatingNotification = () => {
   return (
     <div className="relative group" ref={containerRef}>
       {/* --- PANEL DANH SÁCH THÔNG BÁO --- */}
-      {/* bottom-14 để panel hiện ngay trên nút chuông */}
       <div
         className={`absolute bottom-14 right-0 w-80 sm:w-96 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden transition-all duration-300 origin-bottom-right z-50 ${
           isOpen
@@ -123,7 +159,7 @@ const FloatingNotification = () => {
       >
         <div className="p-4 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center bg-neutral-50 dark:bg-neutral-900/50">
           <h3 className="font-semibold text-neutral-900 dark:text-white">
-            Thông báo
+            Thông báo ({unreadCount})
           </h3>
           <Link
             href="/account-orders"
@@ -136,8 +172,9 @@ const FloatingNotification = () => {
 
         <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
           {loading && notifications.length === 0 ? (
-            <div className="p-8 text-center text-sm text-neutral-500 animate-pulse">
-              Đang tải thông báo...
+            <div className="p-8 text-center text-sm text-neutral-500 animate-pulse flex flex-col items-center gap-2">
+              <Loader2 className="animate-spin" size={20} />
+              <span>Đang tải thông báo...</span>
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-8 text-center flex flex-col items-center gap-2 text-neutral-500">
@@ -145,60 +182,80 @@ const FloatingNotification = () => {
               <span className="text-xs">Bạn chưa có thông báo nào.</span>
             </div>
           ) : (
-            notifications.map((item) => (
-              <div
-                key={item.id || item._id}
-                onClick={() => handleMarkAsRead(item)}
-                className={`group flex p-3 gap-3 border-b border-neutral-50 dark:border-neutral-700/50 cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
-                  !item.isRead ? "bg-orange-50/60 dark:bg-neutral-700/30" : ""
-                }`}
-              >
+            <>
+              {notifications.map((item) => (
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm ${
-                    item.type === "ORDER_STATUS"
-                      ? "bg-blue-500"
-                      : item.type === "PROMOTION"
-                        ? "bg-pink-500"
-                        : "bg-primary-500"
+                  key={item.id || item._id}
+                  onClick={() => handleMarkAsRead(item)}
+                  className={`group flex p-3 gap-3 border-b border-neutral-50 dark:border-neutral-700/50 cursor-pointer transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                    !item.isRead ? "bg-orange-50/60 dark:bg-neutral-700/30" : ""
                   }`}
                 >
-                  {item.type === "PROMOTION" ? (
-                    <span className="las la-gift text-xl"></span>
-                  ) : (
-                    <span className="las la-bell text-xl"></span>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-0.5">
-                    <p
-                      className={`text-sm line-clamp-1 ${!item.isRead ? "font-bold text-neutral-900 dark:text-white" : "font-medium text-neutral-700 dark:text-neutral-200"}`}
-                    >
-                      {item.title}
-                    </p>
-                    {!item.isRead && (
-                      <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
+                  <div
+                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm ${
+                      item.type === "ORDER_STATUS"
+                        ? "bg-blue-500"
+                        : item.type === "PROMOTION"
+                          ? "bg-pink-500"
+                          : "bg-primary-500"
+                    }`}
+                  >
+                    {item.type === "PROMOTION" ? (
+                      <span className="las la-gift text-xl"></span>
+                    ) : (
+                      <span className="las la-bell text-xl"></span>
                     )}
                   </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 mb-1.5 leading-relaxed">
-                    {item.content}
-                  </p>
-                  <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">
-                    {item.createdAt
-                      ? formatDistanceToNow(new Date(item.createdAt), {
-                          addSuffix: true,
-                          locale: vi,
-                        })
-                      : ""}
-                  </p>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-0.5">
+                      <p
+                        className={`text-sm line-clamp-1 ${!item.isRead ? "font-bold text-neutral-900 dark:text-white" : "font-medium text-neutral-700 dark:text-neutral-200"}`}
+                      >
+                        {item.title}
+                      </p>
+                      {!item.isRead && (
+                        <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 mb-1.5 leading-relaxed">
+                      {item.content}
+                    </p>
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">
+                      {item.createdAt
+                        ? formatDistanceToNow(new Date(item.createdAt), {
+                            addSuffix: true,
+                            locale: vi,
+                          })
+                        : ""}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+
+              {/* --- NÚT LOAD MORE --- */}
+              {hasMore && (
+                <div className="p-3 text-center border-t border-neutral-50 dark:border-neutral-700/50">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-500 hover:underline disabled:opacity-50 flex items-center justify-center gap-2 w-full"
+                  >
+                    {isLoadingMore && (
+                      <Loader2 className="animate-spin" size={14} />
+                    )}
+                    {isLoadingMore
+                      ? "Đang tải thêm..."
+                      : "Xem thêm thông báo cũ"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* --- NÚT CHUÔNG --- */}
+      {/* --- NÚT CHUÔNG (Giữ nguyên) --- */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`relative flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-all duration-300 border border-neutral-200 dark:border-neutral-700 ${
@@ -219,7 +276,7 @@ const FloatingNotification = () => {
   );
 };
 
-// --- ICON MESSENGER ---
+// --- ICON MESSENGER (Giữ nguyên) ---
 const MessengerIcon = ({ size = 24 }: { size?: number }) => (
   <svg
     width={size}
@@ -258,7 +315,7 @@ const FloatingContact = () => {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-center">
-      {/* 1. NÚT CHÍNH (TOGGLE) - LUÔN HIỆN Ở DƯỚI CÙNG */}
+      {/* 1. NÚT CHÍNH (TOGGLE) */}
       <div className="relative group z-20">
         <button
           onClick={toggleMenu}
@@ -273,13 +330,10 @@ const FloatingContact = () => {
         </button>
       </div>
 
-      {/* 2. DANH SÁCH CÁC NÚT CON (Messenger, Phone) */}
-      {/* Sửa dụng max-h để animation chiều cao, giúp đóng lại hoàn toàn, không chiếm diện tích */}
+      {/* 2. DANH SÁCH CÁC NÚT CON */}
       <div
         className={`flex flex-col items-center gap-3 overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen
-            ? "max-h-60 opacity-100 mb-3" // Khi mở: có chiều cao và có margin đẩy nút Notification lên
-            : "max-h-0 opacity-0 mb-0" // Khi đóng: chiều cao 0, margin 0 -> Notification rớt xuống sát nút chính
+          isOpen ? "max-h-60 opacity-100 mb-3" : "max-h-0 opacity-0 mb-0"
         }`}
       >
         {/* Nút Gọi Hotline */}
@@ -307,8 +361,7 @@ const FloatingContact = () => {
         </a>
       </div>
 
-      {/* 3. ICON NOTIFICATION - NẰM TRÊN CÙNG CỦA CỘT (Do flex-col-reverse) */}
-      {/* Luôn có mb-3 để tạo khoảng cách với phần tử bên dưới (dù là nút chính hay danh sách mở rộng) */}
+      {/* 3. ICON NOTIFICATION */}
       <div className="mb-3 transition-all duration-300 z-10">
         <FloatingNotification />
       </div>
