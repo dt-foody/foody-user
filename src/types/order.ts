@@ -28,7 +28,7 @@ export type PaymentMethod =
   | "vnpay"
   | "bank_transfer";
 
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded" | "canceled";
 
 export type ShippingStatus =
   | "pending"

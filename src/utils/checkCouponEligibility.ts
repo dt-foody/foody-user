@@ -147,6 +147,14 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
     return new Date().getDay(); // 0 (Chủ nhật) đến 6 (Thứ bảy)
   },
 
+  current_full_date: (ctx) => {
+    const now = new Date();
+    const date = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${year}-${month}-${date}`;
+  },
+
   // --- REFERRAL/REWARD ---
   referrer_successful_invites: (context) => context?.customer?.referrerSuccessfulInvites || 0,
   is_referred_new_customer: (context) => !!context?.customer?.referredBy,
