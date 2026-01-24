@@ -21,7 +21,7 @@ import { orderService } from "@/services/order.service";
 import { CustomerPhone, PaymentMethod } from "@/types";
 import Image from "next/image";
 import { CreateOrderItem_Option, CartLine } from "@/types/cart";
-import { getImageUrl, handleImageError } from "@/utils/imageHelper";
+import { getImageUrl } from "@/utils/imageHelper";
 import SmartImage from "@/components/SmartImage";
 import HereMapPicker from "@/components/HereMapPicker";
 import { Fragment } from "react";

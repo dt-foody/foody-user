@@ -36,9 +36,10 @@ export type CouponConditionGroup =
 export type CouponCondition = CouponConditionGroup;
 
 export interface CouponGiftItem {
-  item: string; // ID của Product hoặc Combo
+  item: any; // Object or Id của Product hoặc Combo
   itemType: GiftType; // 'Product' hoặc 'Combo'
   price: number; // Giá bán ưu đãi (0 = Miễn phí)
+  image?: string;
   name?: string;
 }
 

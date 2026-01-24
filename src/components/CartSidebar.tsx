@@ -37,6 +37,7 @@ import { getCartItemPrices } from "@/utils/cartHelper";
 import Link from "next/link";
 import foodImageDefault from "../images/food_image_default.jpg";
 import { dealSettingService } from "@/services/dealSetting.service";
+import SmartImage from "./SmartImage";
 
 const PLACEHOLDER_IMAGE = foodImageDefault;
 const formatPrice = (price: number) => `${price.toLocaleString("vi-VN")}đ`;
@@ -50,7 +51,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
 }) {
   const allOptions = React.useMemo(
     () => Object.values(options || {}).flat(),
-    [options]
+    [options],
   );
   if (allOptions.length === 0) return null;
   return (
@@ -557,13 +558,11 @@ export default function CartSidebar() {
                     className="p-2.5 bg-white rounded-lg border hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start gap-3">
-                      <Image
-                        src={item._image || PLACEHOLDER_IMAGE}
-                        alt={item.item.name}
-                        onError={handleImageError}
+                      <SmartImage
+                        src={item._image}
+                        className="object-cover rounded-md flex-shrink-0"
                         width={56}
                         height={56}
-                        className="object-cover rounded-md flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <div>
@@ -577,7 +576,7 @@ export default function CartSidebar() {
                               {/* Giá thực của món (đã giảm) */}
                               <span className="text-sm font-bold text-primary-600">
                                 {formatPrice(
-                                  priceDetail.productPriceAfterPromo
+                                  priceDetail.productPriceAfterPromo,
                                 )}
                               </span>
 
@@ -680,11 +679,8 @@ export default function CartSidebar() {
 
                   <div className="flex items-start gap-3 relative z-10">
                     <div className="relative w-14 h-14 flex-shrink-0">
-                      <Image
-                        src={PLACEHOLDER_IMAGE} // Dùng placeholder hoặc logic lấy ảnh
-                        alt={gift.name}
-                        width={56}
-                        height={56}
+                      <SmartImage
+                        src={gift.image}
                         className="object-cover rounded-md opacity-90 grayscale-[0.2]"
                       />
                       <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white p-1 rounded-full shadow-sm">

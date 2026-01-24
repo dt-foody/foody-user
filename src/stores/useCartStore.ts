@@ -559,8 +559,9 @@ export function useCart() {
           const price = gift.price || 0;
 
           lines.push({
-            id: gift.item,
+            id: gift.item ? gift.item._id || gift.item.id : gift.item,
             name: gift.name || "Quà tặng",
+            image: gift.item ? gift.item.image : "",
             itemType: gift.itemType,
             quantity: quantity,
             price: price,
