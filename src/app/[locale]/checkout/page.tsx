@@ -59,7 +59,7 @@ const RenderSelectedOptions = React.memo(function RenderSelectedOptions({
 }) {
   const allOptions = React.useMemo(
     () => Object.values(options || {}).flat(),
-    [options]
+    [options],
   );
   if (allOptions.length === 0) return null;
   return (
@@ -571,9 +571,8 @@ export default function CheckoutPage() {
                   {/* Ảnh quà tặng */}
                   <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-purple-100">
                     {/* Bạn có thể thay src bằng gift.image hoặc placeholder */}
-                    <Image
-                      src={PLACEHOLDER_IMAGE} // Dùng placeholder hoặc logic lấy ảnh
-                      alt={gift.name}
+                    <SmartImage
+                      src={gift.image}
                       width={56}
                       height={56}
                       className="object-cover rounded-md opacity-90 grayscale-[0.2]"
