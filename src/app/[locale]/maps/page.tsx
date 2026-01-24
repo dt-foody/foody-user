@@ -81,7 +81,7 @@ function PageMaps() {
                 👉 Facebook
               </a> */}
               <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL} className="lg:mx-2 lg:h-[40px]">
-                Lối đi
+                Facebook
               </ButtonPrimary>
               {" "}
               — nơi bạn thực sự được là chính mình.

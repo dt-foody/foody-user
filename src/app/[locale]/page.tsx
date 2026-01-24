@@ -450,7 +450,7 @@ function PageHome() {
               👉 Lối đi
             </a> */}
             <ButtonPrimary targetBlank href="https://luuchi.com.vn/vi/maps" className="mx-2 lg:h-[40px]">
-              Lối đi
+              👉 Lối đi
             </ButtonPrimary>
             (Bắt đầu từ đâu?).
           </p>
