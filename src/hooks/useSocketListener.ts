@@ -10,6 +10,19 @@ export const useSocketListener = () => {
   const { user } = useAuthStore();
   const router = useRouter(); // Hook điều hướng
 
+  const playNotificationSound = () => {
+    try {
+      // Đảm bảo bạn đã có file này trong public/sounds/notification.mp3
+      const audio = new Audio("/sounds/notification.mp3");
+      audio.play().catch((err) => {
+        // Trình duyệt có thể chặn autoplay nếu người dùng chưa tương tác với trang
+        console.warn("Không thể phát âm thanh thông báo:", err);
+      });
+    } catch (error) {
+      console.error("Lỗi khi khởi tạo âm thanh:", error);
+    }
+  };
+
   useEffect(() => {
     const socket = initSocket();
 
@@ -18,49 +31,51 @@ export const useSocketListener = () => {
       socket.on("order_status_changed", (data: any) => {
         console.log("🔔 Socket Notification:", data);
 
+        playNotificationSound();
+
         // [UPDATE] Sử dụng Sonner
-        toast.success("Cập nhật trạng thái đơn hàng", {
-          description: data.message, // Hiện nội dung chi tiết ở dòng dưới
-          duration: 5000,
-          // Thêm nút hành động để xem chi tiết ngay
-          action: {
-            label: "Xem ngay",
-            onClick: () => {
-              if (data.orderId) {
-                router.push(`/account-orders/${data.orderId}`);
-              }
-            },
-          },
-        });
+        // toast.success("Cập nhật trạng thái đơn hàng", {
+        //   description: data.message, // Hiện nội dung chi tiết ở dòng dưới
+        //   duration: 5000,
+        //   // Thêm nút hành động để xem chi tiết ngay
+        //   action: {
+        //     label: "Xem ngay",
+        //     onClick: () => {
+        //       if (data.orderId) {
+        //         router.push(`/account-orders/${data.orderId}`);
+        //       }
+        //     },
+        //   },
+        // });
 
         // Nếu bạn dùng React Query và muốn reload dữ liệu ngầm
         // queryClient.invalidateQueries(['my-orders']);
+        window.dispatchEvent(new Event("REFRESH_NOTIFICATIONS"));
       });
 
       socket.on("notification_received", (data: any) => {
         console.log("🔔 Socket Notification:", data);
 
         // Phát âm thanh thông báo nhẹ (nếu muốn)
-        // const audio = new Audio('/sounds/notification.mp3');
-        // audio.play().catch(() => {});
+        playNotificationSound();
 
         // Hiển thị Toast
-        toast.info(data.payload.title || "Thông báo mới", {
-          description: data.payload.content,
-          duration: 5000,
-          // Nếu có link đính kèm (ví dụ link tới đơn hàng)
-          action: data.payload.referenceId
-            ? {
-                label: "Chi tiết",
-                onClick: () => {
-                  // Logic điều hướng tuỳ theo referenceModel
-                  if (data.payload.referenceModel === "Order") {
-                    router.push(`/account-orders/${data.payload.referenceId}`);
-                  }
-                },
-              }
-            : undefined,
-        });
+        // toast.info(data.payload.title || "Thông báo mới", {
+        //   description: data.payload.content,
+        //   duration: 5000,
+        //   // Nếu có link đính kèm (ví dụ link tới đơn hàng)
+        //   action: data.payload.referenceId
+        //     ? {
+        //         label: "Chi tiết",
+        //         onClick: () => {
+        //           // Logic điều hướng tuỳ theo referenceModel
+        //           if (data.payload.referenceModel === "Order") {
+        //             router.push(`/account-orders/${data.payload.referenceId}`);
+        //           }
+        //         },
+        //       }
+        //     : undefined,
+        // });
 
         // Dispatch sự kiện custom để FloatingContact cập nhật lại số lượng badge
         // (Cách đơn giản để giao tiếp giữa các component không cùng cha con mà không cần Redux/Context phức tạp)
