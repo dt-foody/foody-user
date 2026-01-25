@@ -7,6 +7,7 @@ export interface Notification {
   _id?: string; // Fallback nếu backend trả về _id
   title: string;
   content: string;
+  data?: any;
   type: string;
   isRead: boolean;
   createdAt: string;
