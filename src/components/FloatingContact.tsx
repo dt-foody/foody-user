@@ -127,11 +127,10 @@ const FloatingNotification = () => {
 
     return (
       <div className="flex flex-col space-y-5 text-center">
-        <div className="space-y-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-          {contentText.split("\n").map((line: string, index: number) => (
-            <p key={index}>{line}</p>
-          ))}
-        </div>
+        <div
+          className="space-y-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: contentText }} // <-- Dòng này cực kỳ quan trọng
+        />
 
         {selectedNotify.data?.actionLink && (
           <div className="pt-4 flex justify-center">
@@ -263,9 +262,12 @@ const FloatingNotification = () => {
                           <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5 ml-2"></span>
                         )}
                       </div>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 mb-1.5 leading-relaxed">
-                        {item.content}
-                      </p>
+                      <div
+                        className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 mb-1.5 leading-relaxed"
+                        dangerouslySetInnerHTML={{
+                          __html: item.content || "",
+                        }}
+                      />
                       <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-medium">
                         {item.createdAt
                           ? formatDistanceToNow(new Date(item.createdAt), {
