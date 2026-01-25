@@ -126,7 +126,7 @@ const FloatingNotification = () => {
     const contentText = selectedNotify.content || selectedNotify.message || "";
 
     return (
-      <div className="flex flex-col space-y-5 text-center">
+      <div className="flex flex-col space-y-5">
         <div
           className="space-y-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: contentText }} // <-- Dòng này cực kỳ quan trọng
