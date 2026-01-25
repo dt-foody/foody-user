@@ -44,7 +44,7 @@ const AccountReferral = () => {
         }
         await fetchReferralList(1);
       } catch (error) {
-        toast.error("Không thể tải thông tin giới thiệu");
+        toast.error("Không thể tải thông tin mã kết nối");
       } finally {
         setIsLoading(false);
       }
@@ -86,7 +86,7 @@ const AccountReferral = () => {
     if (referralCode) {
       navigator.clipboard.writeText(referralCode);
       setIsCopied(true);
-      toast.success("Đã sao chép mã giới thiệu!");
+      toast.success("Đã sao chép mã kết nối!");
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
@@ -115,7 +115,7 @@ const AccountReferral = () => {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-[#3b2f26] flex items-center gap-2">
           <Gift className="text-orange-500" size={28} />
-          Mã giới thiệu
+          Mã kết nối
         </h1>
         <p className="text-sm text-gray-500">
           Mời bạn bè trải nghiệm để cùng nhận những ưu đãi hấp dẫn từ Lưu Chi.
@@ -127,7 +127,7 @@ const AccountReferral = () => {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <h3 className="text-lg font-bold text-gray-800">
-              Mã giới thiệu của bạn
+              Mã kết nối của bạn
             </h3>
             <p className="text-sm text-gray-600 leading-relaxed max-w-xs">
               Chia sẻ mã này. Bạn và bạn bè sẽ nhận được quà tặng khi họ hoàn
@@ -161,7 +161,7 @@ const AccountReferral = () => {
         <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4 flex items-center justify-between">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
             <Users size={20} className="text-gray-500" />
-            Bạn bè đã giới thiệu
+            Bạn bè đã kết nối
           </h3>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
             {totalResults} thành viên
@@ -176,7 +176,7 @@ const AccountReferral = () => {
               </div>
               <div className="space-y-1">
                 <p className="text-base font-medium text-gray-800">
-                  Chưa có người được giới thiệu
+                  Chưa có người được kết nối
                 </p>
                 <p className="text-sm text-gray-400">
                   Đừng lo, hãy bắt đầu chia sẻ mã để nhận ưu đãi!
