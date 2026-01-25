@@ -25,8 +25,8 @@ export const notificationService = {
 
   // Lấy số lượng chưa đọc
   getUnreadCount: async () => {
-    // Backend trả về { count: number } hoặc số trực tiếp
-    return await apiFetch<{ count: number } | number>(`/notifications/unread-count`);
+    // Backend trả về { unreadCount: number } hoặc số trực tiếp
+    return await apiFetch<{ unreadCount: number } | number>(`/notifications/unread-count`);
   },
 
   // Đánh dấu đã đọc

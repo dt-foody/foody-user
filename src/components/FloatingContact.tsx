@@ -31,7 +31,7 @@ const FloatingNotification = () => {
   const fetchUnreadCount = async () => {
     try {
       const data = await notificationService.getUnreadCount();
-      const count = typeof data === "number" ? data : data?.count || 0;
+      const count = typeof data === "number" ? data : data?.unreadCount || 0;
       setUnreadCount(count);
     } catch (error) {
       console.error("Lỗi lấy số lượng thông báo:", error);
