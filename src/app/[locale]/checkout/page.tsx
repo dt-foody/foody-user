@@ -387,6 +387,17 @@ export default function CheckoutPage() {
       // 1. Tách các field UI không cần thiết (_image, cartId)
       const { _image, cartId, promotionWarning, ...rest } = cartItem;
 
+      // Nếu có warning (tức là không đủ điều kiện), ta ép promotion thành rỗng luôn
+      if (promotionWarning) {
+          return {
+              ...rest,
+              item: {
+                  ...rest.item,
+                  promotion: "", // Xóa promotion ID vì không đủ điều kiện
+              }
+          };
+      }
+
       // 2. Xử lý field promotion trong nested object 'item'
       const rawPromotion = rest.item.promotion;
 
