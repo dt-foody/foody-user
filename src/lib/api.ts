@@ -73,14 +73,6 @@ export const apiFetch = async <T>(
             // Refresh thành công -> Gọi lại request ban đầu với flag _retry = true
             return await apiFetch<T>(endpoint, { ...options, _retry: true });
           } catch (refreshError) {
-            if (typeof window !== "undefined") {
-              // Ví dụ: localStorage.removeItem("user_info");
-
-              // 3. Điều hướng bắt buộc về trang Login
-              // Sử dụng window.location.href để load lại trang sạch sẽ nhất
-              window.location.href = "/login";
-            }
-
             // Refresh thất bại -> Ném lỗi ra ngoài để component xử lý (thường là logout)
             throw <ApiError>{
               message: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.",
