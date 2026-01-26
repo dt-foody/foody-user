@@ -74,6 +74,14 @@ const changePassword = async (data: any /* TChangePasswordSchema */): Promise<an
   });
 }
 
+const refreshToken = async (): Promise<any> => {
+  // Lưu ý: apiFetch đã có logic tự động refresh khi gặp 401,
+  // nên hàm này chủ yếu dùng để chủ động refresh trước khi token hết hạn nếu muốn.
+  return await apiFetch("/auth/refresh-token", {
+    method: "POST",
+  });
+};
+
 // Export tất cả hàm dưới dạng một object
 export const authService = {
   login,
@@ -82,7 +90,8 @@ export const authService = {
   getMe,
   forgotPassword,
   resetPassword,
-  changePassword
+  changePassword,
+  refreshToken,
 };
 
 export default authService;

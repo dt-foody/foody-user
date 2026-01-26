@@ -1,4 +1,4 @@
-// services/apiService.ts
+// src/lib/api.ts
 import { API_URL } from "@/constants";
 
 export interface ApiError {
@@ -6,14 +6,16 @@ export interface ApiError {
   statusCode?: number;
 }
 
+// Biến trạng thái để quản lý việc refresh token (Pattern: Singleton Promise)
+let isRefreshing = false;
+let refreshPromise: Promise<any> | null = null;
+
 /**
- * A generic fetch wrapper for backend API calls.
- * - Always returns parsed JSON (no null)
- * - Throws unified ApiError on failures
+ * Hàm wrapper cho backend API calls.
  */
 export const apiFetch = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { _retry?: boolean } = {} // Thêm flag _retry để đánh dấu request đang thử lại
 ): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
 
@@ -28,16 +30,60 @@ export const apiFetch = async <T>(
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: "include",
+    credentials: "include", // Quan trọng: Gửi kèm cookie
   };
 
   try {
     const response = await fetch(url, config);
 
-    // ❌ Backend trả về HTTP lỗi
+    // ❌ XỬ LÝ KHI BACKEND TRẢ VỀ LỖI
     if (!response.ok) {
-      let errorData: any;
+      // 🚨 Case 1: Token hết hạn (401)
+      if (response.status === 401 && !options._retry) {
+        if (!isRefreshing) {
+          // Bắt đầu quá trình refresh
+          isRefreshing = true;
+          refreshPromise = fetch(`${API_URL}/auth/refresh-token`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include", // Gửi cookie chứa refresh token lên server
+          })
+            .then((res) => {
+              if (!res.ok) throw new Error("Refresh token failed");
+              return res.json();
+            })
+            .catch((error) => {
+              // Nếu refresh thất bại -> Logout hoặc điều hướng về login
+              // window.location.href = "/login"; 
+              throw error;
+            })
+            .finally(() => {
+              // Reset trạng thái sau khi xong
+              isRefreshing = false;
+              refreshPromise = null;
+            });
+        }
 
+        // Chờ quá trình refresh hoàn tất (cho dù là request đầu tiên hay các request đến sau)
+        if (refreshPromise) {
+          try {
+            await refreshPromise;
+            // Refresh thành công -> Gọi lại request ban đầu với flag _retry = true
+            return await apiFetch<T>(endpoint, { ...options, _retry: true });
+          } catch (refreshError) {
+             // Refresh thất bại -> Ném lỗi ra ngoài để component xử lý (thường là logout)
+            throw <ApiError>{
+              message: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.",
+              statusCode: 401,
+            };
+          }
+        }
+      }
+
+      // 🚨 Case 2: Các lỗi khác (400, 403, 500...)
+      let errorData: any;
       try {
         errorData = await response.json();
       } catch {
@@ -50,14 +96,13 @@ export const apiFetch = async <T>(
       };
     }
 
-    // ✅ 2. XỬ LÝ 204: Trả về null thay vì throw lỗi
+    // ✅ XỬ LÝ 204: No Content
     if (response.status === 204) {
       return null as T;
     }
 
-    // 🔥 Đọc raw text để tránh lỗi JSON parse khi body rỗng
+    // 🔥 Đọc response body
     const text = await response.text();
-
     if (!text || text.trim() === "") {
       throw <ApiError>{
         message: "Empty response body",
@@ -75,7 +120,6 @@ export const apiFetch = async <T>(
       };
     }
   } catch (err: any) {
-    // Đây là lớp catch cuối: luôn trả error thống nhất
     throw <ApiError>{
       message:
         err?.message ||
