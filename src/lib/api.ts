@@ -15,7 +15,7 @@ let refreshPromise: Promise<any> | null = null;
  */
 export const apiFetch = async <T>(
   endpoint: string,
-  options: RequestInit & { _retry?: boolean } = {} // Thêm flag _retry để đánh dấu request đang thử lại
+  options: RequestInit & { _retry?: boolean } = {}, // Thêm flag _retry để đánh dấu request đang thử lại
 ): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
 
@@ -56,7 +56,7 @@ export const apiFetch = async <T>(
             })
             .catch((error) => {
               // Nếu refresh thất bại -> Logout hoặc điều hướng về login
-              // window.location.href = "/login"; 
+              // window.location.href = "/login";
               throw error;
             })
             .finally(() => {
@@ -73,7 +73,15 @@ export const apiFetch = async <T>(
             // Refresh thành công -> Gọi lại request ban đầu với flag _retry = true
             return await apiFetch<T>(endpoint, { ...options, _retry: true });
           } catch (refreshError) {
-             // Refresh thất bại -> Ném lỗi ra ngoài để component xử lý (thường là logout)
+            if (typeof window !== "undefined") {
+              // Ví dụ: localStorage.removeItem("user_info");
+
+              // 3. Điều hướng bắt buộc về trang Login
+              // Sử dụng window.location.href để load lại trang sạch sẽ nhất
+              window.location.href = "/login";
+            }
+
+            // Refresh thất bại -> Ném lỗi ra ngoài để component xử lý (thường là logout)
             throw <ApiError>{
               message: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.",
               statusCode: 401,
