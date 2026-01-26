@@ -43,7 +43,7 @@ export const apiFetch = async <T>(
         if (!isRefreshing) {
           // Bắt đầu quá trình refresh
           isRefreshing = true;
-          refreshPromise = fetch(`${API_URL}/auth/refresh-token`, {
+          refreshPromise = fetch(`${API_URL}/auth/refresh-tokens`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
