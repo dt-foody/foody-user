@@ -509,6 +509,31 @@ export default function CheckoutPage() {
     return false;
   };
 
+  const calculateSingleCouponDiscount = (coupon: any, currentSubtotal: number, currentShippingFee: number) => {
+    // 1. Nếu là coupon freeship
+    if (coupon.type === "freeship") {
+      // Nếu là phần trăm (hiếm) hoặc mặc định freeship toàn bộ
+      if (coupon.valueType === "percentage") {
+        return (currentShippingFee * coupon.value) / 100;
+      }
+      // Nếu là fixed_amount (giảm tối đa X đồng tiền ship)
+      return Math.min(currentShippingFee, coupon.value || 0);
+    }
+
+    // 2. Nếu là coupon giảm giá hàng (item discount)
+    if (coupon.valueType === "percentage") {
+      const discount = (currentSubtotal * coupon.value) / 100;
+      // Chặn theo maxDiscountAmount nếu có
+      return coupon.maxDiscountAmount ? Math.min(discount, coupon.maxDiscountAmount) : discount;
+    }
+
+    if (coupon.valueType === "fixed_amount") {
+      return Math.min(currentSubtotal, coupon.value);
+    }
+
+    return 0;
+  };
+
   return (
     <div className="min-h-screen bg-[#fffaf5] text-[#3b2f26] px-4 py-8 flex justify-center font-sans">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1060,21 +1085,28 @@ export default function CheckoutPage() {
             {/* Coupon Display */}
             {appliedCoupons.length > 0 && (
               <div className="py-2 border-y border-dashed bg-orange-50 -mx-6 px-6 space-y-1">
-                {appliedCoupons.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex justify-between text-sm text-orange-700"
-                  >
-                    <span className="flex items-center gap-1">
-                      <Ticket size={12} /> {c.code}
-                    </span>
-                    <span className="font-medium">
-                      {c.type === "freeship"
-                        ? `-${shippingDiscount.toLocaleString("vi-VN")}đ`
-                        : `-${itemDiscount.toLocaleString("vi-VN")}đ`}
-                    </span>
-                  </div>
-                ))}
+                {appliedCoupons.map((c) => {
+                  // Tính toán số tiền giảm riêng cho coupon này
+                  const singleDiscount = calculateSingleCouponDiscount(
+                    c, 
+                    subtotal, 
+                    originalShippingFee // hoặc displayShippingFee tùy logic phí ship của bạn
+                  );
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex justify-between text-sm text-orange-700"
+                    >
+                      <span className="flex items-center gap-1">
+                        <Ticket size={12} /> {c.code || c.voucherCode}
+                      </span>
+                      <span className="font-medium">
+                        -{singleDiscount.toLocaleString("vi-VN")}đ
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
