@@ -269,7 +269,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
               </div>
               <div className="pl-6 space-y-1">
                 {order.orderType !== "Delivery" ? (
-                  <p className="text-gray-600 leading-snug">
+                  <p className="text-[13px] text-blue-600 mt-2 px-1 leading-snug">
                     Quý khách đến lấy đơn vui lòng liên hệ SĐT bếp:{" "}
                     <span className="font-medium">0889058678</span> tại địa chỉ:{" "}
                     <span className="font-medium">
