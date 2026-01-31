@@ -505,7 +505,7 @@ export default function CartSidebar() {
             </div>
             {/* Note Warning */}
             {fulfillmentType === "pickup" && settings.storePickup?.note && (
-              <p className="text-[10px] text-blue-600 italic mt-1 px-1">
+              <p className="text-[13px] text-blue-600 italic mt-2 px-1">
                 * {settings.storePickup.note}
               </p>
             )}
