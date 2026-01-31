@@ -268,14 +268,31 @@ const OrderCard = ({ order }: OrderCardProps) => {
                 <span>Địa chỉ nhận hàng</span>
               </div>
               <div className="pl-6 space-y-1">
-                <p className="font-medium">
-                  {order.shipping?.address?.recipientName}
-                </p>
-                <p>{order.shipping?.address?.recipientPhone}</p>
-                <p className="text-gray-600 leading-snug">
-                  {order.shipping?.address?.fullAddress ||
-                    `${order.shipping?.address?.street}, ${order.shipping?.address?.ward}, ${order.shipping?.address?.district}, ${order.shipping?.address?.city}`}
-                </p>
+                {order.orderType !== "Delivery" ? (
+                  <p className="text-gray-600 leading-snug">
+                    Quý khách đến lấy đơn vui lòng liên hệ SĐT bếp:{" "}
+                    <span className="font-medium">0889058678</span> tại địa chỉ:{" "}
+                    <span className="font-medium">
+                      đầu ngõ 104 Nguyễn Phúc Lai, Đống Đa, Hà Nội
+                    </span>
+                  </p>
+                ) : (
+                  <div className="text-gray-600 leading-snug space-y-1">
+                    <p className="font-medium">
+                      {order.shipping?.address?.recipientName || ""}
+                    </p>
+                    <p>{order.shipping?.address?.recipientPhone || ""}</p>
+                    <p>
+                      {order.shipping?.address?.fullAddress ||
+                        `${order.shipping?.address?.street || ""}, ${
+                          order.shipping?.address?.ward || ""
+                        }, ${order.shipping?.address?.district || ""}, ${
+                          order.shipping?.address?.city || ""
+                        }`}
+                    </p>
+                  </div>
+                )}
+
                 {order.note && (
                   <div className="bg-yellow-50 p-2 rounded-md mt-2 border border-yellow-100 flex gap-2">
                     <MessageSquare
