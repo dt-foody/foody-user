@@ -428,7 +428,7 @@ function PageHome() {
           <p>Ở đây.</p>
           <div>
             <ButtonPrimary targetBlank href={FACEBOOK_GROUP_URL} className="lg:h-[40px]">
-              Bước vào
+              Đi cùng mình
             </ButtonPrimary>
           </div>
           <p>Ta sẽ cùng bắt đầu từ đó.</p>
@@ -452,7 +452,6 @@ function PageHome() {
             <ButtonPrimary targetBlank href="https://luuchi.com.vn/vi/maps" className="mx-2 lg:h-[40px]">
               👉 Lối đi
             </ButtonPrimary>
-            (Bắt đầu từ đâu?).
           </p>
         </div>
       </section>
