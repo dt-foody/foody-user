@@ -160,6 +160,33 @@ const initialState: CartState & ExtendedStateData = {
   surcharges: [],
 };
 
+// --- HELPER MỚI: Tính Subtotal cho Cart (Replicate logic trong useCart) ---
+const calculateCartSubtotal = (cartItems: CartLine[]): number => {
+  // 1. Market Subtotal
+  const marketSubtotal = cartItems.reduce((sum, item) => {
+    const marketPrice = getLineItemMarketPrice(item);
+    return sum + marketPrice * item.quantity;
+  }, 0);
+
+  // 2. Effective Subtotal
+  return cartItems.reduce((sum, item) => {
+    let itemPrice = item.totalPrice;
+
+    const promotion = (item.item as any).promotion;
+    if (
+      promotion &&
+      typeof promotion === "object" &&
+      promotion.minOrderValue > 0
+    ) {
+      if (marketSubtotal < promotion.minOrderValue) {
+        itemPrice = getLineItemMarketPrice(item);
+      }
+    }
+
+    return sum + itemPrice * item.quantity;
+  }, 0);
+};
+
 export const useCartStore = create<ExtendedCartStore>()(
   persist(
     (set, get) => ({
@@ -254,6 +281,7 @@ export const useCartStore = create<ExtendedCartStore>()(
             showCart: false,
           };
         });
+        get().recalculateShippingFee();
       },
 
       updateQuantity: (cartId, amount) => {
@@ -314,9 +342,16 @@ export const useCartStore = create<ExtendedCartStore>()(
             ),
           };
         });
+        get().recalculateShippingFee();
       },
 
-      clearCart: () => set({ cartItems: [], appliedCoupons: [] }),
+      clearCart: () =>
+        set({
+          cartItems: [],
+          appliedCoupons: [],
+          shippingFee: DEFAULT_SHIPPING_FEE,
+          shippingDistance: 0,
+        }),
 
       updateItemNote: (cartId, note) => {
         set((state) => ({
@@ -330,6 +365,7 @@ export const useCartStore = create<ExtendedCartStore>()(
         set((state) => ({
           cartItems: state.cartItems.filter((i) => i.cartId !== cartId),
         }));
+        get().recalculateShippingFee();
       },
 
       setProductForOptions: (product) => set({ productForOptions: product }),
@@ -350,6 +386,7 @@ export const useCartStore = create<ExtendedCartStore>()(
           deliveryOption,
           scheduledDate,
           scheduledTime,
+          cartItems,
         } = get();
 
         if (!selectedAddress || !selectedAddress.location?.coordinates) {
@@ -374,9 +411,18 @@ export const useCartStore = create<ExtendedCartStore>()(
           }
         }
 
+        // Tính toán totalAmount
+        const totalAmount = calculateCartSubtotal(cartItems);
+
         try {
           set({ isCalculatingShip: true });
-          const res = await orderService.getShippingFee(lat, lng, orderTime);
+          const res = await orderService.getShippingFee({
+            lat,
+            lng,
+            orderTime,
+            items: cartItems,
+            totalAmount,
+          });
           set({
             shippingFee: res.shippingFee,
             shippingDistance: res.distance,
@@ -751,9 +797,9 @@ export function useCart() {
 
   const totalSurcharge = useMemo(
     () => {
-        // Nếu là pickup -> Phụ thu = 0
-        if (store.fulfillmentType === "pickup") return 0;
-        return store.surcharges.reduce((sum, s) => sum + s.cost, 0);
+      // Nếu là pickup -> Phụ thu = 0
+      if (store.fulfillmentType === "pickup") return 0;
+      return store.surcharges.reduce((sum, s) => sum + s.cost, 0);
     },
     [store.surcharges, store.fulfillmentType]
   );
@@ -843,7 +889,7 @@ export function CartStoreInitializer() {
 
       const isNotEnoughMoney = minOrderVal > 0 && subtotal < minOrderVal;
 
-      const isInvalidFreeship = 
+      const isInvalidFreeship =
         fulfillmentType === "pickup" && coupon.type === "freeship";
 
       if (!check.isEligible || isNotEnoughMoney || isInvalidFreeship) {

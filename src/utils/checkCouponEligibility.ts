@@ -133,6 +133,13 @@ const FIELD_RESOLVERS: Record<string, (ctx: EvaluationContext) => any> = {
     return new Date(dob).getFullYear();
   },
 
+  customer_default_address_district: (ctx) => {
+    const addresses = ctx.customer?.addresses || [];
+    const defaultAddress = addresses.find(addr => addr.isDefault);
+
+    return defaultAddress?.district || "";
+  },
+
   customer_order_count: (ctx) => ctx.customer?.totalOrder || 0,
   customer_total_spent: (ctx) => ctx.customer?.totalSpent || 0,
 
@@ -191,8 +198,8 @@ const OPERATORS: Record<string, (a: any, b: any) => boolean> = {
     const list = Array.isArray(b)
       ? b.map(String)
       : String(b)
-          .split(',')
-          .map((i) => i.trim());
+        .split(',')
+        .map((i) => i.trim());
 
     return list.includes(String(a));
   },
@@ -202,8 +209,8 @@ const OPERATORS: Record<string, (a: any, b: any) => boolean> = {
     const list = Array.isArray(b)
       ? b.map(String)
       : String(b)
-          .split(",")
-          .map((i) => i.trim());
+        .split(",")
+        .map((i) => i.trim());
     return !list.includes(String(a));
   },
 
@@ -213,8 +220,8 @@ const OPERATORS: Record<string, (a: any, b: any) => boolean> = {
     const listB = Array.isArray(b)
       ? b
       : String(b)
-          .split(",")
-          .map((i) => i.trim());
+        .split(",")
+        .map((i) => i.trim());
     return a.some((item) => listB.includes(item));
   },
 };

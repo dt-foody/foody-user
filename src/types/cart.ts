@@ -138,7 +138,7 @@ export interface CartActions {
   setComboForSelection: (combo: Combo | null) => void;
 
   setFulfillmentType: (type: "delivery" | "pickup") => void;
-  
+
   setDeliveryOption: (option: DeliveryOption) => void;
   setScheduledDate: (date: string) => void;
   setScheduledTime: (time: string) => void;
