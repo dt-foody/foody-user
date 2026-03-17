@@ -21,7 +21,7 @@ const socialsDemo: SocialType[] = [
   { 
     name: "Youtube", 
     icon: "lab la-youtube", 
-    href: "https://www.youtube.com/@quynhanhphannu" 
+    href: "https://www.youtube.com/@claritylabvn" 
   },
   { 
     name: "Tiktok", 
