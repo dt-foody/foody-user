@@ -49,6 +49,16 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'luuchi.com.vn',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.luuchi.com.vn',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'placehold.co',
         pathname: '/*',
       },
